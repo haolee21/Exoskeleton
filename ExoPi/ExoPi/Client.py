@@ -17,14 +17,21 @@ class Client(object):
         self.mainProcess = mp.Process(target=self.main)
 
     def start(self):
+        self.switch.set()
         self.mainProcess.start()
     def stop(self):
         self.switch.clear()
     def selfSync(self,syncTime):
         time.sleep(syncTime)
     def main(self):
-        self.socket.connect((self.pcIP, self.pcPort))
-        self.switch.set()
+        self.socket.settimeout(2)
+        try:
+            self.socket.connect((self.pcIP, self.pcPort)) #todo Fix the problem when client not connected, the session cannot stop since it never get into the loop
+        except socket.timeout:
+            print('Cannot find PC')
+            self.switch.clear()
+
+
         while self.switch.is_set():
             selfSync = th.Thread(target=self.selfSync,args=(1/self.freq,))
             selfSync.start()

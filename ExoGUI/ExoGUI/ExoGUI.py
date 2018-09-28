@@ -18,7 +18,14 @@ class MainWindow(object):
         self.recData = queue.Queue()
         self.recDataLock = th.Lock()
         self.s = None
+
+        # share ssh components
         self.ssh = None
+        self.sshin = None
+        self.sshConnect = th.Event()
+
+        # share TCP/IP components
+        self.tcpipConnect = th.Event()
         # GUI
         self.window = tk.Tk()
         self.window.title('Bionics Lower Limb Exoskeleton')
@@ -89,14 +96,25 @@ class MainWindow(object):
         self.buttonPlot = tk.Button(master = self.window,command = self.plotBut)
         self.buttonPlot.grid(row=13,columnspan=1,column=1)
 
-    def connectExo(self, label):
+        #4 Test function
+
+        self.buttonTestFun = tk.Button(master = self.window,command=self.testFun,text='Test Fun')
+        self.buttonTestFun.grid(row=14,columnspan=2,column=1)
+    def connectExo(self, label): #this button also deal with disconnecting
         if self.exo1.status:
             label.config(bg='red', text='Disconnected')
             self.connectButText.set('Connect')
             self.exo1.disconnect()
-            self.ssh.exec_command('end',get_pty=True)
+            self.sshin.channel.sendall('end\n')
+            time.sleep(3) # for exo to return some turning off message
 
+            self.sshConnect.clear()
+            self.tcpipConnect.clear()
+            self.ssh.close()
+            self.s.close()
         else:
+            self.sshConnect.set()
+            self.tcpipConnect.set()
             sshThread = th.Thread(target=self.set_SSHConnect)
             sshThread.start()
             ipThread = th.Thread(target=self.connectIP)
@@ -104,19 +122,30 @@ class MainWindow(object):
             self.exo1.connect()
             label.config(bg='green', text='Connected')
             self.connectButText.set('Disconnect')
-            self.window.update()
+
 
     def set_SSHConnect(self):
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.ssh.connect('192.168.1.134', 22, 'pi', 'bionics') #todo need to fix why ssh_set is not working
-        _,sshout, _ = self.ssh.exec_command('python3 Exo/ExoPi/ExoPi.py',get_pty=True)
-        data = ''.join(sshout.readlines())
-        with self.recDataLock:
-            self.recData.put(data)
+        self.sshin,sshout, _ = self.ssh.exec_command('python3 Exo/ExoPi/ExoPi.py',get_pty=True)
+        # sshin, sshout, _ = self.ssh.exec_command('python3 test.py', get_pty=True)
+
+        count = 1
+        while self.sshConnect.is_set():
+            if sshout.channel.recv_ready():
+                with self.recDataLock:
+                    self.recData.put(sshout.channel.recv(1024))
+
+            # time.sleep(0.5)
+            # count = count+1
+            # if count ==10:
+            #     self.sshin.channel.sendall('\x03') # the ctrl c command to terminate the session
 
 
-        print('tried')
+
+
+
 
     def refreshRead(self):
         while not self.recData.empty():
@@ -137,13 +166,14 @@ class MainWindow(object):
         with self.recDataLock:
             self.recData.put('TCP/IP Bind success\n')
         count = 1
-        while True:
+        while self.tcpipConnect.is_set():
             data = conIP.recv(1024)
             with self.recDataLock:
-                print('rec '+str(count))
-                count = count +1
-                print(data)
-                self.recData.put(data)
+                # print('rec '+str(count))
+                # count = count +1
+                # print(data)
+                # self.recData.put(data)
+                pass
             time.sleep(1)
     def plotBut(self):
         thread = th.Thread(target=self.testPlot)
@@ -161,15 +191,14 @@ class MainWindow(object):
 
         while True:
             yData = np.random.rand(30)
-            print(yData)
             line.set_ydata(yData)
             ax.draw_artist(ax.patch)
             ax.draw_artist(line)
             fig.canvas.update()
             fig.canvas.flush_events()
             time.sleep(0.01)
-            print('test')
-
+    def testFun(self):
+        self.sshin.channel.sendall('test,start\n')
 
 
 
