@@ -4,8 +4,8 @@ import time
 def MsgSep(msg, msgList):
     while not len(msg) == 0:
         beg = -1
-        beg1 = msg.find(b'#r') + 1
-        beg2 = msg.find(b'#con') + 1
+        beg1 = msg.find(b'r') + 1
+        beg2 = msg.find(b'con') + 1
         if (beg1 < beg2) and (beg1 != -1):
             beg = beg1
         elif (beg2 < beg1) and (beg2 != -1):
