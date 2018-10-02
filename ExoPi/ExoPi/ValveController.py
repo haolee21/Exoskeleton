@@ -262,7 +262,7 @@ class ValveController(object):
                 return 6
         # use finite machine to control
         # total 7 different phases
-        print(curSen[LHIPPOS],curSen[LKNEPOS],curSen[LANKPOS])
+        #print(curSen[LHIPPOS],curSen[LKNEPOS],curSen[LANKPOS])
         if self.state ==1:
             self.state = phase1()
         elif self.state==2:

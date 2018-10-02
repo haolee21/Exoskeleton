@@ -5,9 +5,9 @@
 #include <string.h>
 const int NUMSAMP = 3;
 const int NUMSEN = 9;
-const int SAMPINTERVAL = 5; //unit is ms
+const int SAMPINTERVAL = 8; //unit is ms
 const unsigned long MAXTIME = 3600000; // Time reset every 1 hour, transmit less bits to increase sample freq
-int sensorArray[] = {A0,A1,A2,A3,A4,A5,A6,A7,A8};
+int sensorArray[] = {A9,A10,A11,A12,A13,A3,A15,A1,A2};
 int curIndex;
 
 int senData[NUMSEN][NUMSAMP];
@@ -71,11 +71,13 @@ void loop() {
 	sendResult += addZero(String(curTime),7);
 	
 	for (int senIndex = 0; senIndex < NUMSEN; senIndex++) {
-		sendResult += ",";
+		
 		senSum[senIndex] = senSum[senIndex] - senData[senIndex][curIndex];
 		senData[senIndex][curIndex] = analogRead(sensorArray[senIndex]);
 		senSum[senIndex] = senSum[senIndex] + senData[senIndex][curIndex];
-		sendResult += addZero(String((double)senSum[senIndex] / NUMSAMP, 0),3);
+
+		sendResult += addZero(String(senSum[senIndex] / NUMSAMP), 3);
+		//sendResult += addZero(String((double)senSum[senIndex] / NUMSAMP, 0),3);
 	}
 	sendResult = sendResult + "\n";
 	//sendResult = "@11111,222,333,444,555,666,777,888,999,123\n";

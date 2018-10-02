@@ -8,7 +8,7 @@ import threading as th
 import multiprocessing as mp
 import time
 import ValveController as vc
-port = serial.Serial(port='/dev/ttyACM0',baudrate=115200,timeout=0.01)
+port = serial.Serial(port='/dev/ttyACM0',baudrate=115200, parity=serial.PARITY_EVEN,stopbits=serial.STOPBITS_ONE)
 if port.isOpen():
     port.close()
 port.open()
@@ -24,7 +24,7 @@ senRecQue = senManager.Queue()
 sendPCQue = senManager.Queue()
 sendPCLock = senManager.Lock()
 senLock = senManager.Lock()
-sensor = SenReader.SenReader(400,senArray,senRecQue,senLock,port,sendPCQue,sendPCLock)
+sensor = SenReader.SenReader(125,senArray,senRecQue,senLock,port,sendPCQue,sendPCLock)
 sensor.start()
 # Initialize Controller
 conManager = mp.Manager()
