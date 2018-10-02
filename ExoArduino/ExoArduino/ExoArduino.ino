@@ -76,7 +76,7 @@ void loop() {
 		senData[senIndex][curIndex] = analogRead(sensorArray[senIndex]);
 		senSum[senIndex] = senSum[senIndex] + senData[senIndex][curIndex];
 
-		sendResult += addZero(String(senSum[senIndex] / NUMSAMP), 3);
+		sendResult += addZero(String(senSum[senIndex] / NUMSAMP), 4);
 		//sendResult += addZero(String((double)senSum[senIndex] / NUMSAMP, 0),3);
 	}
 	sendResult = sendResult + "\n";

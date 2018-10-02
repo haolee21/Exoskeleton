@@ -36,11 +36,12 @@ class SenReader(object):
 
             if self.port.in_waiting>0:
 
-                rawInput = self.port.read_until(size=45)
+                rawInput = self.port.read_until(size=45)  #todo make data length a variable
                 #state,preInput,senStr = dp.dataSep(rawInput,self.senArray,self.senLock)
                 state,senStr = dp.dataSepSimp(rawInput,self.senArray,self.senLock)
                 if state:
-                    self.senRecQue.put(self.senArray)
+                    self.senRecQue.put(self.senArray) #todo need to save recorded data
+
                     sendPCCount = sendPCCount+1
                     if sendPCCount ==4:
                         sendPCThread = th.Thread(target=self.sendPC,args=(senStr,))
@@ -54,7 +55,6 @@ class SenReader(object):
             while (aftTime - preTime)<self.period:
                 aftTime = time.time()
                 time.sleep(0.00001)
-            print(aftTime - preTime)
 
 
         print('Sensor ends')

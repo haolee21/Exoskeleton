@@ -35,23 +35,25 @@ def dataSep(strOri,senArray,senLock):
     
 
 def dataSepSimp(curStr,senArray,senLock):
-    if len(curStr)==36:
+    if len(curStr)==45:
+
         try:
             curSen = curStr.decode('utf-8')
             with senLock:
                 senArray[0]=int(curSen[1:8])
-                senArray[1]=int(curSen[8:11])
-                senArray[2]=int(curSen[11:14])
-                senArray[3]=int(curSen[14:17])
-                senArray[4]=int(curSen[17:20])
-                senArray[5]=int(curSen[20:23])
-                senArray[6]=int(curSen[23:26])
-                senArray[7]=int(curSen[26:29])
-                senArray[8]=int(curSen[29:32])
-                senArray[9]=int(curSen[32:-1])
+                senArray[1]=int(curSen[8:12])
+                senArray[2]=int(curSen[12:16])
+                senArray[3]=int(curSen[16:20])
+                senArray[4]=int(curSen[20:24])
+                senArray[5]=int(curSen[24:28])
+                senArray[6]=int(curSen[28:32])
+                senArray[7]=int(curSen[32:36])
+                senArray[8]=int(curSen[36:40])
+                senArray[9]=int(curSen[40:-1])
 
                 #senArray[:] = [int(curSen[1:8]),int(curSen[8:11]),int(curSen[11:14]),int(curSen[14:17]),int(curSen[17:20]),int(curSen[20:23]),int(curSen[23:26]),int(curSen[26:29]),int(curSen[29:32]),int(curSen[32:-1])]
         except (ValueError, IndexError, OverflowError):  # TODO need to know what cause the exception
+            print('failed')
             return False,''
         return True,curSen
     else:
