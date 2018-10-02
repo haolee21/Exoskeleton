@@ -12,6 +12,10 @@ import pickle
 import socket
 import matplotlib.pyplot as plt
 import numpy as np
+import Plotter
+import multiprocessing as mp
+import DataProcess as dp
+
 class MainWindow(object):
     def __init__(self):
         # Program
@@ -32,6 +36,12 @@ class MainWindow(object):
         self.window.geometry('800x600')
         #Public Variable that will display
 
+        # data plotting components
+        self.startPlot = th.Event()
+
+
+
+        # load previous setting
         try:
             preSetLink = open('ExoGUI_preset.exo')
             preSetDic = preSetLink.readline()
@@ -100,6 +110,8 @@ class MainWindow(object):
 
         self.buttonTestFun = tk.Button(master = self.window,command=self.testFun,text='Test Fun')
         self.buttonTestFun.grid(row=14,columnspan=2,column=1)
+        self.buttonEndTestFun = tk.Button(master=self.window,command=self.endTestFun,text='End Test Fun')
+        self.buttonEndTestFun.grid(row=14,columnspan=2,column=3)
     def connectExo(self, label): #this button also deal with disconnecting
         if self.exo1.status:
             label.config(bg='red', text='Disconnected')
@@ -131,7 +143,7 @@ class MainWindow(object):
         self.sshin,sshout, _ = self.ssh.exec_command('python3 Exo/ExoPi/ExoPi.py',get_pty=True)
         # sshin, sshout, _ = self.ssh.exec_command('python3 test.py', get_pty=True)
 
-        count = 1
+        # count = 1
         while self.sshConnect.is_set():
             if sshout.channel.recv_ready():
                 with self.recDataLock:
@@ -171,9 +183,9 @@ class MainWindow(object):
             with self.recDataLock:
                 # print('rec '+str(count))
                 # count = count +1
-                # print(data)
+                print(data)
                 # self.recData.put(data)
-                pass
+
             time.sleep(1)
     def plotBut(self):
         thread = th.Thread(target=self.testPlot)
@@ -199,6 +211,31 @@ class MainWindow(object):
             time.sleep(0.01)
     def testFun(self):
         self.sshin.channel.sendall('test,start\n')
+    def endTestFun(self):
+        self.sshin.channel.sendall('test,stop\n')
+    def dataPlot(self):
+        tQue = mp.Queue()
+        yQue = mp.Queue()
+        #todo check the definition of plotter
+        titleArray = ['plot1','plot2','plot3','plot4','plot5','plot6','plot7','plot8','plot9','plot10']
+        yLimArray =[(0,300),(0,300),(0,300),(0,300),(0,300),(0,300),(0,300),(0,300),(0,300),(0,300)]
+        yLabelArray=['test','test','test','test','test','test','test','test','test','test']
+        sensorPlot = Plotter(tQue,yQue,self.recDataLock,10,100,range(10),titleArray)
+        #todo fix the plotter reference problem
+        while self.startPlot.is_set():
+            while not self.recData.empty():
+                with self.recDataLock:
+                    curMeaList = []
+                    curData = self.recData.get()
+                    curData = curData.decode('utf-8')
+                    curData = dp.comSep(curData,curMeaList)
+                    if curMeaList[0][0]=='r':
+                        yQue.put([int(yEle) for yEle in curMeaList[1:]])
+                        tQue.put(int(curMeaList[0][1:]))
+
+
+
+
 
 
 

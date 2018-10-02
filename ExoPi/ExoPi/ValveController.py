@@ -4,10 +4,11 @@ import Valve
 import time
 import gpiozero as gp
 
-## Position measurement        
-LHIPPOS = 0        
-LKNEPOS = 1
-LANKPOS = 2
+## Position measurement
+TIME = 0
+LHIPPOS = 1
+LKNEPOS = 3
+LANKPOS = 5
 
 
 
@@ -64,13 +65,21 @@ syncPin = gp.OutputDevice(4)
 
 
 # Threshold for finite state machine
-ankThHigh = 100
-ankThMid = 100
-ankThLow = 100
-hipThMid=100
-hipThHigh = 100
-kneThHigh=100
-kneThLow=100
+    # Encoder parameters
+    # ankThMid: 3.8716 kOhm/5.08 kOhms
+    # kneThHigh: 4.16 kOhm/4.4351 kOhms
+    # kneThLow: 3.542 kOhm/4.4351 kOhms
+    # hipThMid: 2.9 kOhm/5.049 kOhms
+    # hipThHigh: 3.05 kOhm/5.049 kOhms
+    # Vcc = 4.97 Volts
+    # arduino measurement: 5 volt/1024 units
+
+ankThMid = 3.8716/5.08*4.97*1024/5
+kneThHigh=4.16/4.4351*4.97*1024/5
+kneThLow=3.542/4.4351*4.97*1024/5
+hipThMid=2.9/5.049*4.97*1024/5
+hipThHigh = 3.05/5.049*4.97*1024/5
+
 class ValveController(object):
 
     j_recLHip = th.Event()
@@ -176,7 +185,7 @@ class ValveController(object):
             curSen = list(self.senArray) #todo make sure this will not cause trouble if we read and write at the same time
 
             if self.j_recLSpring.is_set():
-                allTaskList.append(th.Thread(targe=self.recLSpring,args=(curSen,)))
+                allTaskList.append(th.Thread(target=self.recLSpring,args=(curSen,)))
             if self.j_test.is_set():
                 allTaskList.append(th.Thread(target=self.testTask))
             for task in allTaskList:
@@ -193,15 +202,19 @@ class ValveController(object):
             ankVal1.Off()
             ankVal2.Off()
             if curSen[LKNEPOS]<kneThLow:
+                print('Phase 2')
                 return 2
             else:
+
                 return 1
         def phase2():
             kneVal1.On()
             kneVal2.On()
-            if curSen[LANKPOS]<ankThLow:
+            if curSen[LANKPOS]<ankThMid:
+                print('Phase 3')
                 return 3
             else:
+
                 return 2
         def phase3():
             kneVal1.Off()
@@ -209,8 +222,10 @@ class ValveController(object):
             ankVal1.On()
             ankVal2.On()
             if curSen[LHIPPOS]>hipThMid:
+                print('Phase 4')
                 return 4
             else:
+
                 return 3
         def phase4():
             kneVal1.On()
@@ -218,8 +233,10 @@ class ValveController(object):
             ankVal1.On()
             ankVal2.On()
             if curSen[LHIPPOS]>hipThHigh:
+                print('Phase 5')
                 return 5
             else:
+
                 return 4
         def phase5():
             kneVal1.Off()
@@ -227,8 +244,10 @@ class ValveController(object):
             ankVal1.On()
             ankVal2.On()
             if curSen[LKNEPOS]>kneThHigh:
+                print('Phase 6')
                 return 6
             else:
+
                 return 5
         def phase6():
             kneVal1.On()
@@ -236,11 +255,14 @@ class ValveController(object):
             ankVal1.Off()
             ankVal2.Off()
             if curSen[LKNEPOS]<kneThHigh:
+                print('Phase 1')
                 return 1
             else:
+
                 return 6
         # use finite machine to control
         # total 7 different phases
+        #print(curSen[LHIPPOS],curSen[LKNEPOS],curSen[LANKPOS])
         if self.state ==1:
             self.state = phase1()
         elif self.state==2:

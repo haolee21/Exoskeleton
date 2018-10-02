@@ -10,6 +10,7 @@ class SenReader(object):
     def __init__(self,freq,senArray,senRecQue,senLock,port,sendPCQue,sendPCLock):
         self.port = port
         self.freq=freq
+        self.period = 1/freq
         self.senArray = senArray
         self.senRecQue = senRecQue
         self.senLock = senLock
@@ -28,14 +29,16 @@ class SenReader(object):
         time.sleep(sleepTime)
     def main(self):
         self.port.flushInput() #start brand new
-        preInput = b'' #if current data is not complete, we wait until next cycle
+        #preInput = b'' #if current data is not complete, we wait until next cycle
         sendPCCount = 0
         while self.switch.is_set():
-            selfSync = th.Thread(target= self.selfSync,args=(1/self.freq,))
-            selfSync.start()
+            preTime = time.time()
+
             if self.port.in_waiting>0:
-                rawInput = preInput+self.port.read_until(b'\n')
-                state,preInput,senStr = dp.dataSep(rawInput,self.senArray,self.senLock)
+
+                rawInput = self.port.read_until(size=45)
+                #state,preInput,senStr = dp.dataSep(rawInput,self.senArray,self.senLock)
+                state,senStr = dp.dataSepSimp(rawInput,self.senArray,self.senLock)
                 if state:
                     self.senRecQue.put(self.senArray)
                     sendPCCount = sendPCCount+1
@@ -47,7 +50,13 @@ class SenReader(object):
                     pass
             else:
                 print('get nothing')
-            selfSync.join()
+            aftTime = time.time()
+            while (aftTime - preTime)<self.period:
+                aftTime = time.time()
+                time.sleep(0.00001)
+            print(aftTime - preTime)
+
+
         print('Sensor ends')
     def sendPC(self,senStr):
         with self.sendPCLock:
