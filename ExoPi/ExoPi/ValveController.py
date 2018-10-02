@@ -74,11 +74,11 @@ syncPin = gp.OutputDevice(4)
     # Vcc = 4.97 Volts
     # arduino measurement: 5 volt/1024 units
 
-ankThMid = 3.8716/5.08*4.97*1024/5
-kneThHigh=4.16/4.4351*4.97*1024/5
-kneThLow=3.542/4.4351*4.97*1024/5
-hipThMid=2.9/5.049*4.97*1024/5
-hipThHigh = 3.05/5.049*4.97*1024/5
+ankThMid = 3.8716/5.08*4.97*1024/5   # 775.7345058267715
+kneThHigh=4.16/4.4351*4.97*1024/5    # 954.7205158846475
+kneThLow=3.542/4.4351*4.97*1024/5    # 812.8894392460146
+hipThMid=2.9/5.049*4.97*1024/5       # 584.6271340859576
+hipThHigh = 3.05/5.049*4.97*1024/5   # 614.866468607645
 
 class ValveController(object):
 
@@ -183,7 +183,7 @@ class ValveController(object):
             allTaskList =[]
             # Get current measurement
             curSen = list(self.senArray) #todo make sure this will not cause trouble if we read and write at the same time
-
+            
             if self.j_recLSpring.is_set():
                 allTaskList.append(th.Thread(target=self.recLSpring,args=(curSen,)))
             if self.j_test.is_set():
