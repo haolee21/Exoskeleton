@@ -33,6 +33,7 @@ class Recorder(object):
         self.senSyncTime = syncTime
 
     def saveData(self):
+        print('start to save data')
         senRecList =[]
         while not self.senRecQue.empty():
             # the data type in senRecQue is string "@time(7) sen1(4).........., all measurements has fixed length and are all integer
@@ -50,12 +51,12 @@ class Recorder(object):
             dataList.append(int(recStr[40:-1]))
             senRecList.append(dataList)
 
-        preValCond = [0](*len(self.conRecName) + 1) # this list also included time in the first element
+        preValCond = [0]*(len(self.conRecName) + 1) # this list also included time in the first element
         conRecList=[]
         conRecList.append(preValCond)
         #create valve name for saving
         valveName = ''.join(self.conRecName)
-        while not self.conRecName.empty():
+        while not self.conRecQue.empty():
             # the data type in conRecName is string
             # #time,name of valve,state
             curCon = self.conRecQue.get()
@@ -82,7 +83,7 @@ class Recorder(object):
 
         # record sync time
         syncTimeList =[]
-        while not self.syncTime.is_empty():
+        while not self.syncTime.empty():
             syncTimeList.append(self.syncTime.get())
 
 
@@ -90,6 +91,6 @@ class Recorder(object):
         np.savetxt('testData/'+self.name+'/'+self.name+'_sen.csv',senRecList,fmt='%d',delimiter=',',header=self.senName)
         np.savetxt('testData/' + self.name + '/' + self.name + '_valve.csv', conRecList, fmt='%d', delimiter=',',
                   header=valveName)
-        np.savetxt('testData/'+self.name+'/'+self.name+'_sync.csv',syncTimeList,fmt='%d',header='SyncTime')
+        np.savetxt('testData/'+self.name+'/'+self.name+'_sync.csv',syncTimeList,fmt='%f',header='SyncTime')
         # np.savetxt('testData/' + self.name + '/' + self.name + '_pwm.csv', self.pwmRecList, fmt='%d', delimiter=',',
         #            header=self.pwmName)

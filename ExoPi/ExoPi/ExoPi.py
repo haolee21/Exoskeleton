@@ -20,23 +20,21 @@ time.sleep(0.1)
 senManager = mp.Manager()
 numOfSen = 9
 senArray = senManager.Array('i',[0]*(numOfSen+1)) #+1 for time
-senRecQue = senManager.Queue()
-sendPCQue = senManager.Queue()
-sendPCLock = senManager.Lock()
-senLock = senManager.Lock()
+senRecQue = mp.Queue()
+sendPCQue = mp.Queue()
+sendPCLock = mp.Lock()
+senLock = mp.Lock()
 sensor = SenReader.SenReader(125,senArray,senRecQue,senLock,port,sendPCQue,sendPCLock)
 sensor.start()
 # Initialize Controller
-conManager = mp.Manager()
-numOfVal =  4 #only count the low freq valve
-valCondArray =conManager.Array('i',[0]*numOfVal)
-valCondRecQue = conManager.Queue()
-cmdQue = conManager.Queue()
-cmdLock = conManager.Lock()
-valveRec = conManager.Queue()
-valveRecLock = conManager.Lock()
-syncTimeQue = conManager.Queue()
-valveCon = vc.ValveController(100,100,cmdQue,cmdLock,senArray,valveRec,valveRecLock,syncTimeQue)
+
+valCondRecQue = mp.Queue()
+cmdQue = mp.Queue()
+cmdLock = mp.Lock()
+valveRecQue = mp.Queue()
+valveRecLock = mp.Lock()
+syncTimeQue = mp.Queue()
+valveCon = vc.ValveController(100,100,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue)
 valveCon.start()
 print('done valve')
 # Initialize Client
@@ -45,7 +43,7 @@ exoClient.start()
 # Initialize Recorder
 name = input('Please input the name of this experiment:')
 senName = 'Time,HipPos,KnePos,AnkPos,SyncPin,Test,Test,Test,Test,Test'
-recorder = Recorder.Recorder(name=name, senRecQue=senRecQue,senName=senName,syncTime=syncTimeQue)
+recorder = Recorder.Recorder(name=name, senRecQue=senRecQue,senName=senName,conRecQue=valveRecQue,conRecName=['KneVal1','KneVal2','AnkVal1','AnkVal2'],syncTime=syncTimeQue)
 
 
 def readCmd(cmdStr,cmdList):

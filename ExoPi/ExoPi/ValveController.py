@@ -99,7 +99,8 @@ class ValveController(object):
     j_test = th.Event()
     j_valveTest = th.Event()
     """description of class"""
-    def __init__(self,conFreq,cmdFreq,cmdQue,cmdLock,senArray,valveRecQue):
+    def __init__(self,conFreq,cmdFreq,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue):
+        print('start init valve controller')
         self.conFreq = conFreq # the frequency of control loop,
                                # should be some value less than the loop itself,
                                # since it is just for avoiding control loop run too fast that starve the senArray
@@ -108,22 +109,20 @@ class ValveController(object):
         self.cmdLock = cmdLock
         self.senArray = senArray
         self.switch=mp.Event()
-
-        self.pwmVal1 = Valve.Valve('PWM1',0)
-        self.pwmVal2 = Valve.Valve('PWM2',1)
-
+        self.syncTimeQue = syncTimeQue
 
         # initialize finite state machine
         self.state = 1
 
         # define valve (need to record)
 
-        self.kneVal1 = Valve.Valve('KneVal1',OP13)
-        self.kneVal2 = Valve.Valve('KneVal2',OP14)
-        self.ankVal1 = Valve.Valve('AnkVal1',OP15)
-        self.ankVal2 = Valve.Valve('AnkVal2',OP16)
+        self.kneVal1 = Valve.Valve('KneVal1',OP13,valveRecQue,valveRecLock)
+        self.kneVal2 = Valve.Valve('KneVal2',OP14,valveRecQue,valveRecLock)
+        self.ankVal1 = Valve.Valve('AnkVal1',OP15,valveRecQue,valveRecLock)
+        self.ankVal2 = Valve.Valve('AnkVal2',OP16,valveRecQue,valveRecLock)
 
         self.valveList = [self.kneVal1,self.kneVal2,self.ankVal1,self.ankVal2]
+        print('done init valve controller')
     def start(self):
         # When start, first sync the time 
         self.switch.set()
@@ -132,23 +131,25 @@ class ValveController(object):
         checkTaskTh.start()
         conLoopTh = th.Thread(target=self.conLoop)
         conLoopTh.start()
+        print('valve controller starts')
     def stop(self):
         self.switch.clear()
 
     def syncConAndSen(self):
-        timeSync = []
         timeDiff=[0.05,0.1,0.3]
         for t_sleep in timeDiff:
             syncPin.on()
-            timeSync.append(time.time())
+            self.syncTimeQue.put(time.time())
             time.sleep(t_sleep)
             syncPin.off()
-            timeSync.append(time.time())
+            self.syncTimeQue.put(time.time())
             time.sleep(t_sleep)
 
         print('Done sycn')
     def noTask(self):
         print('No such task')
+    def selfSync(self,sleepTime):
+        time.sleep(sleepTime)
 
     def checkTasks(self,cmdQue,cmdQueLock):
 
@@ -210,11 +211,6 @@ class ValveController(object):
 
     def recLSpring(self,curSen):
         def phase1():
-            kneVal1.Off()
-            kneVal2.Off()
-            ankVal1.Off()
-            ankVal2.Off()
-
             self.kneVal1.Off()
             self.kneVal2.Off()
             self.ankVal1.Off()
@@ -232,7 +228,6 @@ class ValveController(object):
                 print('Phase 3')
                 return 3
             else:
-
                 return 2
         def phase3():
             self.kneVal1.Off()
@@ -243,7 +238,6 @@ class ValveController(object):
                 print('Phase 4')
                 return 4
             else:
-
                 return 3
         def phase4():
             self.kneVal1.On()
@@ -254,7 +248,6 @@ class ValveController(object):
                 print('Phase 5')
                 return 5
             else:
-
                 return 4
         def phase5():
             self.kneVal1.Off()
@@ -265,7 +258,6 @@ class ValveController(object):
                 print('Phase 6')
                 return 6
             else:
-
                 return 5
         def phase6():
             self.kneVal1.On()
@@ -276,7 +268,6 @@ class ValveController(object):
                 print('Phase 1')
                 return 1
             else:
-
                 return 6
         # use finite machine to control
         # total 7 different phases

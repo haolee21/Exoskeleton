@@ -39,7 +39,6 @@ class SenReader(object):
                 rawInput = self.port.read_until(size=45)  #todo make data length a variable
                 #state,preInput,senStr = dp.dataSep(rawInput,self.senArray,self.senLock)
                 state,senStr = dp.dataSepSimp(rawInput,self.senArray,self.senLock,self.senRecQue)
-
                 if state:
                     # tryTime1 = time.time()
                     #self.senRecQue.put(self.senArray) #self.senArray is a multiprocess manager.Array, cannot be directly put into a list, thus we transform it into a normal list
