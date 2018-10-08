@@ -26,7 +26,7 @@ class Client(object):
     def main(self):
         self.socket.settimeout(2)
         try:
-            self.socket.connect((self.pcIP, self.pcPort)) #todo Fix the problem when client not connected, the session cannot stop since it never get into the loop
+            self.socket.connect((self.pcIP, self.pcPort))
         except socket.timeout:
             print('Cannot find PC')
             self.switch.clear()

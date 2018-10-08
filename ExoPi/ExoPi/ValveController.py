@@ -7,8 +7,8 @@ import gpiozero as gp
 ## Position measurement
 TIME = 0
 LHIPPOS = 1
-LKNEPOS = 3
-LANKPOS = 5
+LKNEPOS = 4
+LANKPOS = 3
 
 
 
@@ -43,23 +43,25 @@ OP14 = 17
 OP15 = 27        
 OP16 = 22
 
-swValL = Valve.Valve('swValL',OP6)
-preVal1 = Valve.Valve('preVal1',OP1)
-tankVal1 = Valve.Valve('tankVal1',OP5)
-preVal2 = Valve.Valve('preVal2',OP2)
-actVal = Valve.Valve('actVal',OP8)
-tankVal2 = Valve.Valve('tankVal2',OP7)
-relPreVal = Valve.Valve('relPreVal',OP3)
-balVal = Valve.Valve('balVal',OP4)
-addVal1 = Valve.Valve('addVal1',OP9)
-addVal2 = Valve.Valve('addVal2',OP10)
-addVal3 = Valve.Valve('addVal3',OP11)
-addVal4 = Valve.Valve('addVal4',OP12)
+# swValL = Valve.Valve('swValL',OP6)
+# preVal1 = Valve.Valve('preVal1',OP1)
+# tankVal1 = Valve.Valve('tankVal1',OP5)
+# preVal2 = Valve.Valve('preVal2',OP2)
+# actVal = Valve.Valve('actVal',OP8)
+# tankVal2 = Valve.Valve('tankVal2',OP7)
+# relPreVal = Valve.Valve('relPreVal',OP3)
+# balVal = Valve.Valve('balVal',OP4)
+# addVal1 = Valve.Valve('addVal1',OP9)
+# addVal2 = Valve.Valve('addVal2',OP10)
+# addVal3 = Valve.Valve('addVal3',OP11)
+# addVal4 = Valve.Valve('addVal4',OP12)
+#
+# kneVal1 = Valve.Valve('kneVal1',OP13)
+# kneVal2 = Valve.Valve('kneVal2',OP14)
+# ankVal1 = Valve.Valve('ankVal1',OP15)
+# ankVal2 = Valve.Valve('ankVal2',OP16)
 
-kneVal1 = Valve.Valve('kneVal1',OP13)
-kneVal2 = Valve.Valve('kneVal2',OP14)
-ankVal1 = Valve.Valve('ankVal1',OP15)
-ankVal2 = Valve.Valve('ankVal2',OP16)
+
 
 syncPin = gp.OutputDevice(4)
 
@@ -95,8 +97,10 @@ class ValveController(object):
     j_recLSpring = th.Event()
     j_testBreak = th.Event()
     j_test = th.Event()
+    j_valveTest = th.Event()
     """description of class"""
-    def __init__(self,conFreq,cmdFreq,cmdQue,cmdLock,senArray):
+    def __init__(self,conFreq,cmdFreq,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue):
+        print('start init valve controller')
         self.conFreq = conFreq # the frequency of control loop,
                                # should be some value less than the loop itself,
                                # since it is just for avoiding control loop run too fast that starve the senArray
@@ -105,13 +109,20 @@ class ValveController(object):
         self.cmdLock = cmdLock
         self.senArray = senArray
         self.switch=mp.Event()
-
-        self.pwmVal1 = Valve.Valve('PWM1',0)
-        self.pwmVal2 = Valve.Valve('PWM2',1)
-
+        self.syncTimeQue = syncTimeQue
 
         # initialize finite state machine
         self.state = 1
+
+        # define valve (need to record)
+
+        self.kneVal1 = Valve.Valve('KneVal1',OP13,valveRecQue,valveRecLock)
+        self.kneVal2 = Valve.Valve('KneVal2',OP14,valveRecQue,valveRecLock)
+        self.ankVal1 = Valve.Valve('AnkVal1',OP15,valveRecQue,valveRecLock)
+        self.ankVal2 = Valve.Valve('AnkVal2',OP16,valveRecQue,valveRecLock)
+
+        self.valveList = [self.kneVal1,self.kneVal2,self.ankVal1,self.ankVal2]
+        print('done init valve controller')
     def start(self):
         # When start, first sync the time 
         self.switch.set()
@@ -120,24 +131,25 @@ class ValveController(object):
         checkTaskTh.start()
         conLoopTh = th.Thread(target=self.conLoop)
         conLoopTh.start()
+        print('valve controller starts')
     def stop(self):
         self.switch.clear()
-    def selfSync(self,syncTime):
-        time.sleep(syncTime)
+
     def syncConAndSen(self):
-        timeSync = []
         timeDiff=[0.05,0.1,0.3]
         for t_sleep in timeDiff:
             syncPin.on()
-            timeSync.append(time.time())
+            self.syncTimeQue.put(time.time())
             time.sleep(t_sleep)
             syncPin.off()
-            timeSync.append(time.time())
+            self.syncTimeQue.put(time.time())
             time.sleep(t_sleep)
 
         print('Done sycn')
     def noTask(self):
         print('No such task')
+    def selfSync(self,sleepTime):
+        time.sleep(sleepTime)
 
     def checkTasks(self,cmdQue,cmdQueLock):
 
@@ -188,6 +200,8 @@ class ValveController(object):
                 allTaskList.append(th.Thread(target=self.recLSpring,args=(curSen,)))
             if self.j_test.is_set():
                 allTaskList.append(th.Thread(target=self.testTask))
+            if self.j_valveTest.is_set():
+                allTaskList.append(th.Thread(target=self.testValve))
             for task in allTaskList:
                 task.start()
             for task in allTaskList:
@@ -197,10 +211,10 @@ class ValveController(object):
 
     def recLSpring(self,curSen):
         def phase1():
-            kneVal1.Off()
-            kneVal2.Off()
-            ankVal1.Off()
-            ankVal2.Off()
+            self.kneVal1.Off()
+            self.kneVal2.Off()
+            self.ankVal1.Off()
+            self.ankVal2.Off()
             if curSen[LKNEPOS]<kneThLow:
                 print('Phase 2')
                 return 2
@@ -208,57 +222,52 @@ class ValveController(object):
 
                 return 1
         def phase2():
-            kneVal1.On()
-            kneVal2.On()
+            self.kneVal1.On()
+            self.kneVal2.On()
             if curSen[LANKPOS]<ankThMid:
                 print('Phase 3')
                 return 3
             else:
-
                 return 2
         def phase3():
-            kneVal1.Off()
-            kneVal2.Off()
-            ankVal1.On()
-            ankVal2.On()
+            self.kneVal1.Off()
+            self.kneVal2.Off()
+            self.ankVal1.On()
+            self.ankVal2.On()
             if curSen[LHIPPOS]>hipThMid:
                 print('Phase 4')
                 return 4
             else:
-
                 return 3
         def phase4():
-            kneVal1.On()
-            kneVal2.On()
-            ankVal1.On()
-            ankVal2.On()
+            self.kneVal1.On()
+            self.kneVal2.On()
+            self.ankVal1.On()
+            self.ankVal2.On()
             if curSen[LHIPPOS]>hipThHigh:
                 print('Phase 5')
                 return 5
             else:
-
                 return 4
         def phase5():
-            kneVal1.Off()
-            kneVal2.Off()
-            ankVal1.On()
-            ankVal2.On()
+            self.kneVal1.Off()
+            self.kneVal2.Off()
+            self.ankVal1.On()
+            self.ankVal2.On()
             if curSen[LKNEPOS]>kneThHigh:
                 print('Phase 6')
                 return 6
             else:
-
                 return 5
         def phase6():
-            kneVal1.On()
-            kneVal2.On()
-            ankVal1.Off()
-            ankVal2.Off()
+            self.kneVal1.On()
+            self.kneVal2.On()
+            self.ankVal1.Off()
+            self.ankVal2.Off()
             if curSen[LKNEPOS]<kneThHigh:
                 print('Phase 1')
                 return 1
             else:
-
                 return 6
         # use finite machine to control
         # total 7 different phases
@@ -285,4 +294,12 @@ class ValveController(object):
         print('done try')
         time.sleep(0.05)
 
+
+    def testValve(self):
+        for valve in self.valveList:
+            for i in range(10):
+                valve.On()
+                time.sleep(0.5)
+                valve.Off()
+                time.sleep(0.5)
 
