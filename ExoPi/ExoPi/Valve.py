@@ -1,16 +1,23 @@
 import gpiozero as gp
+import time
 class Valve(object):
     """description of class"""
-    def __init__(self,name,index):
-        self.name = name
+    def __init__(self,name,index,valveRecQue,valveRecLock):
+
         self.pin = gp.OutputDevice(index)
-        self.state = 0
-
-
+        self.valveRecQue = valveRecQue
+        self.valveRecLock = valveRecLock
+        self.onStr = ','+name + ',1'
+        self.offStr = ','+name + ',0'
     def On(self):
         self.pin.on()
-        self.state = 1
+        curTime = time.time()
+        with self.valveRecLock:
+            self.valveRecQue.put(str(curTime)+self.onStr)
     def Off(self):
         self.pin.off()
-        self.state = 0
+        curTime = time.time()
+        with self.valveRecLock:
+            self.valveRecQue.put(str(curTime)+self.offStr)
+
 

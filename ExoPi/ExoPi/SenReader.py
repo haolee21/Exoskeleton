@@ -38,10 +38,14 @@ class SenReader(object):
 
                 rawInput = self.port.read_until(size=45)  #todo make data length a variable
                 #state,preInput,senStr = dp.dataSep(rawInput,self.senArray,self.senLock)
-                state,senStr = dp.dataSepSimp(rawInput,self.senArray,self.senLock)
-                if state:
-                    self.senRecQue.put(self.senArray) #todo need to save recorded data
+                state,senStr = dp.dataSepSimp(rawInput,self.senArray,self.senLock,self.senRecQue)
 
+                if state:
+                    # tryTime1 = time.time()
+                    #self.senRecQue.put(self.senArray) #self.senArray is a multiprocess manager.Array, cannot be directly put into a list, thus we transform it into a normal list
+                                     # todo check the effect on speed
+                    # tryTime2 = time.time()
+                    # print(tryTime2-tryTime1)
                     sendPCCount = sendPCCount+1
                     if sendPCCount ==4:
                         sendPCThread = th.Thread(target=self.sendPC,args=(senStr,))
@@ -55,7 +59,6 @@ class SenReader(object):
             while (aftTime - preTime)<self.period:
                 aftTime = time.time()
                 time.sleep(0.00001)
-
 
         print('Sensor ends')
     def sendPC(self,senStr):
