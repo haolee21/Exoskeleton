@@ -82,6 +82,7 @@ kneThLow=3.542/4.4351*4.97*1024/5    # 812.8894392460146
 hipThMid=2.9/5.049*4.97*1024/5       # 584.6271340859576
 hipThHigh = 3.05/5.049*4.97*1024/5   # 614.866468607645
 
+
 class ValveController(object):
 
     j_recLHip = th.Event()
@@ -98,6 +99,7 @@ class ValveController(object):
     j_testBreak = th.Event()
     j_test = th.Event()
     j_valveTest = th.Event()
+    j_testSync = th.Event()
     """description of class"""
     def __init__(self,conFreq,cmdFreq,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue):
         print('start init valve controller')
@@ -116,10 +118,10 @@ class ValveController(object):
 
         # define valve (need to record)
 
-        self.kneVal1 = Valve.Valve('KneVal1',OP13,valveRecQue,valveRecLock)
-        self.kneVal2 = Valve.Valve('KneVal2',OP14,valveRecQue,valveRecLock)
-        self.ankVal1 = Valve.Valve('AnkVal1',OP15,valveRecQue,valveRecLock)
-        self.ankVal2 = Valve.Valve('AnkVal2',OP16,valveRecQue,valveRecLock)
+        self.kneVal1 = Valve.Valve('KneVal1',OP1,valveRecQue,valveRecLock)
+        self.kneVal2 = Valve.Valve('KneVal2',OP2,valveRecQue,valveRecLock)
+        self.ankVal1 = Valve.Valve('AnkVal1',OP3,valveRecQue,valveRecLock)
+        self.ankVal2 = Valve.Valve('AnkVal2',OP4,valveRecQue,valveRecLock)
 
         self.valveList = [self.kneVal1,self.kneVal2,self.ankVal1,self.ankVal2]
         print('done init valve controller')
@@ -179,7 +181,10 @@ class ValveController(object):
                         self.j_test.set()
                     elif curCmd[1]=='stop':
                         self.j_test.clear()
-
+                elif curCmd[0]=='testval':
+                    self.j_valveTest.set()
+                elif curCmd[0]=='testsync':
+                    self.j_testSync.set()
 
                 else:
                     self.noTask()
@@ -202,6 +207,10 @@ class ValveController(object):
                 allTaskList.append(th.Thread(target=self.testTask))
             if self.j_valveTest.is_set():
                 allTaskList.append(th.Thread(target=self.testValve))
+                self.j_valveTest.clear()
+            if self.j_testSync.is_set():
+                allTaskList.append(th.Thread(target=self.syncConAndSen()))
+                self.j_testSync.clear()
             for task in allTaskList:
                 task.start()
             for task in allTaskList:
@@ -297,9 +306,10 @@ class ValveController(object):
 
     def testValve(self):
         for valve in self.valveList:
+            print(valve.name)
             for i in range(10):
                 valve.On()
-                time.sleep(0.5)
+                time.sleep(0.1)
                 valve.Off()
-                time.sleep(0.5)
+                time.sleep(0.1)
 

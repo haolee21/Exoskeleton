@@ -3,7 +3,7 @@ import time
 class Valve(object):
     """description of class"""
     def __init__(self,name,index,valveRecQue,valveRecLock):
-
+        self.name = name
         self.pin = gp.OutputDevice(index)
         self.valveRecQue = valveRecQue
         self.valveRecLock = valveRecLock
