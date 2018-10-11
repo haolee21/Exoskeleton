@@ -60,14 +60,18 @@ class Recorder(object):
             # the data type in conRecName is string
             # #time,name of valve,state
             curCon = self.conRecQue.get()
+
             # put curCon into list
             curList = []
             startI = 0
             # break recorded string into list time,name,condition
+
             while True:
                 endI = curCon.find(',',startI)
+
                 if endI==-1:
-                    endI ==len(curCon)
+                    endI =len(curCon)
+
                     curList.append(curCon[startI:endI])
                     break
                 else:
@@ -77,14 +81,17 @@ class Recorder(object):
             # find the index for previous valve condition
 
             valI = self.conRecName.index(curList[1])+1 # the first element is time, so index +1 for valves
+
             preValCond[valI] = int(curList[2])
-            preValCond[0]=float(curList[0])
-            conRecList.append(preValCond)
+            preValCond[0]=int(float(curList[0])*1000+0.5)
+            conRecList.append(preValCond.copy()) # list in python is pointer, thus if we exit the loop, the pointer will point back to original null data, which is 0
+
 
         # record sync time
         syncTimeList =[]
         while not self.syncTime.empty():
             syncTimeList.append(self.syncTime.get())
+
 
 
         os.mkdir('testData/'+self.name)

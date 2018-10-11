@@ -43,7 +43,10 @@ exoClient.start()
 # Initialize Recorder
 name = input('Please input the name of this experiment:')
 senName = 'Time,HipPos,KnePos,AnkPos,SyncPin,Test,Test,Test,Test,Test'
-recorder = Recorder.Recorder(name=name, senRecQue=senRecQue,senName=senName,conRecQue=valveRecQue,conRecName=['KneVal1','KneVal2','AnkVal1','AnkVal2'],syncTime=syncTimeQue)
+conRecName = []
+for val in valveCon.valveList:
+    conRecName.append(val.name)
+recorder = Recorder.Recorder(name=name, senRecQue=senRecQue,senName=senName,conRecQue=valveRecQue,conRecName=conRecName,syncTime=syncTimeQue)
 
 
 def readCmd(cmdStr,cmdList):

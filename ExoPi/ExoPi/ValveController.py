@@ -126,7 +126,7 @@ class ValveController(object):
         self.ankPreVal = Valve.Valve('AnkPreVal',OP2,valveRecQue,valveRecLock)
         self.balVal = Valve.Valve('BalVal',OP5,valveRecQue,valveRecLock)
 
-        self.valveList = [self.kneVal1,self.kneVal2,self.ankVal1,self.ankVal2,self.knePreVal,self.ankPreVal]
+        self.valveList = [self.kneVal1,self.kneVal2,self.ankVal1,self.ankVal2,self.knePreVal,self.ankPreVal,self.balVal]
         print('#done init valve controller')
     def start(self):
         # When start, first sync the time 
@@ -315,4 +315,5 @@ class ValveController(object):
                 time.sleep(0.1)
                 valve.Off()
                 time.sleep(0.1)
+        print('#Done testval')
 
