@@ -10,8 +10,8 @@ class Client(object):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.pcIP= pcIP
         self.pcPort = pcPort
-        #
-        print('connect to PC')
+
+        print('#connect to PC')
         self.sendPCQue = sendPCQue
         self.sendPCLock = sendPCLock
         self.mainProcess = mp.Process(target=self.main)
@@ -28,7 +28,7 @@ class Client(object):
         try:
             self.socket.connect((self.pcIP, self.pcPort))
         except socket.timeout:
-            print('Cannot find PC')
+            print('!Cannot find PC')
             self.switch.clear()
 
 

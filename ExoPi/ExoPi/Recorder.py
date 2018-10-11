@@ -33,7 +33,7 @@ class Recorder(object):
         self.senSyncTime = syncTime
 
     def saveData(self):
-        print('start to save data')
+        print('#start to save data')
         senRecList =[]
         while not self.senRecQue.empty():
             # the data type in senRecQue is string "@time(7) sen1(4).........., all measurements has fixed length and are all integer

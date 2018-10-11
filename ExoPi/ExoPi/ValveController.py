@@ -102,7 +102,7 @@ class ValveController(object):
     j_testSync = th.Event()
     """description of class"""
     def __init__(self,conFreq,cmdFreq,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue):
-        print('start init valve controller')
+        print('#start init valve controller')
         self.conFreq = conFreq # the frequency of control loop,
                                # should be some value less than the loop itself,
                                # since it is just for avoiding control loop run too fast that starve the senArray
@@ -118,13 +118,16 @@ class ValveController(object):
 
         # define valve (need to record)
 
-        self.kneVal1 = Valve.Valve('KneVal1',OP1,valveRecQue,valveRecLock)
-        self.kneVal2 = Valve.Valve('KneVal2',OP2,valveRecQue,valveRecLock)
-        self.ankVal1 = Valve.Valve('AnkVal1',OP3,valveRecQue,valveRecLock)
-        self.ankVal2 = Valve.Valve('AnkVal2',OP4,valveRecQue,valveRecLock)
+        self.kneVal1 = Valve.Valve('KneVal1',OP9,valveRecQue,valveRecLock)
+        self.kneVal2 = Valve.Valve('KneVal2',OP4,valveRecQue,valveRecLock)
+        self.ankVal1 = Valve.Valve('AnkVal1',OP6,valveRecQue,valveRecLock)
+        self.ankVal2 = Valve.Valve('AnkVal2',OP7,valveRecQue,valveRecLock)
+        self.knePreVal = Valve.Valve('KnePreVal',OP1,valveRecQue,valveRecLock)
+        self.ankPreVal = Valve.Valve('AnkPreVal',OP2,valveRecQue,valveRecLock)
+        self.balVal = Valve.Valve('BalVal',OP5,valveRecQue,valveRecLock)
 
-        self.valveList = [self.kneVal1,self.kneVal2,self.ankVal1,self.ankVal2]
-        print('done init valve controller')
+        self.valveList = [self.kneVal1,self.kneVal2,self.ankVal1,self.ankVal2,self.knePreVal,self.ankPreVal]
+        print('#done init valve controller')
     def start(self):
         # When start, first sync the time 
         self.switch.set()
@@ -133,7 +136,7 @@ class ValveController(object):
         checkTaskTh.start()
         conLoopTh = th.Thread(target=self.conLoop)
         conLoopTh.start()
-        print('valve controller starts')
+        print('#valve controller starts')
     def stop(self):
         self.switch.clear()
 
@@ -147,9 +150,9 @@ class ValveController(object):
             self.syncTimeQue.put(time.time())
             time.sleep(t_sleep)
 
-        print('Done sycn')
+        print('#Done sycn')
     def noTask(self):
-        print('No such task')
+        print('#No such task')
     def selfSync(self,sleepTime):
         time.sleep(sleepTime)
 
@@ -225,7 +228,7 @@ class ValveController(object):
             self.ankVal1.Off()
             self.ankVal2.Off()
             if curSen[LKNEPOS]<kneThLow:
-                print('Phase 2')
+                print('#Phase 2')
                 return 2
             else:
 
@@ -234,7 +237,7 @@ class ValveController(object):
             self.kneVal1.On()
             self.kneVal2.On()
             if curSen[LANKPOS]<ankThMid:
-                print('Phase 3')
+                print('#Phase 3')
                 return 3
             else:
                 return 2
@@ -244,7 +247,7 @@ class ValveController(object):
             self.ankVal1.On()
             self.ankVal2.On()
             if curSen[LHIPPOS]>hipThMid:
-                print('Phase 4')
+                print('#Phase 4')
                 return 4
             else:
                 return 3
@@ -254,7 +257,7 @@ class ValveController(object):
             self.ankVal1.On()
             self.ankVal2.On()
             if curSen[LHIPPOS]>hipThHigh:
-                print('Phase 5')
+                print('#Phase 5')
                 return 5
             else:
                 return 4
@@ -264,7 +267,7 @@ class ValveController(object):
             self.ankVal1.On()
             self.ankVal2.On()
             if curSen[LKNEPOS]>kneThHigh:
-                print('Phase 6')
+                print('#Phase 6')
                 return 6
             else:
                 return 5
@@ -274,7 +277,7 @@ class ValveController(object):
             self.ankVal1.Off()
             self.ankVal2.Off()
             if curSen[LKNEPOS]<kneThHigh:
-                print('Phase 1')
+                print('#Phase 1')
                 return 1
             else:
                 return 6

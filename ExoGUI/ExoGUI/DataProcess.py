@@ -1,31 +1,29 @@
 import time
 
 
-def MsgSep(msg, msgList):
-    while not len(msg) == 0:
-        beg = -1
-        beg1 = msg.find(b'r') + 1
-        beg2 = msg.find(b'con') + 1
-        if (beg1 < beg2) and (beg1 != -1):
-            beg = beg1
-        elif (beg2 < beg1) and (beg2 != -1):
-            beg = beg2
-
-        end = msg.find(b'\n', beg)
-        if end == -1:
-            break
-        msgList.append(msg[beg:end])
-        msg = msg[end + 1:]
-        if beg == -1:
+def dataSep(msg, msgList):
+    if len(msg)==45:
+        if msg[0]=='@':
+            msgList.append(int(msg[1:8]))
+            msgList.append(int(msg[8:12]))
+            msgList.append(int(msg[12:16]))
+            msgList.append(int(msg[16:20]))
+            msgList.append(int(msg[20:24]))
+            msgList.append(int(msg[24:28]))
+            msgList.append(int(msg[28:32]))
+            msgList.append(int(msg[32:36]))
+            msgList.append(int(msg[36:40]))
+            msgList.append(int(msg[40:-1]))
+            return True
+        else:
             return False
-    return True
-
-
+    else:
+        return False
 def comSep(com, comList):  # This function will break command into list
     end = 0
     index = 0
     while end != -1:
-        end = com.find(',', index)
+        end = com.find('\n', index)
         if end == -1:
             break
         comList.append(com[index:end])

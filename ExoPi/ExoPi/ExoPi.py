@@ -36,7 +36,7 @@ valveRecLock = mp.Lock()
 syncTimeQue = mp.Queue()
 valveCon = vc.ValveController(100,100,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue)
 valveCon.start()
-print('done valve')
+print('# controller initialization finished')
 # Initialize Client
 exoClient = Client.Client(freq=60,pcIP='192.168.1.107',pcPort=12345,sendPCQue=sendPCQue,sendPCLock=sendPCLock)
 exoClient.start()
