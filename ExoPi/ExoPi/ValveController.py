@@ -7,8 +7,9 @@ import PWMGen as pwm
 ## Position measurement
 TIME = 0
 LHIPPOS = 1
-LKNEPOS = 4
+LKNEPOS = 2
 LANKPOS = 3
+
 
 
 
@@ -17,11 +18,11 @@ RKNEPOS = 1
 RANKPOS = 2        
 LKNEVEL = 17        
 ## Pressure measurement index        
-LKNEPRE = 16        
-LTANKPRE = 1        
+LKNEPRE = 6
+LTANKPRE = 5
 RKNEPRE = 3        
 RPRETANk = 4        
-LANKPRE = 8        
+LANKPRE = 7
 RTANKPRE = 14
 
 
@@ -84,7 +85,7 @@ hipThHigh = 3.05/5.049*4.97*1024/5   # 614.866468607645
 
 
 class ValveController(object):
-
+    j_recL = th.Event()
     j_recLHip = th.Event()
     j_recLKne = th.Event()
     j_recRHip = th.Event()
@@ -123,18 +124,18 @@ class ValveController(object):
         self.kneVal2 = Valve.Valve('KneVal2',OP4,valveRecQue,valveRecLock)
         self.ankVal1 = Valve.Valve('AnkVal1',OP6,valveRecQue,valveRecLock)
         self.ankVal2 = Valve.Valve('AnkVal2',OP7,valveRecQue,valveRecLock)
-        self.knePreVal = Valve.Valve('KnePreVal',OP1,valveRecQue,valveRecLock)
-        self.ankPreVal = Valve.Valve('AnkPreVal',OP2,valveRecQue,valveRecLock)
+        #self.knePreVal = Valve.Valve('KnePreVal',OP1,valveRecQue,valveRecLock)
+        #self.ankPreVal = Valve.Valve('AnkPreVal',OP2,valveRecQue,valveRecLock)
         self.balVal = Valve.Valve('BalVal',OP5,valveRecQue,valveRecLock)
 
-        self.valveList = [self.kneVal1,self.kneVal2,self.ankVal1,self.ankVal2,self.knePreVal,self.ankPreVal,self.balVal]
+        self.valveList = [self.kneVal1,self.kneVal2,self.ankVal1,self.ankVal2,self.balVal]
 
         # define pwm valves
         self.pwmRecQue = pwmRecQue
         self.pwmRecLock = pwmRecLock
         self.knePreValPWM = pwm.PWMGen('KnePreVal',OP1,self.pwmRecQue,self.pwmRecLock)
-        self.ankPreValPWM = pwm.PWMGen('AnkPreVal',OP2,self.pwmRecLock,pwmRecLock)
-
+        self.ankPreValPWM = pwm.PWMGen('AnkPreVal',OP2,self.pwmRecQue,pwmRecLock)
+        self.pwmValList = [self.knePreValPWM,self.ankPreValPWM]
         print('#done init valve controller')
     def start(self):
         # When start, first sync the time 
@@ -187,6 +188,13 @@ class ValveController(object):
                         self.j_recLSpring.clear()
                     else:
                         self.noTask()
+                elif curCmd[0]=='rec':
+                    if curCmd[1]=='start':
+                        self.j_recL.set()
+                    elif curCmd[1]=='stop':
+                        self.j_recL.clear()
+                    else:
+                        self.noTask()
                 elif curCmd[0]=='test':
                     if curCmd[1]=='start':
                         self.j_test.set()
@@ -212,7 +220,7 @@ class ValveController(object):
             allTaskList =[]
             # Get current measurement
             curSen = list(self.senArray) #todo make sure this will not cause trouble if we read and write at the same time
-            
+            #　list(array) will only copy the value
             if self.j_recLSpring.is_set():
                 allTaskList.append(th.Thread(target=self.recLSpring,args=(curSen,)))
             if self.j_test.is_set():
@@ -226,6 +234,7 @@ class ValveController(object):
             if self.j_testPWM.is_set():
                 allTaskList.append(th.Thread(target=self.testPwm))
                 self.j_testPWM.clear()
+
             for task in allTaskList:
                 task.start()
             for task in allTaskList:
@@ -331,9 +340,22 @@ class ValveController(object):
 
     def testPwm(self):
         waitTime = 5
-        dutyTest = [10,50,90]
+        dutyTest = [10,50,80]
+        print('test knee pwm')
         self.knePreValPWM.start()
         for duty in dutyTest:
             self.knePreValPWM.setDuty(duty)
+            print('current duty '+ str(duty))
             time.sleep(waitTime)
+        self.knePreValPWM.setDuty(0)
         self.knePreValPWM.stop()
+
+        print('test ankle pwm')
+        self.ankPreValPWM.start()
+        for duty in dutyTest:
+            self.ankPreValPWM.setDuty(duty)
+            print('current duty ' + str(duty))
+            time.sleep(waitTime)
+        self.ankPreValPWM.setDuty(0)
+        self.ankPreValPWM.stop()
+        print('done pwm test')

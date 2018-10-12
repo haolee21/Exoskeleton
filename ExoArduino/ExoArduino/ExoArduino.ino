@@ -8,7 +8,7 @@ const int NUMSEN = 9;
 const int SAMPINTERVAL = 8; //unit is ms
 //const int SAMPINTERVAL = 100; //unit is ms
 const unsigned long MAXTIME = 3600000; // Time reset every 1 hour, transmit less bits to increase sample freq
-int sensorArray[] = {0,1,2,3,A12,A13,A3,A15,A10};
+int sensorArray[] = {0,1,2,3,4,5,6,A15,A10};
 int curIndex;
 
 int senData[NUMSEN][NUMSAMP];

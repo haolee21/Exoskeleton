@@ -19,31 +19,32 @@ class PWMGen(object):
 
     def start(self):
         self.switch.set()
-        if self.dutyQue.is_empty():
+        if self.dutyQue.empty():
             print('!No input duty for PWM Generator')
         else:
-            self.mainProcess.start()
+            self.mainThread.start()
     def stop(self):
         self.switch.clear()
     def setDuty(self,duty):
         with self.dutyLock:
             self.dutyQue.put(duty)
-
+        thread = th.Thread(target=self.recDuty,args=(time.time(),duty,))
+        thread.start()
     def main(self):
-        while self.swtich.is_set():
+        while self.switch.is_set():
             if not self.dutyQue.empty():
                 curDuty = self.dutyQue.get()
             onTime = curDuty/float(100)*pwmUnit/6000
             offTime = (100 - curDuty) / float(100) * pwmUnit/6000
             if onTime<0.005:
-                self.pwmVal.Off()
+                self.pwmVal.off()
                 time.sleep(pwmUnit/6000)
                 continue
-            self.pwmVal.On()
+            self.pwmVal.on()
             time.sleep(onTime)
-            self.pwmVal.Off()
+            self.pwmVal.off()
             time.sleep(offTime)
             
     def recDuty(self,curTime,curDuty):
         with self.pwmRecLock:
-            self.pwmRecQue.put(str(curTime)+','+self.name+','+curDuty)
+            self.pwmRecQue.put(str(curTime)+','+self.name+','+str(curDuty))

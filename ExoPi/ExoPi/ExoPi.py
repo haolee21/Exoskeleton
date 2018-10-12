@@ -48,11 +48,14 @@ exoClient = Client.Client(freq=60,pcIP='192.168.1.107',pcPort=12345,sendPCQue=se
 exoClient.start()
 # Initialize Recorder
 name = input('Please input the name of this experiment:')
-senName = 'Time,HipPos,KnePos,AnkPos,SyncPin,Test,Test,Test,Test,Test'
+senName = 'Time,HipPos,KnePos,AnkPos,SyncPin,TankPre,KnePre,AnkPre,Test,Test'
 conRecName = []
 for val in valveCon.valveList:
     conRecName.append(val.name)
-recorder = Recorder.Recorder(name=name, senRecQue=senRecQue,senName=senName,conRecQue=valveRecQue,conRecName=conRecName,syncTime=syncTimeQue)
+pwmRecName =[]
+for pwmVal in valveCon.pwmValList:
+    pwmRecName.append(pwmVal.name)
+recorder = Recorder.Recorder(name=name, senRecQue=senRecQue,senName=senName,conRecQue=valveRecQue,conRecName=conRecName,syncTime=syncTimeQue,pwmRecQue=pwmRecQue,pwmRecName=pwmRecName)
 
 
 def readCmd(cmdStr,cmdList):
