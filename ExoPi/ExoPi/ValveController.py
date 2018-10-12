@@ -3,7 +3,7 @@ import threading as th
 import Valve 
 import time
 import gpiozero as gp
-
+import PWMGen as pwm
 ## Position measurement
 TIME = 0
 LHIPPOS = 1
@@ -94,14 +94,15 @@ class ValveController(object):
     j_testAllValve = th.Event()
     j_testAct = th.Event()
     j_balance = th.Event()
-    j_testSync = th.Event()
+
     j_recLSpring = th.Event()
     j_testBreak = th.Event()
     j_test = th.Event()
     j_valveTest = th.Event()
     j_testSync = th.Event()
+    j_testPWM = th.Event()
     """description of class"""
-    def __init__(self,conFreq,cmdFreq,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue):
+    def __init__(self,conFreq,cmdFreq,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue,pwmRecQue,pwmRecLock):
         print('#start init valve controller')
         self.conFreq = conFreq # the frequency of control loop,
                                # should be some value less than the loop itself,
@@ -127,6 +128,13 @@ class ValveController(object):
         self.balVal = Valve.Valve('BalVal',OP5,valveRecQue,valveRecLock)
 
         self.valveList = [self.kneVal1,self.kneVal2,self.ankVal1,self.ankVal2,self.knePreVal,self.ankPreVal,self.balVal]
+
+        # define pwm valves
+        self.pwmRecQue = pwmRecQue
+        self.pwmRecLock = pwmRecLock
+        self.knePreValPWM = pwm.PWMGen('KnePreVal',OP1,self.pwmRecQue,self.pwmRecLock)
+        self.ankPreValPWM = pwm.PWMGen('AnkPreVal',OP2,self.pwmRecLock,pwmRecLock)
+
         print('#done init valve controller')
     def start(self):
         # When start, first sync the time 
@@ -188,7 +196,8 @@ class ValveController(object):
                     self.j_valveTest.set()
                 elif curCmd[0]=='testsync':
                     self.j_testSync.set()
-
+                elif curCmd[0]=='testpwm':
+                    self.j_testPWM.set()
                 else:
                     self.noTask()
 
@@ -212,8 +221,11 @@ class ValveController(object):
                 allTaskList.append(th.Thread(target=self.testValve))
                 self.j_valveTest.clear()
             if self.j_testSync.is_set():
-                allTaskList.append(th.Thread(target=self.syncConAndSen()))
+                allTaskList.append(th.Thread(target=self.syncConAndSen))
                 self.j_testSync.clear()
+            if self.j_testPWM.is_set():
+                allTaskList.append(th.Thread(target=self.testPwm))
+                self.j_testPWM.clear()
             for task in allTaskList:
                 task.start()
             for task in allTaskList:
@@ -317,3 +329,11 @@ class ValveController(object):
                 time.sleep(0.1)
         print('#Done testval')
 
+    def testPwm(self):
+        waitTime = 5
+        dutyTest = [10,50,90]
+        self.knePreValPWM.start()
+        for duty in dutyTest:
+            self.knePreValPWM.setDuty(duty)
+            time.sleep(waitTime)
+        self.knePreValPWM.stop()
