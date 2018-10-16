@@ -93,7 +93,8 @@ class Recorder(object):
 
         # pwm data unpack
         prePwmCond = [0]*(len(self.pwmRecName)+1)
-        pwmRecList = [prePwmCond]
+        pwmRecList = []
+        #pwmRecList = [prePwmCond.copy()] # we don't need to record the first [0,0,0], pwmGen will do [time,0,0]
         pwmValName = 'Time,'+','.join(self.pwmRecName)
         while not self.pwmRecQue.empty():
             curPwm = self.pwmRecQue.get()
@@ -118,15 +119,14 @@ class Recorder(object):
 
             valI = self.pwmRecName.index(curList[1]) + 1  # the first element is time, so index +1 for valves
 
-            prePwmCond[valI] = int(curList[2])
+            prePwmCond[valI] = float(curList[2])
             prePwmCond[0] = int(float(curList[0]) * 1000 + 0.5)
-            pwmRecList.append(
-                prePwmCond.copy())  # list in python is pointer, thus if we exit the loop, the pointer will point back to original null data, which is 0
+            pwmRecList.append(prePwmCond.copy())  # list in python is pointer, thus if we exit the loop, the pointer will point back to original null data, which is 0
 
         # record sync time
         syncTimeList =[]
         while not self.syncTime.empty():
-            syncTimeList.append(self.syncTime.get())
+            syncTimeList.append(self.syncTime.get()*1000)
 
 
 
@@ -135,6 +135,6 @@ class Recorder(object):
         np.savetxt('testData/' + self.name + '/' + self.name + '_valve.csv', conRecList, fmt='%d', delimiter=',',
                   header=valveName)
         np.savetxt('testData/'+self.name+'/'+self.name+'_sync.csv',syncTimeList,fmt='%f',header='SyncTime')
-        np.savetxt('testData/' + self.name + '/' + self.name + '_pwm.csv', pwmRecList, fmt='%d', delimiter=',',
+        np.savetxt('testData/' + self.name + '/' + self.name + '_pwm.csv', pwmRecList, fmt='%f', delimiter=',',
                    header=pwmValName)
 

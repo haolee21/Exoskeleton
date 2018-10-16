@@ -60,3 +60,23 @@ def dataSepSimp(curStr,senArray,senLock,senRecQue):
         return True,curSen
     else:
         return False,''
+
+
+def getPre(meaVolt):
+    """this return pressure in psi"""
+    return meaVolt * 250 / 1024 - 25
+
+
+def getAng(meaVolt, offset):
+    """this function return in degree"""
+    curVolt = 0.0049 * meaVolt
+    curAng = curVolt / 4.918 * 340 - offset
+    return curAng
+
+
+def getVolt(meaVolt):
+    return 0.0049 * meaVolt
+
+
+def getOri(mea):
+    return mea
