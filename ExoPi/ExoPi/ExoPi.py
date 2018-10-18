@@ -27,7 +27,7 @@ senLock = mp.Lock()
 sensor = SenReader.SenReader(125,senArray,senRecQue,senLock,port,sendPCQue,sendPCLock)
 sensor.start()
 # Initialize Controller
-
+stateQue = mp.Queue()
 valCondRecQue = mp.Queue()
 cmdQue = mp.Queue()
 cmdLock = mp.Lock()
@@ -38,7 +38,7 @@ syncTimeQue = mp.Queue()
 pwmRecQue = mp.Queue()
 pwmRecLock = mp.Lock()
 
-valveCon = vc.ValveController(100,100,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue,pwmRecQue,pwmRecLock)
+valveCon = vc.ValveController(100,100,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue,pwmRecQue,pwmRecLock,stateQue)
 valveCon.start()
 print('# controller initialization finished')
 
@@ -55,7 +55,7 @@ for val in valveCon.valveList:
 pwmRecName =[]
 for pwmVal in valveCon.pwmValList:
     pwmRecName.append(pwmVal.name)
-recorder = Recorder.Recorder(name=name, senRecQue=senRecQue,senName=senName,conRecQue=valveRecQue,conRecName=conRecName,syncTime=syncTimeQue,pwmRecQue=pwmRecQue,pwmRecName=pwmRecName)
+recorder = Recorder.Recorder(name=name, senRecQue=senRecQue,senName=senName,conRecQue=valveRecQue,conRecName=conRecName,syncTime=syncTimeQue,pwmRecQue=pwmRecQue,pwmRecName=pwmRecName,stateQue=stateQue)
 
 
 def readCmd(cmdStr,cmdList):

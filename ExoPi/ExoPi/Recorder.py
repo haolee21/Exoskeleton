@@ -3,7 +3,7 @@ import numpy as np
 import os
 class Recorder(object):
     """description of class"""
-    def __init__(self,name,senRecQue,senName,conRecQue,conRecName,pwmRecQue,pwmRecName,syncTime): #todo need to add valveRecQue,valveName,pwmRecQue,pwmName one day
+    def __init__(self,name,senRecQue,senName,conRecQue,conRecName,pwmRecQue,pwmRecName,stateQue,syncTime): #todo need to add valveRecQue,valveName,pwmRecQue,pwmName one day
         # data type:
                     # senRecQue: string of queue
                     # senName: single string
@@ -20,6 +20,9 @@ class Recorder(object):
 
         # variables for record sync of Pi and arduino
         self.syncTime = syncTime
+
+        # variable for recording walking state
+        self.stateQue = stateQue
 
         # self.valveRecQue = valveRecQue
         # self.valveName = valveName
@@ -128,7 +131,9 @@ class Recorder(object):
         while not self.syncTime.empty():
             syncTimeList.append(self.syncTime.get()*1000)
 
-
+        stateList = []
+        while not self.stateQue.empty():
+            stateList.append(self.stateQue.get())
 
         os.mkdir('testData/'+self.name)
         np.savetxt('testData/'+self.name+'/'+self.name+'_sen.csv',senRecList,fmt='%d',delimiter=',',header=self.senName)
@@ -137,4 +142,5 @@ class Recorder(object):
         np.savetxt('testData/'+self.name+'/'+self.name+'_sync.csv',syncTimeList,fmt='%f',header='SyncTime')
         np.savetxt('testData/' + self.name + '/' + self.name + '_pwm.csv', pwmRecList, fmt='%f', delimiter=',',
                    header=pwmValName)
-
+        np.savetxt('testData/' + self.name + '/' + self.name + '_state.csv', stateList, fmt='%f', delimiter=',',
+                   header='Time,State')

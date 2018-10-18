@@ -77,11 +77,11 @@ syncPin = gp.OutputDevice(4)
     # Vcc = 4.97 Volts
     # arduino measurement: 5 volt/1024 units
 
-ankThMid = 550
-kneThHigh=550
-kneThLow=550
-hipThMid=320
-hipThHigh = 400
+ankThMid = 500
+kneThHigh=435
+kneThLow=500
+hipThMid=530
+hipThHigh = 550
 
 
 class ValveController(object):
@@ -106,9 +106,9 @@ class ValveController(object):
     j_testAnkAct = th.Event()
     j_testKneAct = th.Event()
     """description of class"""
-    def __init__(self,conFreq,cmdFreq,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue,pwmRecQue,pwmRecLock):
+    def __init__(self,conFreq,cmdFreq,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue,pwmRecQue,pwmRecLock,stateQue):
         print('#start init valve controller')
-        self.conFreq = conFreq # the frequency of control loop,
+        self.conT = 1/conFreq # the frequency of control loop,
                                # should be some value less than the loop itself,
                                # since it is just for avoiding control loop run too fast that starve the senArray
         self.cmdFreq = cmdFreq # the frequency of refreshing command
@@ -142,9 +142,13 @@ class ValveController(object):
         self.knePreValPWM = pwm.PWMGen('KnePreVal',OP1,self.pwmRecQue,self.pwmRecLock)
         self.ankPreValPWM = pwm.PWMGen('AnkPreVal',OP2,self.pwmRecQue,pwmRecLock)
         self.pwmValList = [self.knePreValPWM,self.ankPreValPWM]
+
+
+        # record walking state
+        self.stateQue = stateQue
         print('#done init valve controller')
 
-
+        self.change = False
     def start(self):
         # When start, first sync the time 
         self.switch.set()
@@ -181,14 +185,13 @@ class ValveController(object):
         print('#Done sycn')
     def noTask(self):
         print('#No such task')
-    def selfSync(self,sleepTime):
-        time.sleep(sleepTime)
+
 
     def checkTasks(self,cmdQue,cmdQueLock):
 
         while self.switch.is_set():
-            selfSync = th.Thread(target=self.selfSync,args=(1/self.cmdFreq,))
-            selfSync.start()
+            initTime = time.time()
+
             # now we check the command
             if not cmdQue.empty():
                 with cmdQueLock:
@@ -211,9 +214,12 @@ class ValveController(object):
                     if curCmd[1]=='start':
                         self.knePreValPWM.start()
                         self.ankPreValPWM.start() # we start the pwm here since we only start it once
+                        self.stateQue.put([time.time()*1000,1])
                         self.j_recL.set()
                     elif curCmd[1]=='stop':
                         self.j_recL.clear()
+                        self.knePreValPWM.stop()
+                        self.ankPreValPWM.stop()
                     else:
                         self.noTask()
                 elif curCmd[0]=='initsup':
@@ -235,17 +241,20 @@ class ValveController(object):
                     self.j_testAnkAct.set()
                 elif curCmd[0]=='testkneact':
                     self.j_testKneAct.set()
+
+                elif curCmd[0]=='c':
+                    self.change = True
                 else:
                     self.noTask()
-
-            selfSync.join()
-
+            endTime = time.time()
+            while (endTime-initTime)<self.conT:
+                time.sleep(0.001)
+                endTime = time.time()
 
     def conLoop(self):
         while self.switch.is_set():
+            initTime = time.time()
             #print('control loop')
-            selfSync = th.Thread(target=self.selfSync(1/self.conFreq,))
-            selfSync.start()
             allTaskList =[]
             # Get current measurement
             curSen = list(self.senArray) #todo make sure this will not cause trouble if we read and write at the same time
@@ -277,11 +286,13 @@ class ValveController(object):
                 task.start()
             for task in allTaskList:
                 task.join()
-
-            selfSync.join()
+            endTime = time.time()
+            while (endTime-initTime)<self.conT:
+                time.sleep(0.001)
+                endTime = time.time()
     def recLSpring(self,curSen):
         pass
-    kneSupPre = 200
+    kneSupPre = 250
     preTh = 10
     kneWalkSupPre = 230
     ankWalkActPre = 400
@@ -296,6 +307,7 @@ class ValveController(object):
         else:
             print('enough supporting pressure')
             self.knePreValPWM.setDuty(0)
+            self.knePreValPWM.stop()
             self.balVal.on()
             self.kneVal2.on()
             self.kneVal1.off()
@@ -313,10 +325,13 @@ class ValveController(object):
             dutyAnk = self.calDutyRec(curSen[LANKPRE],curSen[LTANKPRE])
             self.ankPreValPWM.setDuty(dutyAnk)
 
-            if curSen[LKNEPOS]<kneThLow: #if pressure is not high enough, don't go to phase 2
+            #if curSen[LKNEPOS]<kneThLow: #if pressure is not high enough, don't go to phase 2
+            if self.change:
+                self.change=False
                 print('#Phase 2')
                 self.knePreValPWM.setDuty(0)
                 self.ankPreValPWM.setDuty(0)
+                self.stateQue.put([time.time()*1000,2])
                 return 2
             else:
                 return 1
@@ -329,20 +344,27 @@ class ValveController(object):
             # ankDuty = self.calDutyAct(curSen[LTANKPRE],curSen[LANKPRE],self.ankWalkActPre)
             ankDuty=90
             self.ankPreValPWM.setDuty(ankDuty)
-            if curSen[LANKPOS]<ankThMid:
+            #if curSen[LANKPOS]<ankThMid:
+            if self.change:
+                self.change=False
                 print('#Phase 3')
                 self.ankPreValPWM.setDuty(0)
+                self.stateQue.put([time.time()*1000, 3])
                 return 3
             else:
                 return 2
         def phase3():
             self.balVal.on()
             self.kneVal1.off()
-            self.kneVal2.off()
+
             self.ankVal1.on()
             self.ankVal2.on()
-            if curSen[LHIPPOS]>hipThMid:
+            self.kneVal2.off()
+            #if curSen[LHIPPOS]>hipThMid:
+            if self.change:
+                self.change=False
                 print('#Phase 4')
+                self.stateQue.put([time.time()*1000, 4])
                 return 4
             else:
                 return 3
@@ -354,16 +376,20 @@ class ValveController(object):
             self.ankVal2.on()
             if curSen[LHIPPOS]>hipThHigh:
                 print('#Phase 5')
+                self.stateQue.put([time.time()*1000, 5])
                 return 5
             else:
                 return 4
         def phase5():
             self.kneVal1.off()
-            self.kneVal2.on()
+            self.kneVal2.off()
             self.ankVal1.on()
             self.ankVal2.on()
             self.balVal.off()
-            if curSen[LKNEPOS]>kneThHigh:
+            #if curSen[LKNEPOS]>kneThHigh:
+            if self.change:
+                self.change=False
+                self.stateQue.put([time.time()*1000, 6])
                 print('#Phase 6')
                 return 6
             else:
@@ -372,9 +398,12 @@ class ValveController(object):
             self.balVal.on()
             self.kneVal1.on()
             self.kneVal2.on()
-            self.ankVal1.off()
-            self.ankVal2.off()
-            if curSen[LKNEPOS]<kneThHigh:
+            self.ankVal1.on()
+            self.ankVal2.on()
+            #if curSen[LKNEPOS]<kneThHigh:
+            if self.change:
+                self.change=False
+                self.stateQue.put([time.time()*1000, 1])
                 print('#Phase 1')
                 return 1
             else:
@@ -398,18 +427,18 @@ class ValveController(object):
             raise Exception('!Finite state machine cannot classified state')
 
     def calDutyAct(self,driPre,conPre,conDes):
-        duty = (conDes-conPre)/(driPre-conPre)*10
+        duty = (conDes-conPre)/(driPre-conPre)*50
         if duty<0:
             duty=0
         return  duty
     def calDutyRec(self,recPre,tankPre):
         diff = recPre -tankPre
-        if diff>100:
-            duty = 80
-        elif diff>60:
-            duty = 30
+        if diff>50:
+            duty = 90
+        elif diff>30:
+            duty = 50
         elif diff>10:
-            duty = 10
+            duty = 20
         else:
             duty =0
         return duty
