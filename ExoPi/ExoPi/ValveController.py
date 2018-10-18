@@ -374,7 +374,9 @@ class ValveController(object):
             self.kneVal2.on()
             self.ankVal1.on()
             self.ankVal2.on()
-            if curSen[LHIPPOS]>hipThHigh:
+            #if curSen[LHIPPOS]>hipThHigh:
+            if self.switch:
+                self.switch=False
                 print('#Phase 5')
                 self.stateQue.put([time.time()*1000, 5])
                 return 5
