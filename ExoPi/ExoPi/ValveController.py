@@ -104,7 +104,7 @@ class ValveController(object):
     j_recPos = th.Event()
     j_dualPwm = th.Event()
     """description of class"""
-    def __init__(self,conFreq,cmdFreq,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue,pwmRecQue,pwmRecLock,stateQue):
+    def __init__(self,conFreq,cmdFreq,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue,pwmRecQue1,pwmRecQue2,stateQue):
         print('#start init valve controller')
         self.conT = 1/conFreq # the frequency of control loop,
                                # should be some value less than the loop itself,
@@ -135,8 +135,8 @@ class ValveController(object):
         # define pwm valves
 
 
-        self.knePreValPWM = pwm.PWMGen('KnePreVal',OP1,pwmRecQue,pwmRecLock)
-        self.ankPreValPWM = pwm.PWMGen('AnkPreVal',OP2,pwmRecQue,pwmRecLock)
+        self.knePreValPWM = pwm.PWMGen('KnePreVal',OP1,pwmRecQue1)
+        self.ankPreValPWM = pwm.PWMGen('AnkPreVal',OP2,pwmRecQue2)
         self.pwmValList = [self.knePreValPWM,self.ankPreValPWM]
 
 
@@ -303,7 +303,7 @@ class ValveController(object):
         pass
     kneSupPre = 250
     preTh = 10
-    kneWalkSupPre = 230
+    kneWalkSupPre = 200
     ankWalkActPre = 300
 
     preDiffTh = 20
@@ -311,7 +311,7 @@ class ValveController(object):
     kneThLow = 460
 
     ankThHigh = 600
-
+    ankThLow = 460
     hipThMid = 540
     hipThHigh = 560
     def initSupPre(self,curSen):
@@ -339,12 +339,11 @@ class ValveController(object):
             self.kneRel.on()
             dutyKne = self.calDutyRec(curSen[LKNEPRE],curSen[LTANKPRE])
             self.knePreValPWM.setDuty(dutyKne)
-            print('Knee duty('+str(dutyKne)+')')
             self.ankVal1.off()
             self.ankVal2.on()
             dutyAnk = self.calDutyRec(curSen[LANKPRE],curSen[LTANKPRE])
             self.ankPreValPWM.setDuty(dutyAnk)
-            print('ankle duty('+str(dutyAnk)+')')
+
             if curSen[LKNEPOS]<self.kneThLow: #if pressure is not high enough, don't go to phase 2
             #if self.change:
                 self.change=False
@@ -389,8 +388,6 @@ class ValveController(object):
             else:
                 return 3
         def phase4():
-
-
             self.kneVal1.off()
             self.kneVal2.off()
             self.kneRel.off()
@@ -402,8 +399,7 @@ class ValveController(object):
                                       self.ankWalkActPre)  # act the ankle with knee pressure
 
             self.ankPreValPWM.setDuty(ankDuty)
-            print('ankle duty(' + str(ankDuty) + ')')
-            if curSen[LKNEPOS]>self.kneThHigh:
+            if curSen[LANKPOS]<self.ankThLow:
             #if self.change:
                 self.change=False
                 print('#Phase 5')
@@ -413,7 +409,6 @@ class ValveController(object):
             else:
                 return 4
         def phase5():
-
             self.kneVal1.off()
             self.kneVal2.off()
             self.kneRel.off()
@@ -450,10 +445,12 @@ class ValveController(object):
             self.kneVal1.on()
             self.kneVal2.on()
             self.kneRel.on()
-
             self.ankVal1.on()
             self.ankVal2.on()
             self.balVal.on()
+
+            kneDuty = self.calDutyAct(curSen[LTANKPRE],curSen[LKNEPRE],self.kneWalkSupPre)
+            self.knePreValPWM.setDuty(kneDuty)
             if curSen[LKNEPOS]<self.kneThHigh:
             #if self.change:
                 self.change=False

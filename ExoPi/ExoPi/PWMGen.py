@@ -6,10 +6,10 @@ import gpiozero as gp
 pwmUnit = 300
 class PWMGen(object):
     """description of class"""
-    def __init__(self,name,index,pwmRecQue,pwmRecLock):
+    def __init__(self,name,index,pwmRecQue):
         self.name = name
         self.pwmRecQue = pwmRecQue
-        self.pwmRecLock = pwmRecLock
+
         self.pwmVal = gp.OutputDevice(index)
         self.switch = mp.Event()
         self.dutyQue = mp.Queue(1)
@@ -36,7 +36,7 @@ class PWMGen(object):
         with self.dutyLock:
             self.dutyQue.get()
             self.dutyQue.put(duty)
-        thread = th.Thread(target=self.recDuty,args=(curTime,duty,self.pwmRecLock))
+        thread = th.Thread(target=self.recDuty,args=(curTime,duty,))
         thread.start()
     def main(self):
         while self.switch.is_set():
@@ -59,9 +59,8 @@ class PWMGen(object):
                 time.sleep(0.0005)
                 endTime = time.time()
         print('!'+str(self.name)+'\t stops')
-    def recDuty(self,curTime,curDuty,pwmRecLock):
-        with pwmRecLock:
-            self.pwmRecQue.put(str(curTime)+','+self.name+','+str(curDuty))
+    def recDuty(self,curTime,curDuty):
+        self.pwmRecQue.put(str(curTime)+','+self.name+','+str(curDuty))
     def on(self):
         self.pwmVal.on()
     def off(self):

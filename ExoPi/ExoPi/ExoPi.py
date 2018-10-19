@@ -35,10 +35,10 @@ valveRecQue = mp.Queue()
 valveRecLock = mp.Lock()
 syncTimeQue = mp.Queue()
         # pwm record queue
-pwmRecQue = mp.Queue()
-pwmRecLock = mp.Lock()
+pwmRecQue1 = mp.Queue()
+pwmRecQue2 = mp.Queue()
 
-valveCon = vc.ValveController(100,100,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue,pwmRecQue,pwmRecLock,stateQue)
+valveCon = vc.ValveController(100,100,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue,pwmRecQue1,pwmRecQue2,stateQue)
 valveCon.start()
 print('# controller initialization finished')
 
@@ -55,7 +55,7 @@ for val in valveCon.valveList:
 pwmRecName =[]
 for pwmVal in valveCon.pwmValList:
     pwmRecName.append(pwmVal.name)
-recorder = Recorder.Recorder(name=name, senRecQue=senRecQue,senName=senName,conRecQue=valveRecQue,conRecName=conRecName,syncTime=syncTimeQue,pwmRecQue=pwmRecQue,pwmRecName=pwmRecName,stateQue=stateQue)
+recorder = Recorder.Recorder(name=name, senRecQue=senRecQue,senName=senName,conRecQue=valveRecQue,conRecName=conRecName,syncTime=syncTimeQue,pwmRecQue1=pwmRecQue1,pwmRecQue2=pwmRecQue2,pwmRecName=pwmRecName,stateQue=stateQue)
 
 
 def readCmd(cmdStr,cmdList):
@@ -81,9 +81,9 @@ while True:
         valveCon.stop()
         exoClient.stop()
         break
-print('end and start to save data')
+print('#end and start to save data')
 recorder.saveData()
-print('Done data saving')
-
+print('#Done data saving')
+print('#Data save as '+name)
 
 sensor.mainProcess.join()

@@ -1,9 +1,10 @@
 import multiprocessing as mp
 import numpy as np
 import os
+import queue
 class Recorder(object):
     """description of class"""
-    def __init__(self,name,senRecQue,senName,conRecQue,conRecName,pwmRecQue,pwmRecName,stateQue,syncTime): #todo need to add valveRecQue,valveName,pwmRecQue,pwmName one day
+    def __init__(self,name,senRecQue,senName,conRecQue,conRecName,pwmRecQue1,pwmRecQue2,pwmRecName,stateQue,syncTime): #todo need to add valveRecQue,valveName,pwmRecQue,pwmName one day
         # data type:
                     # senRecQue: string of queue
                     # senName: single string
@@ -15,8 +16,9 @@ class Recorder(object):
         self.conRecQue = conRecQue #.get() string time,valve name, state
         self.conRecName = conRecName # list(string) [val1,val2.....]
         # variables for recording pwm data
-        self.pwmRecQue = pwmRecQue
+        self.pwmRecQue1 = pwmRecQue1
         self.pwmRecName = pwmRecName
+        self.pwmRecQue2 = pwmRecQue2
 
         # variables for record sync of Pi and arduino
         self.syncTime = syncTime
@@ -99,32 +101,32 @@ class Recorder(object):
         pwmRecList = []
         #pwmRecList = [prePwmCond.copy()] # we don't need to record the first [0,0,0], pwmGen will do [time,0,0]
         pwmValName = 'Time,'+','.join(self.pwmRecName)
-        while not self.pwmRecQue.empty():
-            curPwm = self.pwmRecQue.get()
+
+        allPwmList=[]
+        while not self.pwmRecQue1.empty():
+            curList=[]
+            curPwm= self.pwmRecQue1.get()
+            self.dataSep(curPwm,curList)
+            allPwmList.append(curList.copy())
             # put curCon into list
-            curList = []
-            startI = 0
             # break recorded string into list time,name,condition
-
-            while True:
-                endI = curPwm.find(',', startI)
-
-                if endI == -1:
-                    endI = len(curPwm)
-
-                    curList.append(curPwm[startI:endI])
-                    break
-                else:
-                    curList.append(curPwm[startI:endI])
-                    startI = endI + 1
             # update current valve condition from previous valve condition
             # find the index for previous valve condition
+        while not self.pwmRecQue2.empty():
+            curList=[]
+            curPwm=self.pwmRecQue2.get()
+            self.dataSep(curPwm,curList)
+            allPwmList.append(curList.copy())
+        # re-order all pwm data wrt time
+        allPwmList.sort(key=lambda x:x[0])
 
+        for curList in allPwmList:
             valI = self.pwmRecName.index(curList[1]) + 1  # the first element is time, so index +1 for valves
-
             prePwmCond[valI] = float(curList[2])
             prePwmCond[0] = int(float(curList[0]) * 1000 + 0.5)
-            pwmRecList.append(prePwmCond.copy())  # list in python is pointer, thus if we exit the loop, the pointer will point back to original null data, which is 0
+            pwmRecList.append(
+                prePwmCond.copy())  # list in python is pointer, thus if we exit the loop, the pointer will point back to original null data, which is 0
+
 
         # record sync time
         syncTimeList =[]
@@ -144,3 +146,15 @@ class Recorder(object):
                    header=pwmValName)
         np.savetxt('testData/' + self.name + '/' + self.name + '_state.csv', stateList, fmt='%f', delimiter=',',
                    header='Time,State')
+    def dataSep(self,dataStr,curList):
+        startI = 0
+        while True:
+            endI = dataStr.find(',', startI)
+
+            if endI == -1:
+                endI = len(dataStr)
+                curList.append(dataStr[startI:endI])
+                break
+            else:
+                curList.append(dataStr[startI:endI])
+                startI = endI + 1
