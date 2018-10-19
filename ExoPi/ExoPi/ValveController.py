@@ -77,11 +77,7 @@ syncPin = gp.OutputDevice(4)
     # Vcc = 4.97 Volts
     # arduino measurement: 5 volt/1024 units
 
-ankThMid = 500
-kneThHigh=435
-kneThLow=500
-hipThMid=530
-hipThHigh = 550
+
 
 
 class ValveController(object):
@@ -105,6 +101,8 @@ class ValveController(object):
     j_testPWM = th.Event()
     j_testAnkAct = th.Event()
     j_testKneAct = th.Event()
+    j_recPos = th.Event()
+    j_dualPwm = th.Event()
     """description of class"""
     def __init__(self,conFreq,cmdFreq,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue,pwmRecQue,pwmRecLock,stateQue):
         print('#start init valve controller')
@@ -136,10 +134,9 @@ class ValveController(object):
         self.balVal.on()
         # define pwm valves
 
-        self.pwmRecQue = pwmRecQue
-        self.pwmRecLock = pwmRecLock
-        self.knePreValPWM = pwm.PWMGen('KnePreVal',OP1,self.pwmRecQue,self.pwmRecLock)
-        self.ankPreValPWM = pwm.PWMGen('AnkPreVal',OP2,self.pwmRecQue,pwmRecLock)
+
+        self.knePreValPWM = pwm.PWMGen('KnePreVal',OP1,pwmRecQue,pwmRecLock)
+        self.ankPreValPWM = pwm.PWMGen('AnkPreVal',OP2,pwmRecQue,pwmRecLock)
         self.pwmValList = [self.knePreValPWM,self.ankPreValPWM]
 
 
@@ -163,16 +160,18 @@ class ValveController(object):
         self.ankPreValPWM.stop()
         self.knePreValPWM.stop()
         print('#release pressure')
-        self.balVal.off()
         self.kneVal1.off()
-        self.ankVal1.off()
         self.kneVal2.off()
+        self.kneRel.off()
+        self.ankVal1.off()
         self.ankVal2.off()
+        self.balVal.off()
         self.knePreValPWM.on()
         self.ankPreValPWM.on()
         time.sleep(10)
         self.knePreValPWM.off()
         self.ankPreValPWM.off()
+        print('#done releasing pressure')
     def syncConAndSen(self):
         timeDiff=[0.05,0.1,0.3]
         for t_sleep in timeDiff:
@@ -242,9 +241,12 @@ class ValveController(object):
                     self.j_testAnkAct.set()
                 elif curCmd[0]=='testkneact':
                     self.j_testKneAct.set()
-
+                elif curCmd[0]=='dualpwm':
+                    self.j_dualPwm.set()
                 elif curCmd[0]=='c':
                     self.change = True
+                elif curCmd[0]=='s':
+                    self.j_recPos.set()
                 else:
                     self.noTask()
             endTime = time.time()
@@ -283,6 +285,12 @@ class ValveController(object):
             if self.j_testKneAct.is_set():
                 allTaskList.append(th.Thread(target=self.testKneAct))
                 self.j_testKneAct.clear()
+            if self.j_recPos.is_set():
+                self.j_recPos.clear()
+                allTaskList.append(th.Thread(target=self.recPos,args=(curSen,)))
+            if self.j_dualPwm.is_set():
+                self.j_dualPwm.clear()
+                allTaskList.append(th.Thread(target=self.testBothPwm))
             for task in allTaskList:
                 task.start()
             for task in allTaskList:
@@ -296,7 +304,16 @@ class ValveController(object):
     kneSupPre = 250
     preTh = 10
     kneWalkSupPre = 230
-    ankWalkActPre = 200
+    ankWalkActPre = 300
+
+    preDiffTh = 20
+    kneThHigh = 500
+    kneThLow = 460
+
+    ankThHigh = 600
+
+    hipThMid = 540
+    hipThHigh = 560
     def initSupPre(self,curSen):
         if curSen[LKNEPRE]<(self.kneSupPre-self.preTh):
             # print('!Not enough supporting pressure')
@@ -319,6 +336,7 @@ class ValveController(object):
             self.balVal.on()
             self.kneVal1.off()
             self.kneVal2.on()
+            self.kneRel.on()
             dutyKne = self.calDutyRec(curSen[LKNEPRE],curSen[LTANKPRE])
             self.knePreValPWM.setDuty(dutyKne)
             print('Knee duty('+str(dutyKne)+')')
@@ -327,45 +345,43 @@ class ValveController(object):
             dutyAnk = self.calDutyRec(curSen[LANKPRE],curSen[LTANKPRE])
             self.ankPreValPWM.setDuty(dutyAnk)
             print('ankle duty('+str(dutyAnk)+')')
-            #if curSen[LKNEPOS]<kneThLow: #if pressure is not high enough, don't go to phase 2
-            if self.change:
+            if curSen[LKNEPOS]<self.kneThLow: #if pressure is not high enough, don't go to phase 2
+            #if self.change:
                 self.change=False
                 print('#Phase 2')
                 self.knePreValPWM.setDuty(0)
                 self.ankPreValPWM.setDuty(0)
-                self.balVal.off()
                 self.stateQue.put([time.time()*1000,2])
                 return 2
             else:
                 return 1
         def phase2():
-            self.balVal.on()
+
             self.kneVal1.off()
-            self.kneVal2.off()
-            self.ankVal1.off()
+            self.kneVal2.on()
+            self.kneRel.on()
+            self.ankVal1.on()
             self.ankVal2.on()
-            ankDuty = self.calDutyAct(curSen[LTANKPRE],curSen[LANKPRE],self.ankWalkActPre) #act the ankle with knee pressure
-            #ankDuty=90
-            self.ankPreValPWM.setDuty(ankDuty)
-            print('ankle duty(' + str(ankDuty) + ')')
-            #if curSen[LANKPOS]<ankThMid:
-            if self.change:
-                self.change=False
+            self.balVal.off()
+            if abs(curSen[LKNEPRE]-curSen[LANKPRE])<self.preDiffTh:
+            #if self.change:
+                self.change = False
                 print('#Phase 3')
-                self.ankPreValPWM.setDuty(0)
-                self.stateQue.put([time.time()*1000, 3])
+                self.stateQue.put([time.time()*1000,3])
                 return 3
             else:
                 return 2
         def phase3():
-            self.balVal.on()
-            self.kneVal1.off()
+            self.kneVal1.on()
+            self.kneVal2.on()
+            self.kneRel.off()
 
-            self.ankVal1.on()
+            self.ankVal1.off()
             self.ankVal2.on()
-            self.kneVal2.off()
-            #if curSen[LHIPPOS]>hipThMid:
-            if self.change:
+            self.balVal.on()
+
+            if curSen[LANKPOS]>self.ankThHigh:
+            #if self.change:
                 self.change=False
                 print('#Phase 4')
                 self.stateQue.put([time.time()*1000, 4])
@@ -373,47 +389,80 @@ class ValveController(object):
             else:
                 return 3
         def phase4():
-            self.balVal.off()
-            self.kneVal1.on()
-            self.kneVal2.on()
-            self.ankVal1.on()
+
+
+            self.kneVal1.off()
+            self.kneVal2.off()
+            self.kneRel.off()
+
+            self.ankVal1.off()
             self.ankVal2.on()
-            #if curSen[LHIPPOS]>hipThHigh:
-            if self.change:
+            self.balVal.on()
+            ankDuty = self.calDutyAct(curSen[LTANKPRE], curSen[LANKPRE],
+                                      self.ankWalkActPre)  # act the ankle with knee pressure
+
+            self.ankPreValPWM.setDuty(ankDuty)
+            print('ankle duty(' + str(ankDuty) + ')')
+            if curSen[LKNEPOS]>self.kneThHigh:
+            #if self.change:
                 self.change=False
                 print('#Phase 5')
+                self.ankPreValPWM.setDuty(0)
                 self.stateQue.put([time.time()*1000, 5])
                 return 5
             else:
                 return 4
         def phase5():
+
             self.kneVal1.off()
             self.kneVal2.off()
+            self.kneRel.off()
+
             self.ankVal1.on()
             self.ankVal2.on()
             self.balVal.off()
-            #if curSen[LKNEPOS]>kneThHigh:
-            if self.change:
+            if curSen[LHIPPOS]>self.hipThMid:
+            #if self.change:
                 self.change=False
-                self.stateQue.put([time.time()*1000, 6])
                 print('#Phase 6')
+                self.stateQue.put([time.time()*1000, 6])
                 return 6
             else:
                 return 5
         def phase6():
-            self.balVal.on()
+            self.kneVal1.off()
+            self.kneVal2.off()
+            self.kneRel.off()
+
+            self.ankVal1.off()
+            self.ankVal2.on()
+            self.balVal.off()
+            if (curSen[LKNEPOS]>self.kneThHigh) and (curSen[LHIPPOS]>self.hipThHigh):
+            #if self.change:
+                self.change=False
+                self.stateQue.put([time.time()*1000, 7])
+                print('#Phase 7')
+                return 7
+            else:
+                return 6
+        def phase7():
+
             self.kneVal1.on()
             self.kneVal2.on()
+            self.kneRel.on()
+
             self.ankVal1.on()
             self.ankVal2.on()
-            #if curSen[LKNEPOS]<kneThHigh:
-            if self.change:
+            self.balVal.on()
+            if curSen[LKNEPOS]<self.kneThHigh:
+            #if self.change:
                 self.change=False
                 self.stateQue.put([time.time()*1000, 1])
                 print('#Phase 1')
                 return 1
             else:
-                return 6
+                return 7
+
         # use finite machine to control
         # total 7 different phases
         #print(curSen[LHIPPOS],curSen[LKNEPOS],curSen[LANKPOS])
@@ -429,6 +478,8 @@ class ValveController(object):
             self.state = phase5()
         elif self.state==6:
             self.state = phase6()
+        elif self.state==7:
+            self.state = phase7()
         else:
             raise Exception('!Finite state machine cannot classified state')
 
@@ -538,3 +589,7 @@ class ValveController(object):
         self.knePreValPWM.stop()
         self.ankPreValPWM.stop()
         print('done dual pwm test')
+    def recPos(self,curSen):
+        print('\nHip\t'+str(curSen[LHIPPOS]))
+        print('Knee\t'+str(curSen[LKNEPOS]))
+        print('Ankle\t'+str(curSen[LANKPOS]))

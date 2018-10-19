@@ -28,7 +28,8 @@ class PWMGen(object):
         else:
             mainThread.start()
     def stop(self):
-        self.switch.clear()
+        if self.switch.is_set():
+            self.switch.clear()
 
     def setDuty(self,duty):
         curTime = time.time()
