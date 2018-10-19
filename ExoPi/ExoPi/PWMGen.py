@@ -35,7 +35,7 @@ class PWMGen(object):
         with self.dutyLock:
             self.dutyQue.get()
             self.dutyQue.put(duty)
-        thread = th.Thread(target=self.recDuty,args=(curTime,duty,))
+        thread = th.Thread(target=self.recDuty,args=(curTime,duty,self.pwmRecLock))
         thread.start()
     def main(self):
         while self.switch.is_set():
@@ -58,8 +58,8 @@ class PWMGen(object):
                 time.sleep(0.0005)
                 endTime = time.time()
         print('!'+str(self.name)+'\t stops')
-    def recDuty(self,curTime,curDuty):
-        with self.pwmRecLock:
+    def recDuty(self,curTime,curDuty,pwmRecLock):
+        with pwmRecLock:
             self.pwmRecQue.put(str(curTime)+','+self.name+','+str(curDuty))
     def on(self):
         self.pwmVal.on()

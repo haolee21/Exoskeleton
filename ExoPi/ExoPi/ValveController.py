@@ -127,11 +127,10 @@ class ValveController(object):
         self.kneVal2 = Valve.Valve('KneVal2',OP4,valveRecQue,valveRecLock)
         self.ankVal1 = Valve.Valve('AnkVal1',OP6,valveRecQue,valveRecLock)
         self.ankVal2 = Valve.Valve('AnkVal2',OP7,valveRecQue,valveRecLock)
-        #self.knePreVal = Valve.Valve('KnePreVal',OP1,valveRecQue,valveRecLock)
-        #self.ankPreVal = Valve.Valve('AnkPreVal',OP2,valveRecQue,valveRecLock)
         self.balVal = Valve.Valve('BalVal',OP5,valveRecQue,valveRecLock)
+        self.kneRel = Valve.Valve('KneRel',OP8,valveRecQue,valveRecLock)
 
-        self.valveList = [self.kneVal1,self.kneVal2,self.ankVal1,self.ankVal2,self.balVal]
+        self.valveList = [self.kneVal1,self.kneVal2,self.ankVal1,self.ankVal2,self.balVal,self.kneRel]
 
         # Valve init cond
         self.balVal.on()
@@ -163,6 +162,8 @@ class ValveController(object):
         time.sleep(5)
         self.ankPreValPWM.stop()
         self.knePreValPWM.stop()
+        print('#release pressure')
+        self.balVal.off()
         self.kneVal1.off()
         self.ankVal1.off()
         self.kneVal2.off()
@@ -295,7 +296,7 @@ class ValveController(object):
     kneSupPre = 250
     preTh = 10
     kneWalkSupPre = 230
-    ankWalkActPre = 400
+    ankWalkActPre = 200
     def initSupPre(self,curSen):
         if curSen[LKNEPRE]<(self.kneSupPre-self.preTh):
             # print('!Not enough supporting pressure')
@@ -320,30 +321,33 @@ class ValveController(object):
             self.kneVal2.on()
             dutyKne = self.calDutyRec(curSen[LKNEPRE],curSen[LTANKPRE])
             self.knePreValPWM.setDuty(dutyKne)
+            print('Knee duty('+str(dutyKne)+')')
             self.ankVal1.off()
             self.ankVal2.on()
             dutyAnk = self.calDutyRec(curSen[LANKPRE],curSen[LTANKPRE])
             self.ankPreValPWM.setDuty(dutyAnk)
-
+            print('ankle duty('+str(dutyAnk)+')')
             #if curSen[LKNEPOS]<kneThLow: #if pressure is not high enough, don't go to phase 2
             if self.change:
                 self.change=False
                 print('#Phase 2')
                 self.knePreValPWM.setDuty(0)
                 self.ankPreValPWM.setDuty(0)
+                self.balVal.off()
                 self.stateQue.put([time.time()*1000,2])
                 return 2
             else:
                 return 1
         def phase2():
             self.balVal.on()
-            self.kneVal1.on()
-            self.kneVal2.on()
+            self.kneVal1.off()
+            self.kneVal2.off()
             self.ankVal1.off()
             self.ankVal2.on()
-            # ankDuty = self.calDutyAct(curSen[LTANKPRE],curSen[LANKPRE],self.ankWalkActPre)
-            ankDuty=90
+            ankDuty = self.calDutyAct(curSen[LTANKPRE],curSen[LANKPRE],self.ankWalkActPre) #act the ankle with knee pressure
+            #ankDuty=90
             self.ankPreValPWM.setDuty(ankDuty)
+            print('ankle duty(' + str(ankDuty) + ')')
             #if curSen[LANKPOS]<ankThMid:
             if self.change:
                 self.change=False
@@ -369,14 +373,14 @@ class ValveController(object):
             else:
                 return 3
         def phase4():
-            self.balVal.on()
+            self.balVal.off()
             self.kneVal1.on()
             self.kneVal2.on()
             self.ankVal1.on()
             self.ankVal2.on()
             #if curSen[LHIPPOS]>hipThHigh:
-            if self.switch:
-                self.switch=False
+            if self.change:
+                self.change=False
                 print('#Phase 5')
                 self.stateQue.put([time.time()*1000, 5])
                 return 5
@@ -429,9 +433,14 @@ class ValveController(object):
             raise Exception('!Finite state machine cannot classified state')
 
     def calDutyAct(self,driPre,conPre,conDes):
-        duty = (conDes-conPre)/(driPre-conPre)*50
+        if (driPre-conPre)==0:
+            duty = 90
+        else:
+            duty = (conDes-conPre)/(driPre-conPre)*50
         if duty<0:
             duty=0
+        elif duty>99:
+            duty = 90
         return  duty
     def calDutyRec(self,recPre,tankPre):
         diff = recPre -tankPre
@@ -511,3 +520,21 @@ class ValveController(object):
         self.balVal.off()
         time.sleep(10)
         print('#done knee act test')
+    def testBothPwm(self):
+        waitTime = 5
+        dutyTest = [10, 50, 80]
+
+        print('#test both pwm')
+        self.knePreValPWM.start()
+        self.ankPreValPWM.start()
+        for duty in dutyTest:
+            self.knePreValPWM.setDuty(duty)
+            self.ankPreValPWM.setDuty(100-duty)
+            print('#current knee  duty:'+str(duty))
+            print('#        ankle duty:'+str(100-duty))
+            time.sleep(waitTime)
+        self.knePreValPWM.setDuty(0)
+        self.ankPreValPWM.setDuty(0)
+        self.knePreValPWM.stop()
+        self.ankPreValPWM.stop()
+        print('done dual pwm test')
