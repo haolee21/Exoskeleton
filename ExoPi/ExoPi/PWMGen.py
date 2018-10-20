@@ -32,8 +32,8 @@ class PWMGen(object):
             self.switch.clear()
 
     def setDuty(self,duty):
-        curTime = time.time()
         with self.dutyLock:
+            curTime = time.time()
             self.dutyQue.get()
             self.dutyQue.put(duty)
         thread = th.Thread(target=self.recDuty,args=(curTime,duty,))

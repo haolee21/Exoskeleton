@@ -4,7 +4,7 @@ import os
 import queue
 class Recorder(object):
     """description of class"""
-    def __init__(self,name,senRecQue,senName,conRecQue,conRecName,pwmRecQue1,pwmRecQue2,pwmRecName,stateQue,syncTime): #todo need to add valveRecQue,valveName,pwmRecQue,pwmName one day
+    def __init__(self,name,senRecQue,senName,conRecQue,conRecName,pwmRecQue1,pwmRecQue2,pwmRecName,stateQue,syncTime):
         # data type:
                     # senRecQue: string of queue
                     # senName: single string

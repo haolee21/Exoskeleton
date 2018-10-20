@@ -160,6 +160,7 @@ class ValveController(object):
         self.ankPreValPWM.stop()
         self.knePreValPWM.stop()
         print('#release pressure')
+        time.sleep(5)
         self.kneVal1.off()
         self.kneVal2.off()
         self.kneRel.off()
