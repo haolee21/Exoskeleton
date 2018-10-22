@@ -53,15 +53,15 @@ class SenReader(object):
                 else:
                     pass
             else:
-                print('get nothing')
+                print('!get nothing')
             aftTime = time.time()
             while (aftTime - preTime)<self.period:
                 aftTime = time.time()
                 time.sleep(0.00001)
 
-        print('Sensor ends')
+        print('#Sensor ends')
     def sendPC(self,senStr):
         with self.sendPCLock:
             while not self.sendPCQue.empty():
                 self.sendPCQue.get()
-            self.sendPCQue.put(b'r'+senStr.encode('utf-8')+b'\n')
+            self.sendPCQue.put(senStr.encode('utf-8'))

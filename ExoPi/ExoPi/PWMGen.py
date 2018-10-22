@@ -2,43 +2,67 @@ import multiprocessing as mp
 import time
 import Valve
 import threading as th
+import gpiozero as gp
 pwmUnit = 300
 class PWMGen(object):
     """description of class"""
-    def __init__(self,valve):
+    def __init__(self,name,index,pwmRecQue):
+        self.name = name
+        self.pwmRecQue = pwmRecQue
+
+        self.pwmVal = gp.OutputDevice(index)
         self.switch = mp.Event()
-        self.dutyQue = mp.Queue()
-        self.valve = Valve.Valve()
+        self.dutyQue = mp.Queue(1)
         self.dutyLock = th.Lock()
-        self.mainThread = th.Thread(target = self.main)
+        with self.dutyLock:
+            self.dutyQue.put(0)
+        self.setDuty(0)
+        
 
     def start(self):
-        self.switch.set()
-        if self.dutyQue.is_empty():
-            print('No input duty for PWM Generator')
+        print('!start\t'+str(self.name))
+        if not self.switch.is_set():
+            self.switch.set()
+        mainThread = th.Thread(target=self.main)
+        if self.dutyQue.empty():
+            print('!No input duty for PWM Generator\t'+str(self.name))
         else:
-            self.mainProcess.start()
+            mainThread.start()
     def stop(self):
-        self.switch.clear()
+        if self.switch.is_set():
+            self.switch.clear()
+
     def setDuty(self,duty):
         with self.dutyLock:
+            self.dutyQue.get()
+            curTime = time.time()
             self.dutyQue.put(duty)
-    def selfSync(self,syncTime):
-        time.sleep(syncTime)
+        thread = th.Thread(target=self.recDuty,args=(curTime,duty,))
+        thread.start()
     def main(self):
-        while self.swtich.is_set():
-            selfSyncTh = th.Thread(target=self.selfSync,args=(pwmUnit/6000,))
-            selfSyncTh.start()
-            if not self.dutyQue.empty():
+        while self.switch.is_set():
+            initTime = time.time()
+            with self.dutyLock:
                 curDuty = self.dutyQue.get()
+                self.dutyQue.put(curDuty)
             onTime = curDuty/float(100)*pwmUnit/6000
-            offTime = (100 - curDuty) / float(100) * pwmUnit/6000
-            if onTime<0.005:
-                self.valve.Off()
-                continue
-            self.valve.On()
-            time.sleep(onTime)
-            self.valve.Off()
-            time.sleep(offTime)
-            selfSyncTh.join()
-    
+
+            if onTime<0.00005:
+                self.pwmVal.off()
+                time.sleep(pwmUnit/6000)
+            else:
+                self.pwmVal.on()
+                time.sleep(onTime)
+            self.pwmVal.off()
+            endTime = time.time()
+
+            while (endTime-initTime)<(pwmUnit/6000):
+                time.sleep(0.0005)
+                endTime = time.time()
+        print('!'+str(self.name)+'\t stops')
+    def recDuty(self,curTime,curDuty):
+        self.pwmRecQue.put(str(curTime)+','+self.name+','+str(curDuty))
+    def on(self):
+        self.pwmVal.on()
+    def off(self):
+        self.pwmVal.off()

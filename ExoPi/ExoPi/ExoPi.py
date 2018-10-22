@@ -27,23 +27,35 @@ senLock = mp.Lock()
 sensor = SenReader.SenReader(125,senArray,senRecQue,senLock,port,sendPCQue,sendPCLock)
 sensor.start()
 # Initialize Controller
-
+stateQue = mp.Queue()
 valCondRecQue = mp.Queue()
 cmdQue = mp.Queue()
 cmdLock = mp.Lock()
 valveRecQue = mp.Queue()
 valveRecLock = mp.Lock()
 syncTimeQue = mp.Queue()
-valveCon = vc.ValveController(100,100,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue)
+        # pwm record queue
+pwmRecQue1 = mp.Queue()
+pwmRecQue2 = mp.Queue()
+
+valveCon = vc.ValveController(100,100,cmdQue,cmdLock,senArray,senLock,valveRecQue,valveRecLock,syncTimeQue,pwmRecQue1,pwmRecQue2,stateQue)
 valveCon.start()
-print('done valve')
+print('# controller initialization finished')
+
+
 # Initialize Client
 exoClient = Client.Client(freq=60,pcIP='192.168.1.107',pcPort=12345,sendPCQue=sendPCQue,sendPCLock=sendPCLock)
 exoClient.start()
 # Initialize Recorder
 name = input('Please input the name of this experiment:')
-senName = 'Time,HipPos,KnePos,AnkPos,SyncPin,Test,Test,Test,Test,Test'
-recorder = Recorder.Recorder(name=name, senRecQue=senRecQue,senName=senName,conRecQue=valveRecQue,conRecName=['KneVal1','KneVal2','AnkVal1','AnkVal2'],syncTime=syncTimeQue)
+senName = 'Time,HipPos,KnePos,AnkPos,SyncPin,TankPre,KnePre,AnkPre,Test,Test'
+conRecName = []
+for val in valveCon.valveList:
+    conRecName.append(val.name)
+pwmRecName =[]
+for pwmVal in valveCon.pwmValList:
+    pwmRecName.append(pwmVal.name)
+recorder = Recorder.Recorder(name=name, senRecQue=senRecQue,senName=senName,conRecQue=valveRecQue,conRecName=conRecName,syncTime=syncTimeQue,pwmRecQue1=pwmRecQue1,pwmRecQue2=pwmRecQue2,pwmRecName=pwmRecName,stateQue=stateQue)
 
 
 def readCmd(cmdStr,cmdList):
@@ -69,9 +81,9 @@ while True:
         valveCon.stop()
         exoClient.stop()
         break
-print('end and start to save data')
+print('#end and start to save data')
 recorder.saveData()
-print('Done data saving')
-
+print('#Done data saving')
+print('#Data save as '+name)
 
 sensor.mainProcess.join()

@@ -7,16 +7,14 @@ import time
 class Plotter(object):
     """description of class"""
 
-    def __init__(self, tQue, yQue, lock, numY, dataLen, plotArray, titleArray, yLimArray, yLabelArray, refNeed,
-                 refValue):
+    def __init__(self, tQue, yQue, lock, numY, dataLen, plotArray, titleArray, yLimArray, yLabelArray):
         self.numY = numY
         self.plotArray = plotArray
         self.titleArray = titleArray
         self.dataLen = dataLen
         self.yLimArray = yLimArray
         self.yLabelArray = yLabelArray
-        self.refNeed = refNeed
-        self.refValue = refValue
+
         self.numYPlot = np.int(np.sqrt(len(plotArray)))
         self.numXPlot = np.int(len(plotArray) / self.numYPlot)
         print(self.numYPlot)

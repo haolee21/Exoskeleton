@@ -19,6 +19,8 @@ import DataProcess as dp
 class MainWindow(object):
     def __init__(self):
         # Program
+        self.plotData = queue.Queue()
+        self.plotLock = th.Lock()
         self.recData = queue.Queue()
         self.recDataLock = th.Lock()
         self.s = None
@@ -103,9 +105,10 @@ class MainWindow(object):
         self.window.after(100,self.refreshRead)
 
         #3 Plot the data
-        self.buttonPlot = tk.Button(master = self.window,command = self.plotBut)
-        self.buttonPlot.grid(row=13,columnspan=1,column=1)
-
+        self.buttonPlot = tk.Button(master = self.window,command = self.dataPlot,text = 'Plot Measurement')
+        self.buttonPlot.grid(row=13,columnspan=1,column=2)
+        self.b_stopPlot = tk.Button(master = self.window,command=self.stopPlot,text = 'Stop Plotting')
+        self.b_stopPlot.grid(row=13,columnspan=1,column=3)
         #4 Test function
 
         self.buttonTestFun = tk.Button(master = self.window,command=self.testFun,text='Test Fun')
@@ -120,6 +123,7 @@ class MainWindow(object):
             self.sshin.channel.sendall('end\n')
             time.sleep(3) # for exo to return some turning off message
 
+            self.startPlot.clear()
             self.sshConnect.clear()
             self.tcpipConnect.clear()
             self.ssh.close()
@@ -141,6 +145,7 @@ class MainWindow(object):
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.ssh.connect('192.168.1.134', 22, 'pi', 'bionics') #todo need to fix why ssh_set is not working
         self.sshin,sshout, _ = self.ssh.exec_command('python3 Exo/ExoPi/ExoPi.py',get_pty=True)
+
         # sshin, sshout, _ = self.ssh.exec_command('python3 test.py', get_pty=True)
 
         # count = 1
@@ -177,16 +182,20 @@ class MainWindow(object):
         conIP,addr=self.s.accept()
         with self.recDataLock:
             self.recData.put('TCP/IP Bind success\n')
-        count = 1
+
         while self.tcpipConnect.is_set():
             data = conIP.recv(1024)
-            with self.recDataLock:
-                # print('rec '+str(count))
-                # count = count +1
-                print(data)
-                # self.recData.put(data)
+            print(data)
+            cmdList = []
+            dp.comSep(data.decode('utf-8'),cmdList)
+            for cmd in cmdList:
+                dataList = []
+                dp.dataSep(cmd,dataList)
+                with self.plotLock:
+                    self.plotData.get()
+                    self.plotData.put(dataList)
 
-            time.sleep(1)
+            time.sleep(0.05)
     def plotBut(self):
         thread = th.Thread(target=self.testPlot)
         thread.start()
@@ -214,25 +223,28 @@ class MainWindow(object):
     def endTestFun(self):
         self.sshin.channel.sendall('test,stop\n')
     def dataPlot(self):
+        dataLen=100
+        senArray = [1,2,3]
+        #sensorTypeArray = [dp.getOri,dp.getOri,dp.getOri]
         tQue = mp.Queue()
         yQue = mp.Queue()
         #todo check the definition of plotter
-        titleArray = ['plot1','plot2','plot3','plot4','plot5','plot6','plot7','plot8','plot9','plot10']
-        yLimArray =[(0,300),(0,300),(0,300),(0,300),(0,300),(0,300),(0,300),(0,300),(0,300),(0,300)]
-        yLabelArray=['test','test','test','test','test','test','test','test','test','test']
-        sensorPlot = Plotter(tQue,yQue,self.recDataLock,10,100,range(10),titleArray)
+        titleArray = ['plot1','plot2','plot3']
+        yLimArray =[(0,300),(0,300),(0,300)]
+        yLabelArray=['test','test','test']
+
+        sensorPlot = Plotter.Plotter(tQue,yQue,self.plotLock,len(yLabelArray),dataLen,senArray,titleArray,yLimArray,yLabelArray)
         #todo fix the plotter reference problem
         while self.startPlot.is_set():
             while not self.recData.empty():
                 with self.recDataLock:
-                    curMeaList = []
-                    curData = self.recData.get()
-                    curData = curData.decode('utf-8')
-                    curData = dp.comSep(curData,curMeaList)
-                    if curMeaList[0][0]=='r':
-                        yQue.put([int(yEle) for yEle in curMeaList[1:]])
-                        tQue.put(int(curMeaList[0][1:]))
-
+                    curData = self.plotData.get()
+                    yQue.put(curData[2:])
+                    tQue.put(curData[1])
+    def stopPlot(self):
+        self.startPlot.clear()
+    def voidFun(self):
+        print('execute void function')
 
 
 

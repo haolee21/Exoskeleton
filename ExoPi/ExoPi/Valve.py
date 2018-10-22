@@ -9,12 +9,12 @@ class Valve(object):
         self.valveRecLock = valveRecLock
         self.onStr = ','+name + ',1'
         self.offStr = ','+name + ',0'
-    def On(self):
+    def on(self):
         self.pin.on()
         curTime = time.time()
         with self.valveRecLock:
             self.valveRecQue.put(str(curTime)+self.onStr)
-    def Off(self):
+    def off(self):
         self.pin.off()
         curTime = time.time()
         with self.valveRecLock:

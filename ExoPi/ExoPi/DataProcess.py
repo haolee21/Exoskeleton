@@ -54,9 +54,29 @@ def dataSepSimp(curStr,senArray,senLock,senRecQue):
                 senRecQue.put(curStr)
                 #senArray[:] = [int(curSen[1:8]),int(curSen[8:11]),int(curSen[11:14]),int(curSen[14:17]),int(curSen[17:20]),int(curSen[20:23]),int(curSen[23:26]),int(curSen[26:29]),int(curSen[29:32]),int(curSen[32:-1])]
         except (ValueError, IndexError, OverflowError):  # TODO need to know what cause the exception
-            print('failed')
-            print(curStr)
+            print('!failed')
+            print('!'+curStr.decode('utf-8'))
             return False,''
         return True,curSen
     else:
         return False,''
+
+
+def getPre(meaVolt):
+    """this return pressure in psi"""
+    return meaVolt * 250 / 1024 - 25
+
+
+def getAng(meaVolt, offset):
+    """this function return in degree"""
+    curVolt = 0.0049 * meaVolt
+    curAng = curVolt / 4.918 * 340 - offset
+    return curAng
+
+
+def getVolt(meaVolt):
+    return 0.0049 * meaVolt
+
+
+def getOri(mea):
+    return mea
