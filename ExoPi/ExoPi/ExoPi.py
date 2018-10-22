@@ -38,7 +38,7 @@ syncTimeQue = mp.Queue()
 pwmRecQue1 = mp.Queue()
 pwmRecQue2 = mp.Queue()
 
-valveCon = vc.ValveController(100,100,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue,pwmRecQue1,pwmRecQue2,stateQue)
+valveCon = vc.ValveController(100,100,cmdQue,cmdLock,senArray,senLock,valveRecQue,valveRecLock,syncTimeQue,pwmRecQue1,pwmRecQue2,stateQue)
 valveCon.start()
 print('# controller initialization finished')
 

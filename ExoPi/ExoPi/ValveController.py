@@ -104,7 +104,7 @@ class ValveController(object):
     j_recPos = th.Event()
     j_dualPwm = th.Event()
     """description of class"""
-    def __init__(self,conFreq,cmdFreq,cmdQue,cmdLock,senArray,valveRecQue,valveRecLock,syncTimeQue,pwmRecQue1,pwmRecQue2,stateQue):
+    def __init__(self,conFreq,cmdFreq,cmdQue,cmdLock,senArray,senLock,valveRecQue,valveRecLock,syncTimeQue,pwmRecQue1,pwmRecQue2,stateQue):
         print('#start init valve controller')
         self.conT = 1/conFreq # the frequency of control loop,
                                # should be some value less than the loop itself,
@@ -113,6 +113,7 @@ class ValveController(object):
         self.cmdQue = cmdQue
         self.cmdLock = cmdLock
         self.senArray = senArray
+        self.senLock=senLock
         self.switch=mp.Event()
         self.syncTimeQue = syncTimeQue
 
@@ -261,7 +262,8 @@ class ValveController(object):
             #print('control loop')
             allTaskList =[]
             # Get current measurement
-            curSen = list(self.senArray) #todo make sure this will not cause trouble if we read and write at the same time
+            with self.senLock:
+                curSen = list(self.senArray) #todo make sure this will not cause trouble if we read and write at the same time
             #　list(array) will only copy the value
             if self.j_recLSpring.is_set():
                 allTaskList.append(th.Thread(target=self.recLSpring,args=(curSen,)))
@@ -302,16 +304,16 @@ class ValveController(object):
                 endTime = time.time()
     def recLSpring(self,curSen):
         pass
-    kneSupPre = 250
+    kneSupPre = 300
     preTh = 10
-    kneWalkSupPre = 200
+    kneWalkSupPre = 310
     ankWalkActPre = 300
 
     preDiffTh = 20
     kneThHigh = 500
     kneThLow = 460
 
-    ankThHigh = 600
+    ankThHigh = 580
     ankThLow = 460
     hipThMid = 540
     hipThHigh = 560
@@ -363,10 +365,13 @@ class ValveController(object):
             self.ankVal1.on()
             self.ankVal2.on()
             self.balVal.off()
+            # dutyAnk = self.calDutyRec(curSen[LANKPRE], curSen[LTANKPRE])
+            # self.ankPreValPWM.setDuty(dutyAnk)
             if abs(curSen[LKNEPRE]-curSen[LANKPRE])<self.preDiffTh:
             #if self.change:
                 self.change = False
                 print('#Phase 3')
+                # self.ankPreValPWM.setDuty(0)
                 self.stateQue.put([time.time()*1000,3])
                 return 3
             else:
@@ -379,16 +384,31 @@ class ValveController(object):
             self.ankVal1.off()
             self.ankVal2.on()
             self.balVal.on()
-
+            dutyAnk = self.calDutyRec(curSen[LANKPRE], curSen[LTANKPRE])
+            self.ankPreValPWM.setDuty(dutyAnk)
             if curSen[LANKPOS]>self.ankThHigh:
             #if self.change:
                 self.change=False
                 print('#Phase 4')
+                self.ankPreValPWM.setDuty(0)
                 self.stateQue.put([time.time()*1000, 4])
                 return 4
             else:
                 return 3
         def phase4():
+            self.kneVal1.off()
+            self.kneVal2.on()
+            self.kneRel.on()
+            self.ankVal1.on()
+            self.ankVal2.on()
+            self.balVal.off()
+            if abs(curSen[LKNEPRE] - curSen[LANKPRE]) < self.preDiffTh:
+                print('#Phase 5')
+                self.stateQue.put([time.time() * 1000, 5])
+                return 5
+            else:
+                return 4
+        def phase5():
             self.kneVal1.off()
             self.kneVal2.off()
             self.kneRel.off()
@@ -403,29 +423,29 @@ class ValveController(object):
             if curSen[LANKPOS]<self.ankThLow:
             #if self.change:
                 self.change=False
-                print('#Phase 5')
+                print('#Phase 6')
                 self.ankPreValPWM.setDuty(0)
-                self.stateQue.put([time.time()*1000, 5])
-                return 5
+                self.stateQue.put([time.time()*1000, 6])
+                return 6
             else:
-                return 4
-        def phase5():
+                return 5
+        def phase6():
             self.kneVal1.off()
             self.kneVal2.off()
             self.kneRel.off()
 
             self.ankVal1.on()
             self.ankVal2.on()
-            self.balVal.off()
+            self.balVal.on()
             if curSen[LHIPPOS]>self.hipThMid:
             #if self.change:
                 self.change=False
-                print('#Phase 6')
-                self.stateQue.put([time.time()*1000, 6])
-                return 6
+                print('#Phase 7')
+                self.stateQue.put([time.time()*1000, 7])
+                return 7
             else:
-                return 5
-        def phase6():
+                return 6
+        def phase7():
             self.kneVal1.off()
             self.kneVal2.off()
             self.kneRel.off()
@@ -436,19 +456,19 @@ class ValveController(object):
             if (curSen[LKNEPOS]>self.kneThHigh) and (curSen[LHIPPOS]>self.hipThHigh):
             #if self.change:
                 self.change=False
-                self.stateQue.put([time.time()*1000, 7])
-                print('#Phase 7')
-                return 7
+                self.stateQue.put([time.time()*1000, 8])
+                print('#Phase 8')
+                return 8
             else:
-                return 6
-        def phase7():
-
+                return 7
+        def phase8():
+            self.balVal.on()
             self.kneVal1.on()
             self.kneVal2.on()
             self.kneRel.on()
             self.ankVal1.on()
             self.ankVal2.on()
-            self.balVal.on()
+
 
             kneDuty = self.calDutyAct(curSen[LTANKPRE],curSen[LKNEPRE],self.kneWalkSupPre)
             self.knePreValPWM.setDuty(kneDuty)
@@ -459,7 +479,7 @@ class ValveController(object):
                 print('#Phase 1')
                 return 1
             else:
-                return 7
+                return 8
 
         # use finite machine to control
         # total 7 different phases
@@ -478,6 +498,8 @@ class ValveController(object):
             self.state = phase6()
         elif self.state==7:
             self.state = phase7()
+        elif self.state==8:
+            self.state= phase8()
         else:
             raise Exception('!Finite state machine cannot classified state')
 
@@ -488,7 +510,7 @@ class ValveController(object):
             duty = (conDes-conPre)/(driPre-conPre)*50
         if duty<0:
             duty=0
-        elif duty>99:
+        elif duty>90:
             duty = 90
         return  duty
     def calDutyRec(self,recPre,tankPre):
