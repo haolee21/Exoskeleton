@@ -48,7 +48,7 @@ exoClient = Client.Client(freq=60,pcIP='192.168.1.107',pcPort=12345,sendPCQue=se
 exoClient.start()
 # Initialize Recorder
 name = input('Please input the name of this experiment:')
-senName = 'Time,HipPos,KnePos,AnkPos,SyncPin,TankPre,KnePre,AnkPre,Test,Test'
+senName = 'Time,LHipPos,LKnePos,LAnkPos,SyncPin,RHipPos,RKnePos,RAnkPos,Test,Test'
 conRecName = []
 for val in valveCon.valveList:
     conRecName.append(val.name)

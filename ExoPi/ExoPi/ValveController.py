@@ -17,12 +17,14 @@ RHIPPOS = 0
 RKNEPOS = 1        
 RANKPOS = 2        
 LKNEVEL = 17        
-## Pressure measurement index        
-LKNEPRE = 6
+## Pressure measurement index
 LTANKPRE = 5
+LKNEPRE = 6
+LANKPRE = 7
+
 RKNEPRE = 3        
 RPRETANk = 4        
-LANKPRE = 7
+
 RTANKPRE = 14
 
 
@@ -103,6 +105,7 @@ class ValveController(object):
     j_testKneAct = th.Event()
     j_recPos = th.Event()
     j_dualPwm = th.Event()
+    j_freeWalk = th.Event()
     """description of class"""
     def __init__(self,conFreq,cmdFreq,cmdQue,cmdLock,senArray,senLock,valveRecQue,valveRecLock,syncTimeQue,pwmRecQue1,pwmRecQue2,stateQue):
         print('#start init valve controller')
@@ -126,7 +129,7 @@ class ValveController(object):
         self.kneVal2 = Valve.Valve('KneVal2',OP4,valveRecQue,valveRecLock)
         self.ankVal1 = Valve.Valve('AnkVal1',OP6,valveRecQue,valveRecLock)
         self.ankVal2 = Valve.Valve('AnkVal2',OP7,valveRecQue,valveRecLock)
-        self.balVal = Valve.Valve('BalVal',OP5,valveRecQue,valveRecLock)
+        self.balVal = Valve.Valve('BalVal',OP3,valveRecQue,valveRecLock)
         self.kneRel = Valve.Valve('KneRel',OP8,valveRecQue,valveRecLock)
 
         self.valveList = [self.kneVal1,self.kneVal2,self.ankVal1,self.ankVal2,self.balVal,self.kneRel]
@@ -249,6 +252,8 @@ class ValveController(object):
                     self.change = True
                 elif curCmd[0]=='s':
                     self.j_recPos.set()
+                elif curCmd[0]=='freewalk':
+                    self.syncConAndSen()
                 else:
                     self.noTask()
             endTime = time.time()
@@ -294,6 +299,8 @@ class ValveController(object):
             if self.j_dualPwm.is_set():
                 self.j_dualPwm.clear()
                 allTaskList.append(th.Thread(target=self.testBothPwm))
+
+
             for task in allTaskList:
                 task.start()
             for task in allTaskList:
@@ -305,7 +312,8 @@ class ValveController(object):
     def recLSpring(self,curSen):
         pass
     kneSupPre = 300
-    preTh = 10
+    # preTh = 10   # remove since the system cannot reach it
+    preTh=0
     kneWalkSupPre = 310
     ankWalkActPre = 300
 
@@ -613,3 +621,4 @@ class ValveController(object):
         print('\nHip\t'+str(curSen[LHIPPOS]))
         print('Knee\t'+str(curSen[LKNEPOS]))
         print('Ankle\t'+str(curSen[LANKPOS]))
+
