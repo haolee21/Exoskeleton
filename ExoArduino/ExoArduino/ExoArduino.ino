@@ -13,6 +13,8 @@ int curIndex;
 
 int senData[NUMSEN][NUMSAMP];
 int senSum[NUMSEN];
+
+int curCont = 1;
 String sendResult;
 String Z1 = String("0");
 String Z2 = String("00");
@@ -56,6 +58,7 @@ String addZero(String curIn, unsigned int digit)
 }
 // the setup function runs once when you press reset or power the board
 void setup() {
+
 	Serial.begin(115200,SERIAL_8E1);
 	for (int i = 0; i < NUMSEN; i++) {
 		for (int k = 0; k < NUMSAMP; k++)
@@ -83,7 +86,33 @@ void loop() {
 	
 	
 	sendResult = sendResult + "\n";
-	//sendResult = "@11111,222,333,444,555,666,777,888,999,123\n";
+	/*
+	switch (curCont)
+	{
+	case 1:
+		sendResult = "@1111111111111111111111111111111111111111111\n";
+		break;
+	case 2:
+		sendResult = "@2222222222222222222222222222222222222222222\n";
+		break;
+	case 3:
+		sendResult = "@3333333333333333333333333333333333333333333\n";
+		break;
+	case 4:
+		sendResult = "@4444444444444444444444444444444444444444444\n";
+		break;
+	case 5:
+		sendResult = "@5555555555555555555555555555555555555555555\n";
+		break;
+	default:
+		break;
+	}
+	if (curCont == 5)
+		curCont = 1;
+	else
+		curCont++;*/
+
+	//sendResult = "@1111111222233334444555566667777888899990000\n";
 	//sendResult = Z1+ sendResult;
 	Serial.print(sendResult);
 	curIndex++;

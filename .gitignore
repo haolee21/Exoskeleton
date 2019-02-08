@@ -18,3 +18,13 @@
 !/ExoArduino/ExoArduino
 /ExoArduino/ExoArduino/*
 !/ExoArduino/ExoArduino/*.ino
+
+!/Exo/
+/Exo/*
+!/Exo/ExoMain/
+/Exo/ExoMain/*
+!/Exo/ExoMain/ExoMain/
+/Exo/ExoMain/ExoMain/*
+!/Exo/ExoMain/ExoMain/Script
+/Exo/ExoMain/ExoMain/Script/*
+
