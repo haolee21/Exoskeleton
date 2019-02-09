@@ -93,8 +93,8 @@ int Sensor::serialPortConnect(char *portName) {
 	tty.c_cc[VMIN] = 0;
 
 	// Set in/out baud rate to be 115200
-	cfsetispeed(&tty, B115200);
-	cfsetospeed(&tty, B115200);
+	cfsetispeed(&tty, B500000);
+	cfsetospeed(&tty, B500000);
 
 	// Save tty settings, also checking for error
 	if (tcsetattr(serial_port, TCSANOW, &tty) != 0) {
@@ -165,15 +165,19 @@ void Sensor::readSerialPort(int serialPort) {
 	}
 	int k = 0;
 	this->senLock->lock();
+	cout << "get data: ";
 	for (int t = 0; t < NUMSEN; t++) {
 		int val = 0;
 		for (int i = 0; i < this->dataFormat[t]; i++) {
 			val = val * 10 + this->tempSen[k];
 			k++;
 		}
+		cout << val << ',';
 		this->senData[t] = val;
 	}
 	this->senLock->unlock();
+	cout << endl;
+	
 }
 void Sensor::serialPortClose(int serial_port) {
 	close(serial_port);

@@ -5,7 +5,7 @@
 #include <string.h>
 const int NUMSAMP = 3;
 const int NUMSEN = 9;
-const int SAMPINTERVAL = 8; //unit is ms
+const int SAMPINTERVAL = 5; //unit is ms
 //const int SAMPINTERVAL = 100; //unit is ms
 const unsigned long MAXTIME = 3600000; // Time reset every 1 hour, transmit less bits to increase sample freq
 int sensorArray[] = {0,1,2,3,4,5,6,A15,A10};
@@ -59,7 +59,7 @@ String addZero(String curIn, unsigned int digit)
 // the setup function runs once when you press reset or power the board
 void setup() {
 
-	Serial.begin(115200,SERIAL_8E1);
+	Serial.begin(500000,SERIAL_8E1);
 	for (int i = 0; i < NUMSEN; i++) {
 		for (int k = 0; k < NUMSAMP; k++)
 			senData[i][k] = 0;
