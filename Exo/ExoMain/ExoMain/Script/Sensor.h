@@ -46,7 +46,7 @@ private:
 	
 	
 
-	int dataFormat[10] = {7,4,4,4,4,4,4,4,4,4};	
+	int dataFormat[10] = {7,4,4,4,4,4,4,4,4,4};	//indicate how many digits of measurements
 
 	int serialPortConnect(char *portName);
 	void readSerialPort(int serialPort);

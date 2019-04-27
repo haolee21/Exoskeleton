@@ -48,7 +48,7 @@ void Sensor::senUpdate() {
 		typedef std::chrono::duration<int, std::milli> millisecs_t;
 		std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
 		millisecs_t duration(std::chrono::duration_cast<millisecs_t>(end - startTime));
-		cout << duration.count() << " ms \n";
+		//cout << duration.count() << " ms \n";
 	}
 	cout << "sensor ends" << endl;
 }
@@ -118,7 +118,6 @@ int Sensor::serialPortConnect(char *portName) {
 
 	// Here we assume we received ASCII data, but you might be sending raw bytes (in that case, don't try and
 	// print it to the screen like this!)
-	
 
 	return serial_port;
 
@@ -163,20 +162,21 @@ void Sensor::readSerialPort(int serialPort) {
 		}
 		
 	}
+	// The measurements transform into array and prints
 	int k = 0;
-	this->senLock->lock();
-	cout << "get data: ";
+	std::lock_guard<std::mutex> lock(*this->senLock);
+	//cout << "get data: ";
 	for (int t = 0; t < NUMSEN; t++) {
 		int val = 0;
 		for (int i = 0; i < this->dataFormat[t]; i++) {
 			val = val * 10 + this->tempSen[k];
 			k++;
 		}
-		cout << val << ',';
+		//cout << val << ',';
 		this->senData[t] = val;
 	}
-	this->senLock->unlock();
-	cout << endl;
+	
+	//cout << endl;
 	
 }
 void Sensor::serialPortClose(int serial_port) {

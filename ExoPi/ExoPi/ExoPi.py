@@ -8,7 +8,7 @@ import threading as th
 import multiprocessing as mp
 import time
 import ValveController as vc
-port = serial.Serial(port='/dev/ttyACM0',baudrate=115200, parity=serial.PARITY_EVEN,stopbits=serial.STOPBITS_ONE)
+port = serial.Serial(port='/dev/ttyACM0',baudrate=500000, parity=serial.PARITY_EVEN,stopbits=serial.STOPBITS_ONE)
 if port.isOpen():
     port.close()
 port.open()

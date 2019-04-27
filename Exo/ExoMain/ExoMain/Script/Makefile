@@ -1,6 +1,6 @@
 CC = g++ -std=c++11
 
-OBJ = main.o pwm.o sensor.o
+OBJ = main.o pwm.o sensor.o controller.o valve.o
 
 #I= ../resource
 #CFLAGS=  -Wall -lrt -pthread
@@ -22,7 +22,10 @@ pwm.o:  PWM.cpp
 	$(CC) -c -o $@ PWM.cpp 
 sensor.o :Sensor.cpp
 	$(CC) -c -o $@ Sensor.cpp
-
+controller.o: Controller.cpp
+	$(CC) -c -o $@ Controller.cpp
+valve.o: Valve.cpp
+	$(CC) -c -o $@ Valve.cpp
 
 clean :
 	rm *.o  *.err

@@ -6,12 +6,14 @@
 
 class PWMGen
 {
+	
 public:
-	PWMGen(int);
+	PWMGen(int pinId,int* duty,std::mutex* lock);
 	~PWMGen();
-	void SetDuty(int);
+	void SetDuty(int onDuty);
 	std::thread *Start();
-	std::mutex *GetDutyLock();
+	std::mutex* DutyLock;
+	void Stop();
 private:
 	int duty = 0;
 	bool on = false;
@@ -23,7 +25,7 @@ private:
 	int timeFactor = 50;
 	int totalTime = 5000;
 	int offTime = totalTime - onTime;
-	std::mutex *DutyLock;
+
 };
 
 #endif // !PWM_H

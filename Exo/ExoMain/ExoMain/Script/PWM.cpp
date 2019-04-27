@@ -1,8 +1,8 @@
 #include "PWM.h"
 
-PWMGen::PWMGen(int pinId)
+PWMGen::PWMGen(int pinId,int *duty,std::mutex* lock)
 {
-	this->DutyLock = new std::mutex();
+	this->DutyLock = lock;
 	this->pinId = pinId;
 	pinMode(this->pinId, OUTPUT);
 }
@@ -17,6 +17,9 @@ std::thread *PWMGen::Start() {
 	return mainThread;
 
 }
+void PWMGen::Stop(){
+	this->on = false;
+}
 void PWMGen::Mainloop() {
 	while (this->on) {
 		
@@ -30,9 +33,8 @@ void PWMGen::Mainloop() {
 		delayMicroseconds(curOffTime);
 	}
 }
-std::mutex *PWMGen::GetDutyLock() {
-	return this->DutyLock;
-}
+
 PWMGen::~PWMGen()
 {
+	digitalWrite(this->pinId, LOW);
 }
