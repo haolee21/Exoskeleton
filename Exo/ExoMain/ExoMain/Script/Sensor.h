@@ -7,7 +7,7 @@
 
 #include <wiringPi.h>
 #include <chrono>
-#include<time.h> //this timer
+#include<ctime> //this timer
 
 #include <stdio.h>
 #include <cstring>

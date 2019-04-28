@@ -4,6 +4,7 @@
 void Controller::TestValve(){
     
     for(int i=0;i<this->ValNum;i++){
+        
         std::cout<<"Test Valve "<<i<<std::endl;
         for(int i2=0;i2<20;i2++){
             this->ValveList[i].On();
@@ -29,11 +30,18 @@ void Controller::WaitToSync(){
     ts.tv_nsec = 10000L;
     nanosleep(&ts,(struct timespec*)NULL);
 }
-Controller::Controller()
+Controller::Controller(Sensor *sensor,mutex *senLock)
 {
-    //turn off all the valves
-    for(int i=0;i<this->ValNum;i++)
+    this->sensor = sensor;
+    this->senLock = senLock;
+    std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
+    
+    //turn off all the valves and set start time
+    for(int i=0;i<this->ValNum;i++){
+        this->ValveList[i].SetStartTime(startTime);
         this->ValveList[i].Off();
+    }
+
 
     
 }

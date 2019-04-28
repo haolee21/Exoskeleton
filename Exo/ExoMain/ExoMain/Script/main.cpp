@@ -31,7 +31,7 @@ int main(void)
 	Sensor sensor = Sensor(portName, 5L,&SenLock);
 	sensor.Start();
 	cout << "finish creating" << endl;
-	Controller con = Controller();
+	Controller con = Controller(&sensor,&SenLock);
 	con.TestValve();
 	/*
 	for(int i=0;i<40;i++){
@@ -42,6 +42,11 @@ int main(void)
 	
 	sensor.Stop();
 	
+	//print the control result
+	for(int i=1;i<con.ValveList[0].recIndex;i++){
+		std::cout<<con.ValveList[0].valTimeRec[i]<<","<<con.ValveList[0].valCondRec[i]<<std::endl;
+	}
+
 	
 	return 0;
 }
