@@ -21,6 +21,9 @@ const int NUMSEN = 10; //numSen+time
 const int SIZEOFBUFFER = 512; //Watchout this value, I use this buffer twice to catch data, it has to be long enough
 const int BUFFERSWITCH = 150;
 const int DATALEN = 43;
+
+const int recLength = 240000; //This is the pre-allocate memory for recording sensed data
+
 class Sensor
 {
 public:
@@ -31,7 +34,13 @@ public:
 	void Stop();
 	int senData[NUMSEN]; //data get from ADC
 	thread *th_SenUpdate;
+
+	//create array to storage sensing data
+	int **totSenRec = new int*[recLength];
+	
+	int recIndex;
 private:
+	
 	bool is_create = false;
 	int serialDevId;
 	bool sw_senUpdate;

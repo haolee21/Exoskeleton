@@ -4,7 +4,7 @@
 #include <chrono>
 #include<ctime> //this timer
 using namespace std;
-const int recLength = 240000; //default data length for valve, can record in 100 Hz for 30 min
+//const int recLength = 240000; //default data length for valve, can record in 100 Hz for 30 min
 class Valve
 {
 private:

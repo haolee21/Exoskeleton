@@ -12,6 +12,12 @@ Sensor::Sensor(char *portName,long sampT,mutex* senLock)
 		this->init_buffer = true; //true if we need to init
 		this->senLock = senLock;
 		
+		//initialize the recIndex
+		this->recIndex = 0;
+		for(int i=0;i<recLength;i++)
+			this->totSenRec[i]=new int[NUMSEN];
+
+
 
 		if (this->serialDevId == -1)
 			cout << "Sensor init failed" << endl;
@@ -19,9 +25,7 @@ Sensor::Sensor(char *portName,long sampT,mutex* senLock)
 	else
 		cout << "Sensor already created" << endl;
 }
-Sensor::~Sensor()
-{
-}
+
 void Sensor::Start() {
 	this->sw_senUpdate = true;
 	memset(&this->senBuffer, '\0', sizeof(this->senBuffer));
@@ -150,6 +154,8 @@ void Sensor::readSerialPort(int serialPort) {
 			}
 			else {
 				if (*currentRead != '\n') {
+					// We will get ascii in we directly use (int)currentRead
+					// However, the relative distance of it wrt to '0' is the number
 					*getChar = (int)(*currentRead-'0');
 					getChar++;
 				}
@@ -165,18 +171,24 @@ void Sensor::readSerialPort(int serialPort) {
 	// The measurements transform into array and prints
 	int k = 0;
 	std::lock_guard<std::mutex> lock(*this->senLock);
-	//cout << "get data: ";
+	cout << "get data: ";
 	for (int t = 0; t < NUMSEN; t++) {
 		int val = 0;
+		//For each measurement, the data is 
 		for (int i = 0; i < this->dataFormat[t]; i++) {
 			val = val * 10 + this->tempSen[k];
 			k++;
 		}
-		//cout << val << ',';
+		// put sense data into array
+		cout << val << ',';
 		this->senData[t] = val;
+		// record sense data 
+		this->totSenRec[this->recIndex][t]=val;
 	}
 	
-	//cout << endl;
+	this->recIndex ++;
+	
+	cout << endl;
 	
 }
 void Sensor::serialPortClose(int serial_port) {
@@ -188,4 +200,11 @@ void Sensor::waitToSync() {
 	ts.tv_sec = 0;
 	ts.tv_nsec = 10000L; //10 us
 	nanosleep(&ts, (struct timespec*)NULL);
+}
+Sensor::~Sensor()
+{
+	for(int i=0;i<this->recIndex;i++){
+		delete[] this->totSenRec[i];
+	}
+	delete[] this->totSenRec;
 }
