@@ -12,12 +12,12 @@ mutex SenLock;
 void DelaySys(int waitTime) {
 	struct timespec ts2 = { 0 };
 	ts2.tv_sec = waitTime;
-	ts2.tv_nsec = 10000L; //10 us
+	ts2.tv_nsec = 0; //10 us
 	nanosleep(&ts2, (struct timespec*)NULL);
 }
 void ReadSenData(Sensor *sensor){
 	std::lock_guard<std::mutex> lock(SenLock);
-	for (int i=0;i<10;i++){
+	for (int i=0;i<5;i++){
 		std::cout<<sensor->senData[i];
 		std::cout<<",";
 	}
@@ -48,20 +48,28 @@ int main(void)
 	// 	std::cout<<con.ValveList[0].valTimeRec[i]<<","<<con.ValveList[0].valCondRec[i]<<std::endl;
 	// }
 	//print sense result
-	int time0 = 0;
-	for(int i=0;i<sensor.recIndex;i++){
-		for (int k=0;k<NUMSEN;k++){
-			if (k==0){
-				std::cout<<sensor.totSenRec[i][k]-time0;
-				time0 = sensor.totSenRec[i][k];
-			}
-			else
-				std::cout<<sensor.totSenRec[i][k]<<",";
-		}
-		std::cout<<std::endl;
+	// int time0 = 0;
+	// for(int i=0;i<sensor.recIndex;i++){
+	// 	for (int k=0;k<NUMSEN;k++){
+	// 		if (k==0){
+	// 			std::cout<<sensor.totSenRec[i][k]-time0;
+	// 			time0 = sensor.totSenRec[i][k];
+	// 		}
+	// 		else
+	// 			std::cout<<sensor.totSenRec[i][k]<<",";
+	// 	}
+	// 	std::cout<<std::endl;
 
+	// }
+
+	//only print time
+	int time0 = sensor.totSenRec[0][0];
+	for (int i=0;i<sensor.recIndex-1;i++){
+		std::cout<<sensor.totSenRec[i][0]-time0<<std::endl;
+		time0 = sensor.totSenRec[i][0];
 	}
-
+	std::cout<<"finish"<<std::endl;
+	
 	
 	return 0;
 }

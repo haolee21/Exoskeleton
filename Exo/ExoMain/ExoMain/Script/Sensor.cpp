@@ -52,7 +52,7 @@ void Sensor::senUpdate() {
 		typedef std::chrono::duration<int, std::milli> millisecs_t;
 		std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
 		millisecs_t duration(std::chrono::duration_cast<millisecs_t>(end - startTime));
-		//cout << duration.count() << " ms \n";
+		cout << duration.count() << " ms \n";
 	}
 	cout << "sensor ends" << endl;
 }
@@ -97,8 +97,8 @@ int Sensor::serialPortConnect(char *portName) {
 	tty.c_cc[VMIN] = 0;
 
 	// Set in/out baud rate to be 115200
-	cfsetispeed(&tty, B500000);
-	cfsetospeed(&tty, B500000);
+	cfsetispeed(&tty, B1000000);
+	cfsetospeed(&tty, B1000000);
 
 	// Save tty settings, also checking for error
 	if (tcsetattr(serial_port, TCSANOW, &tty) != 0) {
@@ -171,7 +171,7 @@ void Sensor::readSerialPort(int serialPort) {
 	// The measurements transform into array and prints
 	int k = 0;
 	std::lock_guard<std::mutex> lock(*this->senLock);
-	cout << "get data: ";
+	//cout << "get data: ";
 	for (int t = 0; t < NUMSEN; t++) {
 		int val = 0;
 		//For each measurement, the data is 
@@ -180,7 +180,7 @@ void Sensor::readSerialPort(int serialPort) {
 			k++;
 		}
 		// put sense data into array
-		cout << val << ',';
+		//cout << val << ',';
 		this->senData[t] = val;
 		// record sense data 
 		this->totSenRec[this->recIndex][t]=val;
@@ -188,7 +188,7 @@ void Sensor::readSerialPort(int serialPort) {
 	
 	this->recIndex ++;
 	
-	cout << endl;
+	//cout << endl;
 	
 }
 void Sensor::serialPortClose(int serial_port) {
@@ -203,6 +203,7 @@ void Sensor::waitToSync() {
 }
 Sensor::~Sensor()
 {
+	std::cout<<"start to delete"<<std::endl;
 	for(int i=0;i<this->recIndex;i++){
 		delete[] this->totSenRec[i];
 	}
