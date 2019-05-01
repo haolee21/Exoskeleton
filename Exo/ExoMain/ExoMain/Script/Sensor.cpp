@@ -171,7 +171,7 @@ void Sensor::readSerialPort(int serialPort) {
 	// The measurements transform into array and prints
 	int k = 0;
 	std::lock_guard<std::mutex> lock(*this->senLock);
-	//cout << "get data: ";
+	cout << "get data: ";
 	for (int t = 0; t < NUMSEN; t++) {
 		int val = 0;
 		//For each measurement, the data is 
@@ -180,7 +180,7 @@ void Sensor::readSerialPort(int serialPort) {
 			k++;
 		}
 		// put sense data into array
-		//cout << val << ',';
+		cout << val << ',';
 		this->senData[t] = val;
 		// record sense data 
 		this->totSenRec[this->recIndex][t]=val;
@@ -188,7 +188,7 @@ void Sensor::readSerialPort(int serialPort) {
 	
 	this->recIndex ++;
 	
-	//cout << endl;
+	cout << endl;
 	
 }
 void Sensor::serialPortClose(int serial_port) {

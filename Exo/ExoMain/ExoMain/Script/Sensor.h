@@ -17,7 +17,7 @@
 #include <unistd.h> // write(), read(), close()
 #include <mutex>
 using namespace std;
-const int NUMSEN = 10; //numSen+time
+const int NUMSEN = 9; //numSen+time
 const int SIZEOFBUFFER = 512; //Watchout this value, I use this buffer twice to catch data, it has to be long enough
 const int BUFFERSWITCH = 150;
 const int DATALEN = 43;
@@ -55,7 +55,7 @@ private:
 	
 	
 
-	int dataFormat[10] = {7,4,4,4,4,4,4,4,4,4};	//indicate how many digits of measurements
+	int dataFormat[9] = {7,4,4,4,4,4,4,4,4};	//indicate how many digits of measurements
 
 	int serialPortConnect(char *portName);
 	void readSerialPort(int serialPort);
