@@ -64,7 +64,7 @@ private:
     Valve LKneVal2 = Valve("LKneVal2",OP4);
     Valve LAnkVal1 = Valve("LAnkVal1",OP6);
     Valve LAnkVal2 = Valve("LAnkVal2",OP7);
-    Valve BalVal = Valve("BalVal",OP3);
+    Valve BalVal = Valve("BalVal",OP10);
     Valve LRelVal = Valve("LRelVal",OP8);
     
 

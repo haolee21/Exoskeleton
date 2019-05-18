@@ -129,7 +129,7 @@ class ValveController(object):
         self.kneVal2 = Valve.Valve('KneVal2',OP4,valveRecQue,valveRecLock)
         self.ankVal1 = Valve.Valve('AnkVal1',OP6,valveRecQue,valveRecLock)
         self.ankVal2 = Valve.Valve('AnkVal2',OP7,valveRecQue,valveRecLock)
-        self.balVal = Valve.Valve('BalVal',OP3,valveRecQue,valveRecLock)
+        self.balVal = Valve.Valve('BalVal',OP10,valveRecQue,valveRecLock)
         self.kneRel = Valve.Valve('KneRel',OP8,valveRecQue,valveRecLock)
 
         self.valveList = [self.kneVal1,self.kneVal2,self.ankVal1,self.ankVal2,self.balVal,self.kneRel]

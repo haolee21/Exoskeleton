@@ -53,7 +53,7 @@ sei(); // allow interrupts
 // the loop function runs over and over again until power down or reset
 ISR(TIMER1_COMPA_vect){
 	
-	curTime = millis()%MAXTIME;
+	curTime = millis();
 	
 	for (int senIndex = 0; senIndex < NUMSEN; senIndex++) {
 		
