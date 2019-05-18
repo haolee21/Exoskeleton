@@ -8,7 +8,7 @@ import threading as th
 import multiprocessing as mp
 import time
 import ValveController as vc
-port = serial.Serial(port='/dev/ttyACM0',baudrate=115200, parity=serial.PARITY_EVEN,stopbits=serial.STOPBITS_ONE)
+port = serial.Serial(port='/dev/ttyACM0',baudrate=1000000, parity=serial.PARITY_EVEN,stopbits=serial.STOPBITS_ONE)
 if port.isOpen():
     port.close()
 port.open()
@@ -48,7 +48,7 @@ exoClient = Client.Client(freq=60,pcIP='192.168.1.107',pcPort=12345,sendPCQue=se
 exoClient.start()
 # Initialize Recorder
 name = input('Please input the name of this experiment:')
-senName = 'Time,HipPos,KnePos,AnkPos,SyncPin,TankPre,KnePre,AnkPre,Test,Test'
+senName = 'Time,LHipPos,LKnePos,LAnkPos,SyncPin,RHipPos,RKnePos,RAnkPos,Test,Test'
 conRecName = []
 for val in valveCon.valveList:
     conRecName.append(val.name)
