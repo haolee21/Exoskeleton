@@ -13,17 +13,35 @@ const int NUMSEN = 9;
 const int SAMPDIV = 2;//This actually take 4 samples, use measurement>>2 to divide by 4
 int sensorArray[] = {0,1,2,3,4,5,6,A15,A10};
 int curIndex;
-unsigned long curTime;
+
 int senData[NUMSEN][NUMSAMP];
 int senSum[NUMSEN];
 char buffer[100];
+char *bufferPointer;
 int curCont = 1;
 
 bool readyToSend;
+
+// buffer and array for sensing
+union SenDataType
+{
+	int senVal;
+	char senByte[4];
+};
+union TimeDataType
+{
+	unsigned long timeVal;
+	char timeByte[4];
+
+};
+TimeDataType curTime;
+SenDataType curSen;
+
 // the setup function runs once when you press reset or power the board
 void setup() {
-
-	Serial.begin(1000000,SERIAL_8E1);
+	curIndex =0;
+	bufferPointer = buffer;
+	Serial.begin(115200,SERIAL_8E1);
 	for (int i = 0; i < NUMSEN; i++) {
 		for (int k = 0; k < NUMSAMP; k++)
 			senData[i][k] = 0;
@@ -52,17 +70,26 @@ sei(); // allow interrupts
 
 // the loop function runs over and over again until power down or reset
 ISR(TIMER1_COMPA_vect){
-	
-	curTime = millis();
+	*bufferPointer++ = '@';
+	curTime.timeVal = millis();
+	for (int sendIndex=0;sendIndex<4;sendIndex++){
+		*bufferPointer = curTime.timeByte[sendIndex];
+		//*bufferPointer++ = 'K';
+	}
 	
 	for (int senIndex = 0; senIndex < NUMSEN; senIndex++) {
 		
 		senSum[senIndex] = senSum[senIndex] - senData[senIndex][curIndex];
 		senData[senIndex][curIndex] = analogRead(sensorArray[senIndex]);
+		//senData[senIndex][curIndex] = 121;  //this gives us y
 		senSum[senIndex] = senSum[senIndex] + senData[senIndex][curIndex];
+		curSen.senVal = senSum[senIndex]>>SAMPDIV;
+		for (int sendIndex=0;sendIndex<4;sendIndex++){
+			*bufferPointer++ =  curSen.senByte[sendIndex];
+		}
 	}
+	*bufferPointer++='\n';
 	//Create the output data 
-	sprintf(buffer,"@%07lu%04d%04d%04d%04d%04d%04d%04d%04d",curTime,senSum[0]>>SAMPDIV,senSum[1]>>SAMPDIV,senSum[2]>>SAMPDIV,senSum[3]>>SAMPDIV,senSum[4]>>SAMPDIV,senSum[5]>>SAMPDIV,senSum[6]>>SAMPDIV,senSum[7]>>SAMPDIV);
 	readyToSend = true;
 	
 	
@@ -83,8 +110,9 @@ ISR(TIMER1_COMPA_vect){
 void loop()
 {
 	if (readyToSend){
-		Serial.println(buffer);
+		Serial.write(buffer,42);
 		readyToSend = false;
+		bufferPointer = buffer;
 	}
 
 }
