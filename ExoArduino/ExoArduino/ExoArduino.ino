@@ -50,12 +50,13 @@ void setup()
 
 	// Timer setting: http://www.8bit-era.cz/arduino-timer-interrupts-calculator.html
 	// TIMER 1 for interrupt frequency 500 Hz:
+	// TIMER 1 for interrupt frequency 625 Hz:
 	cli();		// stop interrupts
 	TCCR1A = 0; // set entire TCCR1A register to 0
 	TCCR1B = 0; // same for TCCR1B
 	TCNT1 = 0;  // initialize counter value to 0
-	// set compare match register for 500 Hz increments
-	OCR1A = 31999; // = 16000000 / (1 * 500) - 1 (must be <65536)
+	// set compare match register for 625 Hz increments
+	OCR1A = 25599; // = 16000000 / (1 * 625) - 1 (must be <65536)
 	// turn on CTC mode
 	TCCR1B |= (1 << WGM12);
 	// Set CS12, CS11 and CS10 bits for 1 prescaler
@@ -76,7 +77,7 @@ void loop()
 	{
 		*bufferPointer++ = '@';
 		curTime.timeVal = millis();
-		for (int sendIndex = 0; sendIndex < 4; sendIndex++)
+		for (int sendIndex = 0; sendIndex < 2; sendIndex++)
 		{
 			*bufferPointer++ = curTime.timeByte[sendIndex];
 			//*bufferPointer++ = 'K';
@@ -90,7 +91,7 @@ void loop()
 			//senData[senIndex][curIndex] = 121;  //this gives us y
 			senSum[senIndex] = senSum[senIndex] + senData[senIndex][curIndex];
 			curSen.senVal = senSum[senIndex] >> SAMPDIV;
-			for (int sendIndex = 0; sendIndex < 4; sendIndex++)
+			for (int sendIndex = 0; sendIndex < 2; sendIndex++)
 			{
 				*bufferPointer++ = curSen.senByte[sendIndex];
 			}
@@ -113,7 +114,7 @@ void loop()
 		if (curIndex == NUMSAMP)
 			curIndex = 0;
 
-		Serial.write(buffer, 42);
+		Serial.write(buffer, 22);
 		readyToSend = false;
 		bufferPointer = buffer;
 	}
