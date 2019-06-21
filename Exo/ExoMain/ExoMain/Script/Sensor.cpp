@@ -132,7 +132,7 @@ void Sensor::readSerialPort(int serialPort) {
 	bool getFullData = false; //each time we must retrieve a full data
 	bool foundHead = false;
 	
-	int *getChar = this->tempSen;
+	char *curHead = this->tempSen;
 	while (!getFullData) {
 		char *currentRead = this->senBuffer;
 		int n_bytes = read(serialPort, &this->senBuffer, sizeof(senBuffer));//the last one is end
@@ -145,25 +145,23 @@ void Sensor::readSerialPort(int serialPort) {
 		if (n_bytes < 0)
 			continue;
 		//first find the beginning of current data
+		
 		for (int i = 0; i < n_bytes; i++) {
 			if (!foundHead) {
-				if (*currentRead == '@') {
+				if (*currentRead++ == '@') {
 					foundHead = true;
 				}
-				currentRead++;
 			}
 			else {
 				if (*currentRead != '\n') {
-					// We will get ascii in we directly use (int)currentRead
-					// However, the relative distance of it wrt to '0' is the number
-					*getChar = (int)(*currentRead-'0');
-					getChar++;
+					//find the end of the data
+					//put the temperary data into an char array tempSen
+					*curHead++=*currentRead++;
 				}
 				else {
 					getFullData = true;
 					break;
 				}
-				currentRead++;
 			}
 		}
 		
@@ -172,18 +170,25 @@ void Sensor::readSerialPort(int serialPort) {
 	int k = 0;
 	std::lock_guard<std::mutex> lock(*this->senLock);
 	cout << "get data: ";
+
+	// transform time data
+	
+	int *curSen = this->senData;
+	curHead = this->tempSen;
+	*curSen = (int)(((unsigned long)*curHead) + ((unsigned long)((*++curHead)<<8)));
+	cout<<*curSen;
+	cout<<',';
+	curSen++;
+	curHead++;
 	for (int t = 0; t < NUMSEN; t++) {
-		int val = 0;
-		//For each measurement, the data is 
-		for (int i = 0; i < this->dataFormat[t]; i++) {
-			val = val * 10 + this->tempSen[k];
-			k++;
-		}
+		*curSen = (int)*curHead + (int)((*++curHead)<<8);
 		// put sense data into array
-		cout << val << ',';
-		this->senData[t] = val;
+		cout << *curSen << ',';
+		
 		// record sense data 
-		this->totSenRec[this->recIndex][t]=val;
+		//this->totSenRec[this->recIndex][t]=*curSen;
+		curSen++;
+		curHead++;
 	}
 	
 	this->recIndex ++;

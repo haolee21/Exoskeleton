@@ -17,10 +17,10 @@
 #include <unistd.h> // write(), read(), close()
 #include <mutex>
 using namespace std;
-const int NUMSEN = 9; //numSen+time
+const int NUMSEN = 9; //numSen
 const int SIZEOFBUFFER = 512; //Watchout this value, I use this buffer twice to catch data, it has to be long enough
 const int BUFFERSWITCH = 150;
-const int DATALEN = 43;
+const int DATALEN = NUMSEN*2+2;
 
 const int recLength = 240000; //This is the pre-allocate memory for recording sensed data
 
@@ -32,7 +32,7 @@ public:
 	
 	void Start();
 	void Stop();
-	int senData[NUMSEN]; //data get from ADC
+	int senData[NUMSEN+1]; //data get from ADC
 	thread *th_SenUpdate;
 
 	//create array to storage sensing data
@@ -50,7 +50,7 @@ private:
 	//variables for receiving data
 	bool init_buffer;
 	char senBuffer[SIZEOFBUFFER];
-	int tempSen[DATALEN];
+	char tempSen[DATALEN];
 	mutex* senLock;
 	
 	
