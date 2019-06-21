@@ -29,7 +29,7 @@ int main(void)
 {
 	wiringPiSetupSys(); //setup the system ports, timer, etc. 
 	char portName[] = "/dev/ttyACM0";
-	Sensor sensor = Sensor(portName, 2500L,&SenLock);
+	Sensor sensor = Sensor(portName, 4000L,&SenLock);
 	sensor.Start();
 	cout << "finish creating" << endl;
 	Controller con = Controller(&sensor,&SenLock);

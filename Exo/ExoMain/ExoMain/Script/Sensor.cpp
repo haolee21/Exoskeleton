@@ -48,6 +48,7 @@ void Sensor::senUpdate() {
 		while (std::chrono::system_clock::now()-startTime
 			< std::chrono::microseconds(this->sampT)) {
 			this->waitToSync(); 
+			
 		}
 		typedef std::chrono::duration<int, std::micro> microsecs_t;
 		std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
@@ -133,8 +134,8 @@ void Sensor::readSerialPort(int serialPort) {
 	bool foundHead = false;
 	
 	char *curHead = this->tempSen;
-	while (!getFullData) {
-		char *currentRead = this->senBuffer;
+	char *currentRead = this->senBuffer;
+	while (!getFullData) {	
 		int n_bytes = read(serialPort, &this->senBuffer, sizeof(senBuffer));//the last one is end
 		//clear the initial data in raspberry pi's serial port, they do not make sense
 		if (this->init_buffer) {
@@ -148,18 +149,10 @@ void Sensor::readSerialPort(int serialPort) {
 		
 		for (int i = 0; i < n_bytes; i++) {
 			if (!foundHead) {
-				if (*currentRead++ == '@') {
-					foundHead = true;
-				}
-			}
-			else {
-				if (*currentRead != '\n') {
-					//find the end of the data
-					//put the temperary data into an char array tempSen
-					*curHead++=*currentRead++;
-				}
-				else {
-					getFullData = true;
+				if (*currentRead++ == '@') {//use ++ is because later we can directly use currentRead[0] for time
+					if(*(currentRead+DATALEN)=='\n'){ 
+						getFullData = true;
+					}
 					break;
 				}
 			}
@@ -167,33 +160,28 @@ void Sensor::readSerialPort(int serialPort) {
 		
 	}
 	// The measurements transform into array and prints
-	int k = 0;
-	std::lock_guard<std::mutex> lock(*this->senLock);
-	cout << "get data: ";
+	this->senLock->lock();
+	//std::lock_guard<std::mutex> lock(*this->senLock);
+	
 
 	// transform time data
-	
-	int *curSen = this->senData;
-	curHead = this->tempSen;
-	*curSen = (int)(((unsigned long)*curHead) + ((unsigned long)((*++curHead)<<8)));
-	cout<<*curSen;
-	cout<<',';
-	curSen++;
-	curHead++;
-	for (int t = 0; t < NUMSEN; t++) {
-		*curSen = (int)*curHead + (int)((*++curHead)<<8);
-		// put sense data into array
-		cout << *curSen << ',';
-		
-		// record sense data 
-		//this->totSenRec[this->recIndex][t]=*curSen;
-		curSen++;
-		curHead++;
-	}
+	this->senData[0] = (int)(((unsigned long)currentRead[0]) + ((unsigned long)(currentRead[1]<<8)));
+	this->senData[1] = (int)(currentRead[2]) + (int)(currentRead[3]<<8);
+	this->senData[2] = (int)(currentRead[4]) + (int)(currentRead[5]<<8);
+	this->senData[3] = (int)(currentRead[6]) + (int)(currentRead[7]<<8);
+	this->senData[4] = (int)(currentRead[8]) + (int)(currentRead[9]<<8);
+	this->senData[5] = (int)(currentRead[10]) + (int)(currentRead[11]<<8);
+	this->senData[6] = (int)(currentRead[12]) + (int)(currentRead[13]<<8);
+	this->senData[7] = (int)(currentRead[14]) + (int)(currentRead[15]<<8);
+	this->senData[8] = (int)(currentRead[16]) + (int)(currentRead[17]<<8);
+	this->senData[9] = (int)(currentRead[18]) + (int)(currentRead[19]<<8);
+	this->senLock->unlock();
+	cout << "get data: ";
+	cout<<this->senData[0]<<','<<this->senData[1]<<','<<this->senData[2]<<','<<this->senData[3]<<',';
+	cout<<this->senData[4]<<','<<this->senData[5]<<','<<this->senData[6]<<','<<this->senData[7]<<',';
+	cout<<this->senData[8]<<','<<this->senData[9]<<std::endl;
 	
 	this->recIndex ++;
-	
-	cout << endl;
 	
 }
 void Sensor::serialPortClose(int serial_port) {
@@ -203,7 +191,7 @@ void Sensor::serialPortClose(int serial_port) {
 void Sensor::waitToSync() {
 	struct timespec ts = { 0 };
 	ts.tv_sec = 0;
-	ts.tv_nsec = 10000L; //10 us
+	ts.tv_nsec = 5000L; //10 us
 	nanosleep(&ts, (struct timespec*)NULL);
 }
 Sensor::~Sensor()

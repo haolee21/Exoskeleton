@@ -98,7 +98,7 @@ void loop()
 		{
 			senSum[senIndex] = senSum[senIndex] - senData[senIndex][curIndex];
 			senData[senIndex][curIndex] = analogRead(sensorArray[senIndex]);
-			//senData[senIndex][curIndex] = testSent2;
+			// senData[senIndex][curIndex] = testSent2;
 			senSum[senIndex] = senSum[senIndex] + senData[senIndex][curIndex];
 			curSen.senVal = senSum[senIndex] >> SAMPDIV;
 			for (int sendIndex = 0; sendIndex < 2; sendIndex++)
