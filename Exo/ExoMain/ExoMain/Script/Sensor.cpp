@@ -46,12 +46,12 @@ void Sensor::senUpdate() {
 		std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now(); //starting time
 		this->readSerialPort(this->serialDevId);
 		while (std::chrono::system_clock::now()-startTime
-			< std::chrono::milliseconds(this->sampT)) {
+			< std::chrono::microseconds(this->sampT)) {
 			this->waitToSync(); 
 		}
-		typedef std::chrono::duration<int, std::milli> millisecs_t;
+		typedef std::chrono::duration<int, std::micro> microsecs_t;
 		std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
-		millisecs_t duration(std::chrono::duration_cast<millisecs_t>(end - startTime));
+		microsecs_t duration(std::chrono::duration_cast<microsecs_t>(end - startTime));
 		cout << duration.count() << " ms \n";
 	}
 	cout << "sensor ends" << endl;

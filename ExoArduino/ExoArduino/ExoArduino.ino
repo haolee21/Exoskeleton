@@ -53,17 +53,17 @@ void setup()
 	pinMode(50, OUTPUT);
 
 	// Timer setting: http://www.8bit-era.cz/arduino-timer-interrupts-calculator.html
-	// TIMER 1 for interrupt frequency 200 Hz:
+	// TIMER 1 for interrupt frequency 250 Hz:
 	cli();		// stop interrupts
 	TCCR1A = 0; // set entire TCCR1A register to 0
 	TCCR1B = 0; // same for TCCR1B
 	TCNT1 = 0;  // initialize counter value to 0
-	// set compare match register for 200 Hz increments
-	OCR1A = 9999; // = 16000000 / (8 * 200) - 1 (must be <65536)
+	// set compare match register for 250 Hz increments
+	OCR1A = 63999; // = 16000000 / (1 * 250) - 1 (must be <65536)
 	// turn on CTC mode
 	TCCR1B |= (1 << WGM12);
-	// Set CS12, CS11 and CS10 bits for 8 prescaler
-	TCCR1B |= (0 << CS12) | (1 << CS11) | (0 << CS10);
+	// Set CS12, CS11 and CS10 bits for 1 prescaler
+	TCCR1B |= (0 << CS12) | (0 << CS11) | (1 << CS10);
 	// enable timer compare interrupt
 	TIMSK1 |= (1 << OCIE1A);
 	sei(); // allow interrupts
@@ -80,16 +80,16 @@ void loop()
 	if (readyToSend)
 	{
 		// testSent is for testing the receiving end got correct data
-		testSent1++;
-		testSent2++;
-		if (testSent1 > 1024)
-			testSent1 = 900;
-		if (testSent2 > 1024)
-			testSent2 = 900;
+		// testSent1++;
+		// testSent2++;
+		// if (testSent1 > 1024)
+		// 	testSent1 = 900;
+		// if (testSent2 > 1024)
+		// 	testSent2 = 900;
 
 		*bufferPointer++ = '@';
-		//curTime.timeVal = millis();
-		curTime.timeVal = (unsigned long)testSent1;
+		curTime.timeVal = millis();
+		//curTime.timeVal = (unsigned long)testSent1;
 		for (int sendIndex = 0; sendIndex < 2; sendIndex++)
 		{
 			*bufferPointer++ = curTime.timeByte[sendIndex];
@@ -97,8 +97,8 @@ void loop()
 		for (int senIndex = 0; senIndex < NUMSEN; senIndex++)
 		{
 			senSum[senIndex] = senSum[senIndex] - senData[senIndex][curIndex];
-			//senData[senIndex][curIndex] = analogRead(sensorArray[senIndex]);
-			senData[senIndex][curIndex] = testSent2;
+			senData[senIndex][curIndex] = analogRead(sensorArray[senIndex]);
+			//senData[senIndex][curIndex] = testSent2;
 			senSum[senIndex] = senSum[senIndex] + senData[senIndex][curIndex];
 			curSen.senVal = senSum[senIndex] >> SAMPDIV;
 			for (int sendIndex = 0; sendIndex < 2; sendIndex++)
