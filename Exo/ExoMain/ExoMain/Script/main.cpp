@@ -29,14 +29,14 @@ int main(void)
 {
 	wiringPiSetupSys(); //setup the system ports, timer, etc. 
 	char portName[] = "/dev/ttyACM0";
-	Sensor sensor = Sensor(portName, 4000L,&SenLock);
+	Sensor sensor = Sensor(portName, 1600000L,&SenLock);
 	sensor.Start();
 	cout << "finish creating" << endl;
 	Controller con = Controller(&sensor,&SenLock);
 	//con.TestValve();
 	
 	for(int i=0;i<10;i++){
-		ReadSenData(&sensor);
+		//ReadSenData(&sensor);
 		DelaySys(1);
 	}
 	

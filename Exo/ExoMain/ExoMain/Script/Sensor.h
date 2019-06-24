@@ -27,7 +27,7 @@ const int recLength = 240000; //This is the pre-allocate memory for recording se
 class Sensor
 {
 public:
-	Sensor(char *port,long sampTmilli,mutex* senLock); //sampT is in millisecond
+	Sensor(char *port,long sampTmilli,mutex* senLock); //sampT is in milli
 	~Sensor();
 	
 	void Start();
@@ -60,7 +60,7 @@ private:
 	int serialPortConnect(char *portName);
 	void readSerialPort(int serialPort);
 	void serialPortClose(int serial_port);
-	void waitToSync();
+	void waitToSync(std::chrono::system_clock::time_point);
 };
 
 
