@@ -15,6 +15,9 @@ Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 		this->init_buffer = true; //true if we need to init
 		this->senLock = senLock;
 		this->curBufIndex = 0;
+
+		this->preTime =0; //for testing purpose
+
 		std::cout << "set curBufIndex" << std::endl;
 		std::cout << this->curBufIndex << std::endl;
 		//initialize the recIndex
@@ -216,6 +219,9 @@ void Sensor::readSerialPort(int serialPort)
 		this->senData[8] = (int)(this->curHead[18]) + (int)(this->curHead[19] << 8);
 		this->senData[9] = (int)(this->curHead[20]) + (int)(this->curHead[21] << 8);
 		this->senLock->unlock();
+		
+		// std::cout<<senData[0]-this->preTime<<std::endl;  //this is for checking the sensing time gap is correct
+		// this->preTime = this->senData[0];
 		// cout << "get data: ";
 		// cout << this->senData[0] << ',' << this->senData[1] << ',' << this->senData[2] << ',' << this->senData[3] << ',';
 		// cout << this->senData[4] << ',' << this->senData[5] << ',' << this->senData[6] << ',' << this->senData[7] << ',';

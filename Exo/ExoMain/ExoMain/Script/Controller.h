@@ -73,13 +73,14 @@ private:
 
     void WaitToSync();
     void Sleep(int sleepTime);
-    
+    void Wait(long waitMilli);
+    int preTime; //this is for testing sen
 public:
     Valve ValveList[6]={LKneVal1,LKneVal2,LAnkVal1,LAnkVal2,BalVal,LRelVal};
     Controller(Sensor *sensor,mutex *senLock);
     ~Controller();
     void TestValve();
-
+    void TestSen();
 };
 
 

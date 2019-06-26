@@ -30,12 +30,38 @@ void Controller::WaitToSync(){
     ts.tv_nsec = 10000L;
     nanosleep(&ts,(struct timespec*)NULL);
 }
+
+void Controller::Wait(long waitMilli){
+    struct timespec ts = {0};
+	ts.tv_sec = 1;
+	ts.tv_nsec = 0;
+	nanosleep(&ts, (struct timespec *)NULL);
+
+}
+
+
+void Controller::TestSen(){
+    std::cout<<"get into con test\n";
+    int curTime;
+    for(int i=0;i<400;i++){
+        this->senLock->lock();
+        curTime = this->sensor->senData[0];
+        this->senLock->unlock();
+        std::cout<<curTime-this->preTime<<std::endl;
+        
+        this->preTime = curTime;
+        this->Wait(10);
+    }
+}
+
+
 Controller::Controller(Sensor *sensor,mutex *senLock)
 {
     this->sensor = sensor;
     this->senLock = senLock;
     std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
     
+    this->preTime = 0;
     //turn off all the valves and set start time
     for(int i=0;i<this->ValNum;i++){
         this->ValveList[i].SetStartTime(startTime);

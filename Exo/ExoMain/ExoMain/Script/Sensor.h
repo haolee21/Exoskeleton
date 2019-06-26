@@ -56,7 +56,7 @@ private:
 	char *curBuf;
 	mutex* senLock;
 	int curBufIndex;
-	
+	int preTime;
 
 	
 

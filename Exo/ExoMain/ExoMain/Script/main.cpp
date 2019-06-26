@@ -34,7 +34,7 @@ int main(void)
 	cout << "finish creating" << endl;
 	Controller con = Controller(&sensor,&SenLock);
 	//con.TestValve();
-	
+	con.TestSen();
 	for(int i=0;i<10;i++){
 		//ReadSenData(&sensor);
 		DelaySys(1);
