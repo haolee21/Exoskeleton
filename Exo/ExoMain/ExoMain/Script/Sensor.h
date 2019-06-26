@@ -18,8 +18,8 @@
 #include <mutex>
 using namespace std;
 const int NUMSEN = 9; //numSen
-const int DATALEN = NUMSEN*2+2+2;
-const int SIZEOFBUFFER = DATALEN*1000-10; //Watchout this value, I use this buffer twice to catch data, it has to be long enough
+const int DATALEN = NUMSEN*2+2+4;
+const int SIZEOFBUFFER = DATALEN*1000-10; 
 
 
 
@@ -58,7 +58,7 @@ private:
 	int curBufIndex;
 	
 
-	int dataFormat[9] = {7,4,4,4,4,4,4,4,4};	//indicate how many digits of measurements
+	
 
 	int serialPortConnect(char *portName);
 	void readSerialPort(int serialPort);

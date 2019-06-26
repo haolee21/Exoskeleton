@@ -47,6 +47,12 @@ void Sensor::Stop()
 	cout << "get into stop" << endl;
 	this->sw_senUpdate = false;
 	this->serialPortClose(this->serialDevId);
+	
+	//wait for 1 sec to avoid segmentation error
+	struct timespec ts2 = { 0 };
+	ts2.tv_sec = 1;
+	ts2.tv_nsec = 0; //10 us
+	nanosleep(&ts2, (struct timespec*)NULL);
 }
 void Sensor::senUpdate()
 {
@@ -56,8 +62,8 @@ void Sensor::senUpdate()
 		this->readSerialPort(this->serialDevId);
 		this->waitToSync(startTime);
 
-		std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
-		microsecs_t t_duration(std::chrono::duration_cast<microsecs_t>(end - startTime));
+		//std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+		//microsecs_t t_duration(std::chrono::duration_cast<microsecs_t>(end - startTime));
 		//cout << t_duration.count() << " us \n";
 	}
 	cout << "sensor ends" << endl;
@@ -157,7 +163,7 @@ void Sensor::readSerialPort(int serialPort)
 		this->curHead = this->curBuf;
 		
 		read(serialPort,this->curBuf,DATALEN);
-		std::cout<<"preload\n";
+		//std::cout<<"preload\n";
 		this->curBuf+=DATALEN;
 		this->curBufIndex+=DATALEN;
 	}
@@ -194,26 +200,26 @@ void Sensor::readSerialPort(int serialPort)
 		notGetHead = true;
 		this->curHead+=n_bytes;
 	}	
-	if(getFullData){
+	if(getFullData&&this->sw_senUpdate){
 		// for(int i=0;i<DATALEN;i++){
 		// 	std::cout<<this->curHead[i];
 		// }
 		this->senLock->lock();
-		this->senData[0] = (int)(((unsigned long)this->curHead[0]) + ((unsigned long)(this->curHead[1] << 8)));
-		this->senData[1] = (int)(this->curHead[2]) + (int)(this->curHead[3] << 8);
-		this->senData[2] = (int)(this->curHead[4]) + (int)(this->curHead[5] << 8);
-		this->senData[3] = (int)(this->curHead[6]) + (int)(this->curHead[7] << 8);
-		this->senData[4] = (int)(this->curHead[8]) + (int)(this->curHead[9] << 8);
-		this->senData[5] = (int)(this->curHead[10]) + (int)(this->curHead[11] << 8);
-		this->senData[6] = (int)(this->curHead[12]) + (int)(this->curHead[13] << 8);
-		this->senData[7] = (int)(this->curHead[14]) + (int)(this->curHead[15] << 8);
-		this->senData[8] = (int)(this->curHead[16]) + (int)(this->curHead[17] << 8);
-		this->senData[9] = (int)(this->curHead[18]) + (int)(this->curHead[19] << 8);
+		this->senData[0] = (int)(((unsigned long)this->curHead[0]) + ((unsigned long)(this->curHead[1] << 8))+((unsigned long)(this->curHead[2] << 16))+((unsigned long)(this->curHead[3] << 24)));
+		this->senData[1] = (int)(this->curHead[4]) + (int)(this->curHead[5] << 8);
+		this->senData[2] = (int)(this->curHead[6]) + (int)(this->curHead[7] << 8);
+		this->senData[3] = (int)(this->curHead[8]) + (int)(this->curHead[9] << 8);
+		this->senData[4] = (int)(this->curHead[10]) + (int)(this->curHead[11] << 8);
+		this->senData[5] = (int)(this->curHead[12]) + (int)(this->curHead[13] << 8);
+		this->senData[6] = (int)(this->curHead[14]) + (int)(this->curHead[15] << 8);
+		this->senData[7] = (int)(this->curHead[16]) + (int)(this->curHead[17] << 8);
+		this->senData[8] = (int)(this->curHead[18]) + (int)(this->curHead[19] << 8);
+		this->senData[9] = (int)(this->curHead[20]) + (int)(this->curHead[21] << 8);
 		this->senLock->unlock();
-		cout << "get data: ";
-		cout << this->senData[0] << ',' << this->senData[1] << ',' << this->senData[2] << ',' << this->senData[3] << ',';
-		cout << this->senData[4] << ',' << this->senData[5] << ',' << this->senData[6] << ',' << this->senData[7] << ',';
-		cout << this->senData[8] << ',' << this->senData[9] << std::endl;
+		// cout << "get data: ";
+		// cout << this->senData[0] << ',' << this->senData[1] << ',' << this->senData[2] << ',' << this->senData[3] << ',';
+		// cout << this->senData[4] << ',' << this->senData[5] << ',' << this->senData[6] << ',' << this->senData[7] << ',';
+		// cout << this->senData[8] << ',' << this->senData[9] << std::endl;
 	}
 
 	
@@ -238,6 +244,7 @@ void Sensor::waitToSync(std::chrono::system_clock::time_point startTime)
 }
 Sensor::~Sensor()
 {
+	
 	std::cout << "start to delete" << std::endl;
 	for (int i = 0; i < this->recIndex; i++)
 	{

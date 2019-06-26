@@ -80,17 +80,17 @@ void loop()
 	if (readyToSend)
 	{
 		// testSent is for testing the receiving end got correct data
-		testSent1++;
-		testSent2++;
-		if (testSent1 > 122)
-			testSent1 = 97;
-		if (testSent2 > 90)
-			testSent2 = 65;
+		// testSent1++;
+		// testSent2++;
+		// if (testSent1 > 122)
+		// 	testSent1 = 97;
+		// if (testSent2 > 90)
+		// 	testSent2 = 65;
 
 		*bufferPointer++ = '@';
-		curTime.timeVal = millis();
+		curTime.timeVal = micros();
 	
-		for (int sendIndex = 0; sendIndex < 2; sendIndex++)
+		for (int sendIndex = 0; sendIndex < 4; sendIndex++)
 		{
 			*bufferPointer++ = curTime.timeByte[sendIndex];
 			//*bufferPointer++ = testSent1;
@@ -124,7 +124,7 @@ void loop()
 		curIndex++; //This is index for moving average filter
 		if (curIndex == NUMSAMP)
 			curIndex = 0;
-		Serial.write(buffer, 22);
+		Serial.write(buffer, 24);
 		readyToSend = false;
 		bufferPointer = buffer;
 	}

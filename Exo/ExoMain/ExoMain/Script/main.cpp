@@ -63,13 +63,13 @@ int main(void)
 	// }
 
 	//only print time
-	int time0 = sensor.totSenRec[0][0];
-	for (int i=0;i<sensor.recIndex-1;i++){
-		std::cout<<sensor.totSenRec[i][0]-time0<<std::endl;
-		time0 = sensor.totSenRec[i][0];
-	}
-	std::cout<<"finish"<<std::endl;
+	// int time0 = sensor.totSenRec[0][0];
+	// for (int i=0;i<sensor.recIndex-1;i++){
+	// 	std::cout<<sensor.totSenRec[i][0]-time0<<std::endl;
+	// 	time0 = sensor.totSenRec[i][0];
+	// }
+	// std::cout<<"finish"<<std::endl;
 	
-	
+	DelaySys(5);
 	return 0;
 }
