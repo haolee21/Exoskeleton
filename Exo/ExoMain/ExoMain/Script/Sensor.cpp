@@ -1,6 +1,7 @@
 #include "Sensor.h"
-typedef std::chrono::duration<long, std::nano> nanosecs_t;
 
+typedef std::chrono::duration<long, std::nano> nanosecs_t;
+typedef std::chrono::duration<int, std::micro> microsecs_t;
 Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 {
 	cout << "creating" << endl;
@@ -13,7 +14,9 @@ Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 		//initialize data receiving buffer
 		this->init_buffer = true; //true if we need to init
 		this->senLock = senLock;
-
+		this->curBufIndex = 0;
+		std::cout << "set curBufIndex" << std::endl;
+		std::cout << this->curBufIndex << std::endl;
 		//initialize the recIndex
 		this->recIndex = 0;
 		for (int i = 0; i < recLength; i++)
@@ -21,6 +24,10 @@ Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 
 		if (this->serialDevId == -1)
 			cout << "Sensor init failed" << endl;
+
+		this->curBuf = this->senBuffer;
+		this->curHead = this->curBuf;
+		this->init_buffer = false;
 	}
 	else
 		cout << "Sensor already created" << endl;
@@ -50,8 +57,8 @@ void Sensor::senUpdate()
 		this->waitToSync(startTime);
 
 		std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
-		nanosecs_t t_duration(std::chrono::duration_cast<nanosecs_t>(end - startTime));
-		cout << t_duration.count() << " ns \n";
+		microsecs_t t_duration(std::chrono::duration_cast<microsecs_t>(end - startTime));
+		//cout << t_duration.count() << " us \n";
 	}
 	cout << "sensor ends" << endl;
 }
@@ -94,7 +101,7 @@ int Sensor::serialPortConnect(char *portName)
 	// tty.c_oflag &= ~ONOEOT; // Prevent removal of C-d chars (0x004) in output (NOT PRESENT ON LINUX)
 
 	tty.c_cc[VTIME] = 0; // Wait for up to 1s (10 deciseconds), returning as soon as any data is received.
-	tty.c_cc[VMIN] = 0;
+	tty.c_cc[VMIN] = 22;
 
 	// Set in/out baud rate to be 115200
 	cfsetispeed(&tty, B1000000);
@@ -113,6 +120,7 @@ int Sensor::serialPortConnect(char *portName)
 	// Read bytes. The behaviour of read() (e.g. does it block?,
 	// how long does it block for?) depends on the configuration
 	// settings above, specifically VMIN and VTIME
+
 	int num_bytes = read(serial_port, &this->senBuffer, sizeof(this->senBuffer));
 
 	// n is the number of bytes read. n may be 0 if no bytes were received, and can also be -1 to signal an error.
@@ -129,70 +137,90 @@ int Sensor::serialPortConnect(char *portName)
 
 void Sensor::readSerialPort(int serialPort)
 {
+
 	// This function reads signals, put into buffer, and update the senData once it complete the data receiving
 	bool getFullData = false; //each time we must retrieve a full data
-	bool foundHead = false;
-
-	char *curHead = this->tempSen;
-	char *currentRead = this->senBuffer;
-
-	while (!getFullData)
-	{
-		std::cout<<&this->senBuffer<<std::endl;
-		int n_bytes = read(serialPort, &this->senBuffer, sizeof(senBuffer)); //the last one is end
-		std::cout<<typeid(sizeof(senBuffer)).name()<<std::endl;
-		//clear the initial data in raspberry pi's serial port, they do not make sense
-		if (this->init_buffer)
-		{
-			this->init_buffer = false;
-			memset(&this->senBuffer, '\0', sizeof(this->senBuffer));
-			continue;
-		}
-		if (n_bytes < 0)
-			continue;
-		//first find the beginning of current data
-		std::chrono::system_clock::time_point waitData_time = std::chrono::system_clock::now();
-		for (int i = 0; i < n_bytes; i++)
-		{
-			if (!foundHead)
-			{
-				if (*currentRead++ == '@')
-				{ //use ++ is because later we can directly use currentRead[0] for time
-					if (*(currentRead + DATALEN) == '\n')
-					{
-						getFullData = true;
-					}
-					break;
-				}
-			}
-		}
-		std::chrono::system_clock::time_point getData_time = std::chrono::system_clock::now();
-		nanosecs_t t_duration(std::chrono::duration_cast<nanosecs_t>(getData_time - waitData_time));
-		std::cout << "we wait for " << t_duration.count() << std::endl;
+	bool notGetHead = true;
+	if(!this->init_buffer){
+		this->curHead = this->curBuf;
+		int n_bytes = read(serialPort,this->curBuf,DATALEN);
+		this->curBuf+=DATALEN;
+		this->curBufIndex+=DATALEN;
+		this->init_buffer = true;
 	}
 
-	// The measurements transform into array and prints
-	this->senLock->lock();
-	//std::lock_guard<std::mutex> lock(*this->senLock);
+	// make sure there are enough memory for buffer
+	if ((this->curBufIndex + DATALEN) >= SIZEOFBUFFER){
+		
+		this->curBuf = this->senBuffer;
+		this->curBufIndex = 0;
+		this->curHead = this->curBuf;
+		
+		read(serialPort,this->curBuf,DATALEN);
+		std::cout<<"preload\n";
+		this->curBuf+=DATALEN;
+		this->curBufIndex+=DATALEN;
+	}
+		
+	//std::cout<<static_cast<const void*> (this->curBuf)<<std::endl; //how you print the char array's address
+	//std::chrono::system_clock::time_point start_time = std::chrono::system_clock::now();
+	int n_bytes = read(serialPort,this->curBuf,DATALEN);
+	//std::chrono::system_clock::time_point end_time = std::chrono::system_clock::now();
+	//microsecs_t t_duration(std::chrono::duration_cast<microsecs_t>(end_time - start_time));
+	//std::cout << "we wait for " << t_duration.count() << std::endl;
 
-	// transform time data
-	this->senData[0] = (int)(((unsigned long)currentRead[0]) + ((unsigned long)(currentRead[1] << 8)));
-	this->senData[1] = (int)(currentRead[2]) + (int)(currentRead[3] << 8);
-	this->senData[2] = (int)(currentRead[4]) + (int)(currentRead[5] << 8);
-	this->senData[3] = (int)(currentRead[6]) + (int)(currentRead[7] << 8);
-	this->senData[4] = (int)(currentRead[8]) + (int)(currentRead[9] << 8);
-	this->senData[5] = (int)(currentRead[10]) + (int)(currentRead[11] << 8);
-	this->senData[6] = (int)(currentRead[12]) + (int)(currentRead[13] << 8);
-	this->senData[7] = (int)(currentRead[14]) + (int)(currentRead[15] << 8);
-	this->senData[8] = (int)(currentRead[16]) + (int)(currentRead[17] << 8);
-	this->senData[9] = (int)(currentRead[18]) + (int)(currentRead[19] << 8);
-	this->senLock->unlock();
-	cout << "get data: ";
-	cout << this->senData[0] << ',' << this->senData[1] << ',' << this->senData[2] << ',' << this->senData[3] << ',';
-	cout << this->senData[4] << ',' << this->senData[5] << ',' << this->senData[6] << ',' << this->senData[7] << ',';
-	cout << this->senData[8] << ',' << this->senData[9] << std::endl;
+	//after received data, curBuf and curBufIndex all advanced
+	this->curBuf+=DATALEN;
+	this->curBufIndex+=DATALEN;
+	//std::chrono::system_clock::time_point start_time = std::chrono::system_clock::now();
+	while(notGetHead){
+		if(*this->curHead=='@'){
+			//std::cout<<"found head\n";
+			notGetHead = false;
+		}
+		else
+		{
+			this->curHead++;
+		}
+		
+	}
+	if(*(this->curHead+DATALEN-1)=='\n')
+	{
+		//std::cout<<"we got tail\n";
+		this->curHead++;
+		getFullData = true;
+	}
+	else{
+		notGetHead = true;
+		this->curHead+=n_bytes;
+	}	
+	if(getFullData){
+		// for(int i=0;i<DATALEN;i++){
+		// 	std::cout<<this->curHead[i];
+		// }
+		this->senLock->lock();
+		this->senData[0] = (int)(((unsigned long)this->curHead[0]) + ((unsigned long)(this->curHead[1] << 8)));
+		this->senData[1] = (int)(this->curHead[2]) + (int)(this->curHead[3] << 8);
+		this->senData[2] = (int)(this->curHead[4]) + (int)(this->curHead[5] << 8);
+		this->senData[3] = (int)(this->curHead[6]) + (int)(this->curHead[7] << 8);
+		this->senData[4] = (int)(this->curHead[8]) + (int)(this->curHead[9] << 8);
+		this->senData[5] = (int)(this->curHead[10]) + (int)(this->curHead[11] << 8);
+		this->senData[6] = (int)(this->curHead[12]) + (int)(this->curHead[13] << 8);
+		this->senData[7] = (int)(this->curHead[14]) + (int)(this->curHead[15] << 8);
+		this->senData[8] = (int)(this->curHead[16]) + (int)(this->curHead[17] << 8);
+		this->senData[9] = (int)(this->curHead[18]) + (int)(this->curHead[19] << 8);
+		this->senLock->unlock();
+		cout << "get data: ";
+		cout << this->senData[0] << ',' << this->senData[1] << ',' << this->senData[2] << ',' << this->senData[3] << ',';
+		cout << this->senData[4] << ',' << this->senData[5] << ',' << this->senData[6] << ',' << this->senData[7] << ',';
+		cout << this->senData[8] << ',' << this->senData[9] << std::endl;
+	}
 
-	this->recIndex++;
+	
+	// // // transform time data
+	
+
+	// this->recIndex++;
 }
 void Sensor::serialPortClose(int serial_port)
 {
@@ -205,7 +233,7 @@ void Sensor::waitToSync(std::chrono::system_clock::time_point startTime)
 	nanosecs_t t_duration(std::chrono::duration_cast<nanosecs_t>(nowTime - startTime));
 	struct timespec ts = {0};
 	ts.tv_sec = 0;
-	ts.tv_nsec = this->sampT - t_duration.count(); //10 us
+	ts.tv_nsec = this->sampT - t_duration.count(); 
 	nanosleep(&ts, (struct timespec *)NULL);
 }
 Sensor::~Sensor()

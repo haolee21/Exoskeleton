@@ -38,8 +38,8 @@ int testSent2;
 void setup()
 {
 
-	testSent1 = 900;
-	testSent2 = 900;
+	testSent1 = 97;
+	testSent2 = 65;
 	curIndex = 0;
 	bufferPointer = buffer;
 	Serial.begin(1000000, SERIAL_8E1);
@@ -80,30 +80,32 @@ void loop()
 	if (readyToSend)
 	{
 		// testSent is for testing the receiving end got correct data
-		// testSent1++;
-		// testSent2++;
-		// if (testSent1 > 1024)
-		// 	testSent1 = 900;
-		// if (testSent2 > 1024)
-		// 	testSent2 = 900;
+		testSent1++;
+		testSent2++;
+		if (testSent1 > 122)
+			testSent1 = 97;
+		if (testSent2 > 90)
+			testSent2 = 65;
 
 		*bufferPointer++ = '@';
 		curTime.timeVal = millis();
-		//curTime.timeVal = (unsigned long)testSent1;
+	
 		for (int sendIndex = 0; sendIndex < 2; sendIndex++)
 		{
 			*bufferPointer++ = curTime.timeByte[sendIndex];
+			//*bufferPointer++ = testSent1;
 		}
 		for (int senIndex = 0; senIndex < NUMSEN; senIndex++)
 		{
 			senSum[senIndex] = senSum[senIndex] - senData[senIndex][curIndex];
 			senData[senIndex][curIndex] = analogRead(sensorArray[senIndex]);
-			// senData[senIndex][curIndex] = testSent2;
+			
 			senSum[senIndex] = senSum[senIndex] + senData[senIndex][curIndex];
 			curSen.senVal = senSum[senIndex] >> SAMPDIV;
 			for (int sendIndex = 0; sendIndex < 2; sendIndex++)
 			{
 				*bufferPointer++ = curSen.senByte[sendIndex];
+				//*bufferPointer++ = testSent2;
 			}
 		}
 		*bufferPointer++ = '\n';

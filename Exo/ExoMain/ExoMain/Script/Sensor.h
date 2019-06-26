@@ -18,9 +18,10 @@
 #include <mutex>
 using namespace std;
 const int NUMSEN = 9; //numSen
-const int SIZEOFBUFFER = 512; //Watchout this value, I use this buffer twice to catch data, it has to be long enough
-const int BUFFERSWITCH = 150;
-const int DATALEN = NUMSEN*2+2;
+const int DATALEN = NUMSEN*2+2+2;
+const int SIZEOFBUFFER = DATALEN*1000-10; //Watchout this value, I use this buffer twice to catch data, it has to be long enough
+
+
 
 const int recLength = 240000; //This is the pre-allocate memory for recording sensed data
 
@@ -51,8 +52,10 @@ private:
 	bool init_buffer;
 	char senBuffer[SIZEOFBUFFER];
 	char tempSen[DATALEN];
+	char *curHead;
+	char *curBuf;
 	mutex* senLock;
-	
+	int curBufIndex;
 	
 
 	int dataFormat[9] = {7,4,4,4,4,4,4,4,4};	//indicate how many digits of measurements
