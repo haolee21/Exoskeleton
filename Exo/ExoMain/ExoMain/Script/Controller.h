@@ -81,6 +81,7 @@ public:
     ~Controller();
     void TestValve();
     void TestSen();
+    void TestMeasurement();
 };
 
 

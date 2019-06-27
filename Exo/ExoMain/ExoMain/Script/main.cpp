@@ -11,16 +11,13 @@
 mutex SenLock;
 void DelaySys(int waitTime) {
 	struct timespec ts2 = { 0 };
-	ts2.tv_sec = waitTime;
-	ts2.tv_nsec = 0; //10 us
+	ts2.tv_sec = 0;
+	ts2.tv_nsec = 10000000; //10 us
 	nanosleep(&ts2, (struct timespec*)NULL);
 }
 void ReadSenData(Sensor *sensor){
 	std::lock_guard<std::mutex> lock(SenLock);
-	for (int i=0;i<5;i++){
-		std::cout<<sensor->senData[i];
-		std::cout<<",";
-	}
+	std::cout<<"main"<<sensor->senData[0];
 	std::cout<<endl;
 }
 
@@ -28,13 +25,15 @@ using namespace std;
 int main(void)
 {
 	wiringPiSetupSys(); //setup the system ports, timer, etc. 
+
+	
 	char portName[] = "/dev/ttyACM0";
 	Sensor sensor = Sensor(portName, 1600000L,&SenLock);
 	sensor.Start();
 	cout << "finish creating" << endl;
 	Controller con = Controller(&sensor,&SenLock);
 	//con.TestValve();
-	con.TestSen();
+	con.TestMeasurement();
 	for(int i=0;i<10;i++){
 		//ReadSenData(&sensor);
 		DelaySys(1);
@@ -69,7 +68,7 @@ int main(void)
 	// 	time0 = sensor.totSenRec[i][0];
 	// }
 	// std::cout<<"finish"<<std::endl;
-	
+
 	DelaySys(5);
 	return 0;
 }

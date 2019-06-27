@@ -8,6 +8,8 @@ Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 	if (!this->is_create)
 	{
 
+		
+		cout<<senData<<endl;
 		cout << "Create Sensor" << endl;
 		this->serialDevId = this->serialPortConnect(portName);
 		this->sampT = sampT;
@@ -18,12 +20,12 @@ Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 
 		this->preTime =0; //for testing purpose
 
-		std::cout << "set curBufIndex" << std::endl;
-		std::cout << this->curBufIndex << std::endl;
-		//initialize the recIndex
-		this->recIndex = 0;
-		for (int i = 0; i < recLength; i++)
-			this->totSenRec[i] = new int[NUMSEN];
+	
+		// //initialize the recIndex
+		// this->recIndex = 0;
+		// for (int i = 0; i < recLength; i++)
+		// 	this->totSenRec[i] = new int[NUMSEN];
+
 
 		if (this->serialDevId == -1)
 			cout << "Sensor init failed" << endl;
@@ -39,9 +41,9 @@ Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 void Sensor::Start()
 {
 	this->sw_senUpdate = true;
-	memset(&this->senBuffer, '\0', sizeof(this->senBuffer));
-	memset(&this->senData, 0, sizeof(this->senData));
-	printf("current senBuffer: %s\n", this->senBuffer);
+	memset(&this->senBuffer, '\0', SIZEOFBUFFER);
+	memset(&this->senData, 0, DATALEN+1);
+	//printf("current senBuffer: %s\n", this->senBuffer);
 	this->th_SenUpdate = new thread(&Sensor::senUpdate, this);
 	cout << "initial receiving thread" << endl;
 }
@@ -204,10 +206,8 @@ void Sensor::readSerialPort(int serialPort)
 		this->curHead+=n_bytes;
 	}	
 	if(getFullData&&this->sw_senUpdate){
-		// for(int i=0;i<DATALEN;i++){
-		// 	std::cout<<this->curHead[i];
-		// }
-		this->senLock->lock();
+		
+		std::lock_guard<std::mutex> lock(*this->senLock);
 		this->senData[0] = (int)(((unsigned long)this->curHead[0]) + ((unsigned long)(this->curHead[1] << 8))+((unsigned long)(this->curHead[2] << 16))+((unsigned long)(this->curHead[3] << 24)));
 		this->senData[1] = (int)(this->curHead[4]) + (int)(this->curHead[5] << 8);
 		this->senData[2] = (int)(this->curHead[6]) + (int)(this->curHead[7] << 8);
@@ -218,10 +218,10 @@ void Sensor::readSerialPort(int serialPort)
 		this->senData[7] = (int)(this->curHead[16]) + (int)(this->curHead[17] << 8);
 		this->senData[8] = (int)(this->curHead[18]) + (int)(this->curHead[19] << 8);
 		this->senData[9] = (int)(this->curHead[20]) + (int)(this->curHead[21] << 8);
-		this->senLock->unlock();
 		
-		// std::cout<<senData[0]-this->preTime<<std::endl;  //this is for checking the sensing time gap is correct
-		// this->preTime = this->senData[0];
+		
+		//std::cout<<this->senData[0]-this->preTime<<std::endl;  //this is for checking the sensing time gap is correct
+		//this->preTime = this->senData[0];
 		// cout << "get data: ";
 		// cout << this->senData[0] << ',' << this->senData[1] << ',' << this->senData[2] << ',' << this->senData[3] << ',';
 		// cout << this->senData[4] << ',' << this->senData[5] << ',' << this->senData[6] << ',' << this->senData[7] << ',';
@@ -252,9 +252,9 @@ Sensor::~Sensor()
 {
 	
 	std::cout << "start to delete" << std::endl;
-	for (int i = 0; i < this->recIndex; i++)
-	{
-		delete[] this->totSenRec[i];
-	}
-	delete[] this->totSenRec;
+	// for (int i = 0; i < this->recIndex; i++)
+	// {
+	// 	delete[] this->totSenRec[i];
+	// }
+	// delete[] this->totSenRec;
 }
