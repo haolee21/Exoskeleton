@@ -1,6 +1,29 @@
 #ifndef SENSOR_H
 #define SENSOR_H
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+#include <sched.h>
+#include <sys/mman.h>
+#include <string.h>
+#include <pthread.h>
+#include <errno.h>
+#include <iostream>
+#include <fcntl.h>
+#include <sched.h>
+#include <sys/io.h>
+#include <string.h>
+#include <signal.h>
+
+#include <malloc.h>
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <chrono>
+#include <sys/ioctl.h>
+
 #include <thread>
 #include<iostream>
 #include <wiringSerial.h>
@@ -57,13 +80,14 @@ private:
 	mutex* senLock;
 	int curBufIndex;
 	int preTime;
-
-	
-
 	int serialPortConnect(char *portName);
 	void readSerialPort(int serialPort);
 	void serialPortClose(int serial_port);
-	void waitToSync(std::chrono::system_clock::time_point);
+	void waitToSync(std::chrono::system_clock::time_point,long extraWait);
+
+	//functions that Ji used
+	
+	void tsnorm(struct timespec *ts);
 };
 
 

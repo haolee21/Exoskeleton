@@ -1,5 +1,24 @@
 #include "Sensor.h"
 #include "Controller.h"
+
+#define MY_PRIORITY (49)             /* we use 49 as the PRREMPT_RT use 50 \
+                                        as the priority of kernel tasklets \
+                                        and interrupt handler by default */
+#define POOLSIZE (200 * 1024 * 1024) // 200MB
+#define MAX_SAFE_STACK (100 * 1024)  /* The maximum stack size which is \
+                                      guranteed safe to access without  \
+                                      faulting */
+
+#define NSEC_PER_SEC (1000000000) // The number of nsecs per sec.
+
+#define NSEC 1
+#define USEC (1000 * NSEC)
+#define MSEC (1000 * USEC)
+#define SEC (1000 * MSEC)
+
+long int ms_cnt = 0;
+
+
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
@@ -57,8 +76,18 @@ void Sensor::Stop()
 	ts2.tv_nsec = 0; //10 us
 	nanosleep(&ts2, (struct timespec *)NULL);
 }
+
+void Sensor::tsnorm(struct timespec *ts)
+{
+    while (ts->tv_nsec >= NSEC_PER_SEC)
+    {
+        ts->tv_nsec -= NSEC_PER_SEC;
+        ts->tv_sec++;
+    }
+}
 void Sensor::senUpdate()
 {
+	long extraWait = 0L;
 	std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
 	int conLoopCount = 0;
 	Controller con = Controller(startTime);
@@ -66,14 +95,26 @@ void Sensor::senUpdate()
 	bool testState = true;
 	std::chrono::system_clock::time_point sendTest;
 	std::chrono::system_clock::time_point senseTest;
+	
+
+	struct timespec t;
+    struct sched_param param;
+    long int interval = this->sampT*USEC;
+    long int cnt = 0;
+    long int cnt1 = 0;
+
+	clock_gettime(CLOCK_MONOTONIC, &t);
+
+	serialFlush(this->serialDevId);
+	t.tv_nsec += 0 * MSEC;
+    this->tsnorm(&t);
 	while (this->sw_senUpdate)
 	{
-		startTime = std::chrono::system_clock::now();
+		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+		//startTime = std::chrono::system_clock::now();
 		this->readSerialPort(this->serialDevId);
-		std::chrono::system_clock::time_point endReadTime = std::chrono::system_clock::now();
-		nanosecs_t t_duration1(std::chrono::duration_cast<nanosecs_t>(endReadTime - startTime));
-		std::cout<<t_duration1.count()<<std::endl;
-		if (conLoopCount++ == 5)
+
+		if (conLoopCount++ == 1)
 		{
 			conLoopCount = 0;
 			if (testSen)
@@ -81,11 +122,11 @@ void Sensor::senUpdate()
 				testSen = false;
 				sendTest = std::chrono::system_clock::now();
 				con.SendTestMeasurement(testState);
+				//std::cout << "trigger\n";
 			}
 		}
 		else
 		{
-
 			if (con.WaitTestMeasurement(senseTest, testState, this->senData))
 			{
 				testSen = true;
@@ -93,11 +134,38 @@ void Sensor::senUpdate()
 				std::cout << "we wait for " << t_duration.count() << std::endl;
 			}
 		}
-		this->waitToSync(startTime);
+		
+		std::chrono::system_clock::time_point endReadTime = std::chrono::system_clock::now();
+		nanosecs_t t_duration1(std::chrono::duration_cast<nanosecs_t>(endReadTime - startTime));
+		startTime = endReadTime;
+		
+		//std::cout << "real " << t_duration1.count() << std::endl;
+		try
+		{
+			std::lock_guard<std::mutex> lock(*this->senLock);
+			//std::cout << this->senData[0] - this->preTime << std::endl;
+		}
+		catch (std::logic_error &)
+		{
+			std::cout<< "[exception caught]\n";
+		}
+		this->preTime = this->senData[0];
 
-		//std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
-		//microsecs_t t_duration(std::chrono::duration_cast<microsecs_t>(end - startTime));
-		//cout << t_duration.count() << " us \n";
+
+		// calculate next shot
+        t.tv_nsec += interval;
+
+        this->tsnorm(&t);
+
+        if (cnt++ >= 1000)
+        {
+            //printf("%ld\n", cnt1);
+            cnt = 1;
+        }
+        ms_cnt++;
+        cnt1++;
+
+
 	}
 	cout << "sensor ends" << endl;
 }
@@ -140,7 +208,7 @@ int Sensor::serialPortConnect(char *portName)
 	// tty.c_oflag &= ~ONOEOT; // Prevent removal of C-d chars (0x004) in output (NOT PRESENT ON LINUX)
 
 	tty.c_cc[VTIME] = 0; // Wait for up to 1s (10 deciseconds), returning as soon as any data is received.
-	tty.c_cc[VMIN] = 22;
+	tty.c_cc[VMIN] = 24;
 
 	// Set in/out baud rate to be 115200
 	cfsetispeed(&tty, B1000000);
@@ -235,12 +303,12 @@ void Sensor::readSerialPort(int serialPort)
 	else
 	{
 		notGetHead = true;
-		this->curHead += n_bytes;
+		this->curHead += 1;
 	}
 	if (getFullData && this->sw_senUpdate)
 	{
 
-		//std::lock_guard<std::mutex> lock(*this->senLock);
+		std::lock_guard<std::mutex> lock(*this->senLock);
 		this->senData[0] = (int)(((unsigned long)this->curHead[0]) + ((unsigned long)(this->curHead[1] << 8)) + ((unsigned long)(this->curHead[2] << 16)) + ((unsigned long)(this->curHead[3] << 24)));
 		this->senData[1] = (int)(this->curHead[4]) + (int)(this->curHead[5] << 8);
 		this->senData[2] = (int)(this->curHead[6]) + (int)(this->curHead[7] << 8);
@@ -269,13 +337,22 @@ void Sensor::serialPortClose(int serial_port)
 	close(serial_port);
 }
 
-void Sensor::waitToSync(std::chrono::system_clock::time_point startTime)
+void Sensor::waitToSync(std::chrono::system_clock::time_point startTime, long extraWait)
 {
+	if (extraWait < 0)
+	{
+		extraWait = 0L;
+	}
+	else
+	{
+		extraWait += 1000L;
+	}
 	std::chrono::system_clock::time_point nowTime = std::chrono::system_clock::now();
 	nanosecs_t t_duration(std::chrono::duration_cast<nanosecs_t>(nowTime - startTime));
+	long waitTime = (this->sampT - t_duration.count() - extraWait);
 	struct timespec ts = {0};
 	ts.tv_sec = 0;
-	ts.tv_nsec = this->sampT - t_duration.count();
+	ts.tv_nsec = waitTime;
 	nanosleep(&ts, (struct timespec *)NULL);
 }
 Sensor::~Sensor()
