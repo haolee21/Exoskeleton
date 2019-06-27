@@ -105,7 +105,7 @@ void Sensor::senUpdate()
 
 	clock_gettime(CLOCK_MONOTONIC, &t);
 
-	serialFlush(this->serialDevId);
+	
 	t.tv_nsec += 0 * MSEC;
     this->tsnorm(&t);
 	while (this->sw_senUpdate)
@@ -303,7 +303,10 @@ void Sensor::readSerialPort(int serialPort)
 	else
 	{
 		notGetHead = true;
-		this->curHead += 1;
+		this->curBuf = this->senBuffer;
+		this->curBufIndex = 0;
+		this->curHead = this->curBuf;
+		serialFlush(this->serialDevId);
 	}
 	if (getFullData && this->sw_senUpdate)
 	{
@@ -337,24 +340,7 @@ void Sensor::serialPortClose(int serial_port)
 	close(serial_port);
 }
 
-void Sensor::waitToSync(std::chrono::system_clock::time_point startTime, long extraWait)
-{
-	if (extraWait < 0)
-	{
-		extraWait = 0L;
-	}
-	else
-	{
-		extraWait += 1000L;
-	}
-	std::chrono::system_clock::time_point nowTime = std::chrono::system_clock::now();
-	nanosecs_t t_duration(std::chrono::duration_cast<nanosecs_t>(nowTime - startTime));
-	long waitTime = (this->sampT - t_duration.count() - extraWait);
-	struct timespec ts = {0};
-	ts.tv_sec = 0;
-	ts.tv_nsec = waitTime;
-	nanosleep(&ts, (struct timespec *)NULL);
-}
+
 Sensor::~Sensor()
 {
 
