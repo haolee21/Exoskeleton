@@ -31,10 +31,10 @@ int main(void)
 	Sensor sensor = Sensor(portName, 1600000L,&SenLock);
 	sensor.Start();
 	cout << "finish creating" << endl;
-	Controller con = Controller(&sensor,&SenLock);
+	//Controller con = Controller(&sensor,&SenLock);
 	//con.TestValve();
-	con.TestMeasurement();
-	for(int i=0;i<10;i++){
+	
+	for(int i=0;i<5000;i++){
 		//ReadSenData(&sensor);
 		DelaySys(1);
 	}
