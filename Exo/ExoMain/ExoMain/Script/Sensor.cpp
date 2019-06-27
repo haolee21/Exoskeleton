@@ -108,12 +108,11 @@ void Sensor::senUpdate()
 	
 	t.tv_nsec += 0 * MSEC;
     this->tsnorm(&t);
+	serialFlush(this->serialDevId);
 	while (this->sw_senUpdate)
 	{
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
-		//startTime = std::chrono::system_clock::now();
 		this->readSerialPort(this->serialDevId);
-
 		if (conLoopCount++ == 1)
 		{
 			conLoopCount = 0;
@@ -131,7 +130,7 @@ void Sensor::senUpdate()
 			{
 				testSen = true;
 				millisecs_t t_duration(std::chrono::duration_cast<millisecs_t>(senseTest - sendTest));
-				std::cout << "we wait for " << t_duration.count() << std::endl;
+				//std::cout << "we wait for " << t_duration.count() << std::endl;
 			}
 		}
 		
@@ -139,11 +138,11 @@ void Sensor::senUpdate()
 		nanosecs_t t_duration1(std::chrono::duration_cast<nanosecs_t>(endReadTime - startTime));
 		startTime = endReadTime;
 		
-		//std::cout << "real " << t_duration1.count() << std::endl;
+		std::cout << "real " << t_duration1.count() << std::endl;
 		try
 		{
 			std::lock_guard<std::mutex> lock(*this->senLock);
-			//std::cout << this->senData[0] - this->preTime << std::endl;
+			std::cout << this->senData[0] - this->preTime << std::endl;
 		}
 		catch (std::logic_error &)
 		{
@@ -208,7 +207,7 @@ int Sensor::serialPortConnect(char *portName)
 	// tty.c_oflag &= ~ONOEOT; // Prevent removal of C-d chars (0x004) in output (NOT PRESENT ON LINUX)
 
 	tty.c_cc[VTIME] = 0; // Wait for up to 1s (10 deciseconds), returning as soon as any data is received.
-	tty.c_cc[VMIN] = 24;
+	tty.c_cc[VMIN] = 0;
 
 	// Set in/out baud rate to be 115200
 	cfsetispeed(&tty, B1000000);
@@ -274,6 +273,7 @@ void Sensor::readSerialPort(int serialPort)
 	//std::cout<<static_cast<const void*> (this->curBuf)<<std::endl; //how you print the char array's address
 	//std::chrono::system_clock::time_point start_time = std::chrono::system_clock::now();
 	int n_bytes = read(serialPort, this->curBuf, DATALEN);
+	//std::cout<<"read serial port\n";
 	//std::chrono::system_clock::time_point end_time = std::chrono::system_clock::now();
 	//microsecs_t t_duration(std::chrono::duration_cast<microsecs_t>(end_time - start_time));
 	//std::cout << "we wait for " << t_duration.count() << std::endl;
