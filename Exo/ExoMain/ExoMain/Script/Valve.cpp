@@ -7,7 +7,7 @@
 void Valve::On(){
     std::chrono::system_clock::time_point curTime = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed = curTime - this->startTime;
-    std::cout<<"valve on"<<std::endl;
+    //std::cout<<"valve on"<<std::endl;
     digitalWrite(this->valveId,HIGH);
     this->valCondRec[this->recIndex] = true;
     this->valTimeRec[this->recIndex]=elapsed.count();
@@ -16,7 +16,7 @@ void Valve::On(){
 void Valve::Off(){
     std::chrono::system_clock::time_point curTime = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed = curTime - this->startTime;
-    std::cout<<"valve off"<<std::endl;
+    //std::cout<<"valve off"<<std::endl;
     digitalWrite(this->valveId,LOW);
     this->valCondRec[this->recIndex] = false;
     this->valTimeRec[this->recIndex] = elapsed.count();

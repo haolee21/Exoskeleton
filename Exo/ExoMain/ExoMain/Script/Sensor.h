@@ -1,6 +1,29 @@
 #ifndef SENSOR_H
 #define SENSOR_H
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+#include <sched.h>
+#include <sys/mman.h>
+#include <string.h>
+#include <pthread.h>
+#include <errno.h>
+#include <iostream>
+#include <fcntl.h>
+#include <sched.h>
+#include <sys/io.h>
+#include <string.h>
+#include <signal.h>
+
+#include <malloc.h>
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <chrono>
+#include <sys/ioctl.h>
+
 #include <thread>
 #include<iostream>
 #include <wiringSerial.h>
@@ -17,22 +40,23 @@
 #include <unistd.h> // write(), read(), close()
 #include <mutex>
 using namespace std;
-const int NUMSEN = 9; //numSen+time
-const int SIZEOFBUFFER = 512; //Watchout this value, I use this buffer twice to catch data, it has to be long enough
-const int BUFFERSWITCH = 150;
-const int DATALEN = 43;
+const int NUMSEN = 9; //numSen
+const int DATALEN = NUMSEN*2+2+4;
+const int SIZEOFBUFFER = DATALEN*1000; 
+
+
 
 const int recLength = 240000; //This is the pre-allocate memory for recording sensed data
 
 class Sensor
 {
 public:
-	Sensor(char *port,long sampTmilli,mutex* senLock); //sampT is in millisecond
+	Sensor(char *port,long sampTmilli,mutex* senLock); //sampT is in milli
 	~Sensor();
 	
 	void Start();
 	void Stop();
-	int senData[NUMSEN]; //data get from ADC
+	int senData[NUMSEN+1]; //data get from ADC
 	thread *th_SenUpdate;
 
 	//create array to storage sensing data
@@ -48,19 +72,28 @@ private:
 	long sampT;
 	
 	//variables for receiving data
-	bool init_buffer;
+
 	char senBuffer[SIZEOFBUFFER];
-	int tempSen[DATALEN];
+	char tempSen[DATALEN];
+	char *curHead;
+	char *curBuf;
+	int curBufIndex;
+	bool noHead;
+	int dataCollect;
+
+
+
 	mutex* senLock;
 	
-	
-
-	int dataFormat[9] = {7,4,4,4,4,4,4,4,4};	//indicate how many digits of measurements
-
+	int preTime;
 	int serialPortConnect(char *portName);
 	void readSerialPort(int serialPort);
 	void serialPortClose(int serial_port);
-	void waitToSync();
+	void waitToSync(std::chrono::system_clock::time_point,long extraWait);
+
+	//functions that Ji used
+	
+	void tsnorm(struct timespec *ts);
 };
 
 
