@@ -42,7 +42,7 @@
 using namespace std;
 const int NUMSEN = 9; //numSen
 const int DATALEN = NUMSEN*2+2+4;
-const int SIZEOFBUFFER = DATALEN*1000+1; 
+const int SIZEOFBUFFER = DATALEN*1000; 
 
 
 
@@ -72,13 +72,19 @@ private:
 	long sampT;
 	
 	//variables for receiving data
-	bool init_buffer;
+
 	char senBuffer[SIZEOFBUFFER];
 	char tempSen[DATALEN];
 	char *curHead;
 	char *curBuf;
-	mutex* senLock;
 	int curBufIndex;
+	bool noHead;
+	int dataCollect;
+
+
+
+	mutex* senLock;
+	
 	int preTime;
 	int serialPortConnect(char *portName);
 	void readSerialPort(int serialPort);

@@ -28,7 +28,7 @@ int main(void)
 
 	
 	char portName[] = "/dev/ttyACM0";
-	Sensor sensor = Sensor(portName, 2000L,&SenLock);
+	Sensor sensor = Sensor(portName, 1600L,&SenLock);
 	sensor.Start();
 	cout << "finish creating" << endl;
 	//Controller con = Controller(&sensor,&SenLock);
