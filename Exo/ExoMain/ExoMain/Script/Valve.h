@@ -1,6 +1,6 @@
 #include <string>
 #include <mutex>
-#include "Sensor.h"
+
 #include <chrono>
 #include<ctime> //this timer
 using namespace std;
@@ -24,9 +24,9 @@ public:
     // We record the time difference 
     // The size of the array is too big to only use the memory on stack, we must allocate it on heap
     // Need to delete the array when valve object is destoried
-    double *valTimeRec = new double[recLength];
-    int recIndex;
-    bool *valCondRec=new bool[recLength];
+    //double *valTimeRec = new double[recLength];
+    //int recIndex;
+    //bool *valCondRec=new bool[recLength];
 };
 
 

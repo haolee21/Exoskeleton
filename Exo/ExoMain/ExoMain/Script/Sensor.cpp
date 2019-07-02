@@ -71,12 +71,9 @@ void Sensor::Stop()
 	cout << "get into stop" << endl;
 	this->sw_senUpdate = false;
 	this->serialPortClose(this->serialDevId);
-
-	//wait for 1 sec to avoid segmentation error
-	struct timespec ts2 = {0};
-	ts2.tv_sec = 1;
-	ts2.tv_nsec = 0; //10 us
-	nanosleep(&ts2, (struct timespec *)NULL);
+	this->th_SenUpdate->join();
+	cout<<"sensor fully stops\n";
+	
 }
 
 void Sensor::tsnorm(struct timespec *ts)
@@ -92,7 +89,7 @@ void Sensor::senUpdate()
 	long extraWait = 0L;
 	std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
 	int conLoopCount = 0;
-	Controller con = Controller(startTime);
+	Controller con = Controller();
 	bool testSen = true;
 	bool testState = true;
 	std::chrono::system_clock::time_point sendTest;
@@ -115,37 +112,39 @@ void Sensor::senUpdate()
 	{
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
 		this->readSerialPort(this->serialDevId);
-		if (conLoopCount++ == 1)
-		{
-			conLoopCount = 0;
-			if (testSen)
-			{
-				testSen = false;
-				sendTest = std::chrono::system_clock::now();
-				con.SendTestMeasurement(testState);
-				//std::cout << "trigger\n";
-			}
-		}
-		else
-		{
-			if (con.WaitTestMeasurement(senseTest, testState, this->senData))
-			{
-				testSen = true;
-				millisecs_t t_duration(std::chrono::duration_cast<millisecs_t>(senseTest - sendTest));
-				//std::cout << "we wait for " << t_duration.count() << std::endl;
-			}
-		}
+		// if (conLoopCount++ == 1)
+		// {
+		// 	conLoopCount = 0;
+		// 	if (testSen)
+		// 	{
+		// 		testSen = false;
+		// 		sendTest = std::chrono::system_clock::now();
+		// 		con.SendTestMeasurement(testState);
+		// 		//std::cout << "trigger\n";
+		// 	}
+		// }
+		// else
+		// {
+		// 	if (con.WaitTestMeasurement(senseTest, testState, this->senData))
+		// 	{
+		// 		testSen = true;
+		// 		millisecs_t t_duration(std::chrono::duration_cast<millisecs_t>(senseTest - sendTest));
+		// 		//std::cout << "we wait for " << t_duration.count() << std::endl;
+		// 	}
+		// }
 		
 		std::chrono::system_clock::time_point endReadTime = std::chrono::system_clock::now();
 		nanosecs_t t_duration1(std::chrono::duration_cast<nanosecs_t>(endReadTime - startTime));
 		startTime = endReadTime;
 		
-		//std::cout << "real " << t_duration1.count() << std::endl;
+		//std::cout << "duration " << t_duration1.count() << std::endl;
 		try
 		{
-			std::lock_guard<std::mutex> lock(*this->senLock);
+			// std::lock_guard<std::mutex> lock(*this->senLock);
+			this->senLock->lock();
 			//std::cout << this->senData[0] - this->preTime << std::endl;
 			this->preTime = this->senData[0];
+			this->senLock->unlock();
 		}
 		catch (std::logic_error &)
 		{
