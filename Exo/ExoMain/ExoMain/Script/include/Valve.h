@@ -1,10 +1,14 @@
+#ifndef VALVE_H
+#define VALVE_H
 #include <string>
 #include <mutex>
 
 #include <chrono>
 #include<ctime> //this timer
+
+#define MAXRECLENGTH 24000;
 using namespace std;
-//const int recLength = 240000; //default data length for valve, can record in 100 Hz for 30 min
+
 class Valve
 {
 private:
@@ -12,14 +16,16 @@ private:
     int valveId;
     
     chrono::system_clock::time_point startTime;
-    
-
+    void writeTempFile();
+    bool recCond[MAXRECLENGTH];
+    int curRecIndex;
 public:
     Valve(string name, int valveId);
     ~Valve();
     void On();
     void Off();
-    void SetStartTime( chrono::system_clock::time_point startTime);
+    
+    void WriteWholeFile();
     // Time is recorded under raspberry pi's timer, need to be sync with arduino later
     // We record the time difference 
     // The size of the array is too big to only use the memory on stack, we must allocate it on heap
@@ -29,4 +35,4 @@ public:
     //bool *valCondRec=new bool[recLength];
 };
 
-
+#endif VALVE_H

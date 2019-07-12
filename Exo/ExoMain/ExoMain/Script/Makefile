@@ -2,7 +2,7 @@ CC = g++ -std=c++11
 
 OBJ = main.o pwm.o sensor.o controller.o valve.o
 
-#I= ../resource
+I= /home/pi/Lib/boost_1_70_0
 #CFLAGS=  -Wall -lrt -pthread
 CFLAGS = -Wall -pthread -lwiringPi -g
 

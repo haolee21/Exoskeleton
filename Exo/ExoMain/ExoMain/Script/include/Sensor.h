@@ -90,7 +90,7 @@ private:
 	void readSerialPort(int serialPort);
 	void serialPortClose(int serial_port);
 	void waitToSync(std::chrono::system_clock::time_point,long extraWait);
-
+	
 	//functions that Ji used
 	
 	void tsnorm(struct timespec *ts);
@@ -98,4 +98,4 @@ private:
 
 
 
-#endif // !SENSOR_H
+#endif SENSOR_H

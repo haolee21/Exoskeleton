@@ -8,7 +8,8 @@ void Valve::On(){
     std::chrono::system_clock::time_point curTime = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed = curTime - this->startTime;
     //std::cout<<"valve on"<<std::endl;
-    // digitalWrite(this->valveId,HIGH);
+    digitalWrite(this->valveId,HIGH);
+    this->recCond[this->curRecIndex++] = true;
     // this->valCondRec[this->recIndex] = true;
     // this->valTimeRec[this->recIndex]=elapsed.count();
     // this->recIndex++;
@@ -18,6 +19,7 @@ void Valve::Off(){
     std::chrono::duration<double> elapsed = curTime - this->startTime;
     //std::cout<<"valve off"<<std::endl;
     digitalWrite(this->valveId,LOW);
+    this->recCond[this->curRecIndex++] = false;
     // this->valCondRec[this->recIndex] = false;
     // this->valTimeRec[this->recIndex] = elapsed.count();
     // this->recIndex++;
@@ -28,11 +30,8 @@ Valve::Valve(string name,int valveId)
     this->name = name;
     this->valveId = valveId;
     pinMode(valveId, OUTPUT);
-    // this->recIndex = 0;
-    
-}
-void Valve::SetStartTime(std::chrono::system_clock::time_point startTime){
-    this->startTime = startTime;
+    this->curRecIndex = 0;
+    this->recCond[this->curRecIndex++] = false;
 }
 
 Valve::~Valve()

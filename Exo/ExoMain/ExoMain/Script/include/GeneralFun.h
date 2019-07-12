@@ -12,4 +12,4 @@ void SaveAsCSV(){
 
 
 }
-#endif
+#endif GENERALFUN_H

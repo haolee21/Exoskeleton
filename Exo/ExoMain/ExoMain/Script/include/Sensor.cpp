@@ -1,5 +1,5 @@
 #include "Sensor.h"
-#include "Controller.h"
+
 
 #define MY_PRIORITY (49)             /* we use 49 as the PRREMPT_RT use 50 \
                                         as the priority of kernel tasklets \
@@ -347,7 +347,9 @@ void Sensor::serialPortClose(int serial_port)
 {
 	close(serial_port);
 }
-
+void Sensor::saveMea(){
+	
+}
 
 Sensor::~Sensor()
 {
