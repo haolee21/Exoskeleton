@@ -6,7 +6,7 @@
 #include<unistd.h> //for linux sleep
 #include "PWM.h"
 #include "Controller.h"
-
+#include <chrono>
 
 mutex SenLock;
 void DelaySys(int waitTime) {
@@ -29,7 +29,8 @@ int main(void)
 	
 	char portName[] = "/dev/ttyACM0";
 	Sensor sensor = Sensor(portName, 1600L,&SenLock);
-	sensor.Start();
+	std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
+	sensor.Start(startTime);
 	cout << "finish creating" << endl;
 	//Controller con = Controller(&sensor,&SenLock);
 	//con.TestValve();

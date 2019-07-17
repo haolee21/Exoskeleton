@@ -15,13 +15,13 @@
 #include <sys/io.h>
 #include <string.h>
 #include <signal.h>
-
+#include <vector>
 #include <malloc.h>
 
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/time.h>
-#include <chrono>
+
 #include <sys/ioctl.h>
 
 #include <thread>
@@ -39,6 +39,10 @@
 #include <termios.h> // Contains POSIX terminal control definitions
 #include <unistd.h> // write(), read(), close()
 #include <mutex>
+
+//data recording
+#include "Recorder.hpp"
+
 using namespace std;
 const int NUMSEN = 9; //numSen
 const int DATALEN = NUMSEN*2+2+4;
@@ -54,7 +58,7 @@ public:
 	Sensor(char *port,long sampTmilli,mutex* senLock); //sampT is in milli
 	~Sensor();
 	
-	void Start();
+	void Start(std::chrono::system_clock::time_point startTime);
 	void Stop();
 	int senData[NUMSEN+1]; //data get from ADC
 	thread *th_SenUpdate;
@@ -64,7 +68,7 @@ public:
 	
 	int recIndex;
 private:
-	
+	std::chrono::system_clock::time_point origin;
 	bool is_create = false;
 	int serialDevId;
 	bool sw_senUpdate;
@@ -94,6 +98,9 @@ private:
 	//functions that Ji used
 	
 	void tsnorm(struct timespec *ts);
+
+	//for data recording
+	Recorder senRec;
 };
 
 

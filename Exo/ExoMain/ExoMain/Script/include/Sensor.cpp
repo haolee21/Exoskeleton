@@ -57,13 +57,16 @@ Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 		cout << "Sensor already created" << endl;
 }
 
-void Sensor::Start()
+void Sensor::Start(std::chrono::system_clock::time_point startTime)
 {
+	this->origin = startTime;
 	this->sw_senUpdate = true;
 	memset(&this->senBuffer, '\0', SIZEOFBUFFER);
 	memset(&this->senData, 0, DATALEN + 1);
 	//printf("current senBuffer: %s\n", this->senBuffer);
+	this->senRec = Recorder("sen","sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9","val1,val2,val3,val4");
 	this->th_SenUpdate = new thread(&Sensor::senUpdate, this);
+	
 	cout << "initial receiving thread" << endl;
 }
 void Sensor::Stop()
@@ -263,7 +266,6 @@ void Sensor::readSerialPort(int serialPort)
 			for(int i=0;i<n_bytes;i++){
 				this->dataCollect--;
 				if(*this->curHead=='@'){
-					
 					this->noHead = false;
 					break;
 				}
@@ -290,19 +292,24 @@ void Sensor::readSerialPort(int serialPort)
 					}		
 				}
 				if(tempSenData[DATALEN-1]=='\n'){
-					
-					std::lock_guard<std::mutex> lock(*this->senLock);
-					this->senData[0] = (int)(((unsigned long)tempSenData[1]) + ((unsigned long)(tempSenData[2] << 8)) + ((unsigned long)(tempSenData[3] << 16)) + ((unsigned long)(tempSenData[4] << 24)));
-					this->senData[1] = (int)(tempSenData[5]) + (int)(tempSenData[6] << 8);
-					this->senData[2] = (int)(tempSenData[7]) + (int)(tempSenData[8] << 8);
-					this->senData[3] = (int)(tempSenData[9]) + (int)(tempSenData[10] << 8);
-					this->senData[4] = (int)(tempSenData[11]) + (int)(tempSenData[12] << 8);
-					this->senData[5] = (int)(tempSenData[13]) + (int)(tempSenData[14] << 8);
-					this->senData[6] = (int)(tempSenData[15]) + (int)(tempSenData[16] << 8);
-					this->senData[7] = (int)(tempSenData[17]) + (int)(tempSenData[18] << 8);
-					this->senData[8] = (int)(tempSenData[19]) + (int)(tempSenData[20] << 8);
-					this->senData[9] = (int)(tempSenData[21]) + (int)(tempSenData[22] << 8);
-
+					{
+						std::lock_guard<std::mutex> lock(*this->senLock);
+						this->senData[0] = (int)(((unsigned long)tempSenData[1]) + ((unsigned long)(tempSenData[2] << 8)) + ((unsigned long)(tempSenData[3] << 16)) + ((unsigned long)(tempSenData[4] << 24)));
+						this->senData[1] = (int)(tempSenData[5]) + (int)(tempSenData[6] << 8);
+						this->senData[2] = (int)(tempSenData[7]) + (int)(tempSenData[8] << 8);
+						this->senData[3] = (int)(tempSenData[9]) + (int)(tempSenData[10] << 8);
+						this->senData[4] = (int)(tempSenData[11]) + (int)(tempSenData[12] << 8);
+						this->senData[5] = (int)(tempSenData[13]) + (int)(tempSenData[14] << 8);
+						this->senData[6] = (int)(tempSenData[15]) + (int)(tempSenData[16] << 8);
+						this->senData[7] = (int)(tempSenData[17]) + (int)(tempSenData[18] << 8);
+						this->senData[8] = (int)(tempSenData[19]) + (int)(tempSenData[20] << 8);
+						this->senData[9] = (int)(tempSenData[21]) + (int)(tempSenData[22] << 8);
+					}
+					std::vector<int> recSenData;
+					for(int i=1;i<NUMSEN+1;i++){
+						recSenData.push_back(senData[i]);
+					}
+					this->senRec.PushSen((unsigned long)this->senData[0],recSenData);
 					// std::cout<<"read ";
 					// for(int i=0;i<DATALEN;i++)
 					// 	std::cout<<tempSenData[i];
