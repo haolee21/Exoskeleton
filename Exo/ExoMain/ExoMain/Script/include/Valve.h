@@ -6,7 +6,7 @@
 #include <chrono>
 #include<ctime> //this timer
 
-#define MAXRECLENGTH 24000
+#define MAXRECLENGTHVAL 24000
 using namespace std;
 
 class Valve
@@ -17,7 +17,7 @@ private:
     
     chrono::system_clock::time_point startTime;
     void writeTempFile();
-    bool recCond[MAXRECLENGTH];
+    bool recCond[MAXRECLENGTHVAL];
     int curRecIndex;
 public:
     Valve(string name, int valveId);

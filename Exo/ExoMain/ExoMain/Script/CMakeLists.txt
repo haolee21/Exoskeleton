@@ -12,12 +12,12 @@ include_directories(
 )
 add_library(
     lib STATIC
-    include/PWM.h
-    include/Sensor.h
-    include/Valve.h
-    include/Controller.h
     include/Recorder.hpp 
     include/RecData.hpp
+    include/PWM.h
+    include/Valve.h
+    include/Controller.h
+    include/Sensor.h
 
 )
 set_target_properties(lib PROPERTIES LINKER_LANGUAGE CXX)

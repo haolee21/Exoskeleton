@@ -1,6 +1,5 @@
 #include "Recorder.hpp"
 
-
 Recorder::Recorder(std::string recName,std::string senLabel,std::string valveLabel)
 {
     std::cout<<"create\n";

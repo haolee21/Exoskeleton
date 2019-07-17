@@ -55,6 +55,7 @@ const int recLength = 240000; //This is the pre-allocate memory for recording se
 class Sensor
 {
 public:
+	
 	Sensor(char *port,long sampTmilli,mutex* senLock); //sampT is in milli
 	~Sensor();
 	
@@ -100,7 +101,7 @@ private:
 	void tsnorm(struct timespec *ts);
 
 	//for data recording
-	Recorder senRec;
+	Recorder *senRec;
 };
 
 

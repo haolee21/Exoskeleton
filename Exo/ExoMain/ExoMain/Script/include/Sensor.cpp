@@ -51,7 +51,7 @@ Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 
 		this->curBuf = this->senBuffer;
 		this->curHead = this->curBuf;
-		
+		this->senRec = new Recorder("sen","sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9","val1,val2,val3,val4");
 	}
 	else
 		cout << "Sensor already created" << endl;
@@ -64,7 +64,7 @@ void Sensor::Start(std::chrono::system_clock::time_point startTime)
 	memset(&this->senBuffer, '\0', SIZEOFBUFFER);
 	memset(&this->senData, 0, DATALEN + 1);
 	//printf("current senBuffer: %s\n", this->senBuffer);
-	this->senRec = Recorder("sen","sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9","val1,val2,val3,val4");
+	
 	this->th_SenUpdate = new thread(&Sensor::senUpdate, this);
 	
 	cout << "initial receiving thread" << endl;
@@ -309,7 +309,7 @@ void Sensor::readSerialPort(int serialPort)
 					for(int i=1;i<NUMSEN+1;i++){
 						recSenData.push_back(senData[i]);
 					}
-					this->senRec.PushSen((unsigned long)this->senData[0],recSenData);
+					this->senRec->PushSen((unsigned long)this->senData[0],recSenData);
 					// std::cout<<"read ";
 					// for(int i=0;i<DATALEN;i++)
 					// 	std::cout<<tempSenData[i];
@@ -359,6 +359,7 @@ Sensor::~Sensor()
 {
 
 	std::cout << "start to delete" << std::endl;
+	delete this->senRec;
 	// for (int i = 0; i < this->recIndex; i++)
 	// {
 	// 	delete[] this->totSenRec[i];
