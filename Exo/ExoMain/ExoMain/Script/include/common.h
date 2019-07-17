@@ -4,7 +4,7 @@
 #include <time.h>
 
 //this function is build for linux, ignore the error in windows
-
+//test
 
 /*
 void DelaySys(int waitTime) {
@@ -63,4 +63,4 @@ void DelaySys(int waitTime) {
 
 
 
-#endif COMMON_H
+#endif //COMMON_H

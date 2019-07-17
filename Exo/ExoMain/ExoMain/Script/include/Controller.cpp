@@ -82,6 +82,7 @@ bool Controller::WaitTestMeasurement(std::chrono::system_clock::time_point &sens
             return false;
         }
     }
+    return false;
 
 }
 Controller::Controller()

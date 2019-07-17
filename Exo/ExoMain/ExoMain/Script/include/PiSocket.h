@@ -18,4 +18,4 @@ PiSocket::~PiSocket()
 {
 }
 
-#endif PISOCKET_H
+#endif //PISOCKET_H

@@ -6,7 +6,7 @@
 #include <chrono>
 #include<ctime> //this timer
 
-#define MAXRECLENGTH 24000;
+#define MAXRECLENGTH 24000
 using namespace std;
 
 class Valve
@@ -35,4 +35,4 @@ public:
     //bool *valCondRec=new bool[recLength];
 };
 
-#endif VALVE_H
+#endif //VALVE_H

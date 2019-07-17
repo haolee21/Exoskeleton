@@ -347,9 +347,6 @@ void Sensor::serialPortClose(int serial_port)
 {
 	close(serial_port);
 }
-void Sensor::saveMea(){
-	
-}
 
 Sensor::~Sensor()
 {

@@ -98,4 +98,4 @@ private:
 
 
 
-#endif SENSOR_H
+#endif //SENSOR_H
