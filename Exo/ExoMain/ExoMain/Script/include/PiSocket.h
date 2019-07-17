@@ -1,3 +1,5 @@
+#ifndef PISOCKET_H
+#define PISOCKET_H
 #include <sys/socket.h>
 class PiSocket
 {
@@ -15,3 +17,5 @@ PiSocket::PiSocket(/* args */)
 PiSocket::~PiSocket()
 {
 }
+
+#endif //PISOCKET_H

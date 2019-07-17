@@ -82,16 +82,20 @@ bool Controller::WaitTestMeasurement(std::chrono::system_clock::time_point &sens
             return false;
         }
     }
+    return false;
 
 }
-Controller::Controller(std::chrono::system_clock::time_point startTime)
+Controller::Controller()
 {
+    std::cout<<"start to create controller\n";
+    std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now(); 
     //turn off all the valves and set start time
-    for (int i = 0; i < this->ValNum; i++)
-    {
-        this->ValveList[i].SetStartTime(startTime);
-        this->ValveList[i].Off();
-    }
+    // for (int i = 0; i < this->ValNum; i++)
+    // {
+    //     this->ValveList[i].SetStartTime(startTime);
+    //     this->ValveList[i].Off();
+    // }
+    std::cout<<"valve list created\n";
 }
 
 Controller::~Controller()

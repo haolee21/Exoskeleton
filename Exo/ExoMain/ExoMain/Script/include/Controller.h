@@ -78,7 +78,7 @@ private:
     int preTime; //this is for testing sen
 public:
     Valve ValveList[6]={LKneVal1,LKneVal2,LAnkVal1,LAnkVal2,BalVal,LRelVal};
-    Controller(std::chrono::system_clock::time_point startTime);
+    Controller();
     ~Controller();
     void TestValve();
     bool SendTestMeasurement(bool sendState);
@@ -88,4 +88,4 @@ public:
 
 
 
-#endif
+#endif //CONTROLLER_H
