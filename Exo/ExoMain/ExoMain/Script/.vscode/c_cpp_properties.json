@@ -5,7 +5,10 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/include",
-                "${workspaceFolder}/src"
+                "${workspaceFolder}/src",
+                "~/cdrive/UCLA/lab/Exoskeleton/Controller/PiLib/wiringPi/wiringPi"
+                
+                
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

@@ -24,7 +24,7 @@ typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
 Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 {
-	cout << "creating" << endl;
+	std::cout << "creating" << endl;
 	if (!this->is_create)
 	{
 		cout << "Create Sensor" << endl;
