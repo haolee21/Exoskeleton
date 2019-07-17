@@ -115,32 +115,32 @@ void Sensor::senUpdate()
 	{
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
 		this->readSerialPort(this->serialDevId);
-		// if (conLoopCount++ == 1)
-		// {
-		// 	conLoopCount = 0;
-		// 	if (testSen)
-		// 	{
-		// 		testSen = false;
-		// 		sendTest = std::chrono::system_clock::now();
-		// 		con.SendTestMeasurement(testState);
-		// 		//std::cout << "trigger\n";
-		// 	}
-		// }
-		// else
-		// {
-		// 	if (con.WaitTestMeasurement(senseTest, testState, this->senData))
-		// 	{
-		// 		testSen = true;
-		// 		millisecs_t t_duration(std::chrono::duration_cast<millisecs_t>(senseTest - sendTest));
-		// 		//std::cout << "we wait for " << t_duration.count() << std::endl;
-		// 	}
-		// }
+		if (conLoopCount++ ==1)
+		{
+			conLoopCount = 0;
+			if (testSen)
+			{
+				testSen = false;
+				sendTest = std::chrono::system_clock::now();
+				con.SendTestMeasurement(testState);
+				std::cout << "trigger\n";
+			}
+		}
+		else
+		{
+			if (con.WaitTestMeasurement(senseTest, testState, this->senData))
+			{
+				testSen = true;
+				millisecs_t t_duration(std::chrono::duration_cast<millisecs_t>(senseTest - sendTest));
+				std::cout << "we wait for " << t_duration.count() << std::endl;
+			}
+		}
 		
 		std::chrono::system_clock::time_point endReadTime = std::chrono::system_clock::now();
 		nanosecs_t t_duration1(std::chrono::duration_cast<nanosecs_t>(endReadTime - startTime));
 		startTime = endReadTime;
 		
-		//std::cout << "duration " << t_duration1.count() << std::endl;
+		std::cout << "duration " << t_duration1.count() << std::endl;
 		try
 		{
 			// std::lock_guard<std::mutex> lock(*this->senLock);
