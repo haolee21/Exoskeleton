@@ -21,9 +21,15 @@ Recorder::Recorder(std::string recName,std::string senLabel,std::string valveLab
 
 Recorder::~Recorder()
 {
+    while (!this->threadQue.empty())
+    {
+        std::thread *curThread = this->threadQue.front();
+        curThread->join();
+        this->threadQue.pop();
+    }
+    
     this->OutputCSV();
-    
-    
+
     if(!this->senTemps.empty())
         std::cout<<"Temperary files remaining\n";
     delete this->curSenData;
@@ -37,16 +43,8 @@ void Recorder::PushSen(unsigned long curTime, std::vector<int> curSen){
         //we need to allocate new memory for storage
         this->tempSenData = this->curSenData;
         this->curSenData = new RecData<int>();
-        if(!this->threadQue.empty()){
-            this->threadQue.front()->join();
-            this->threadQue.pop();
-        }
-        this->threadQue.push(new std::thread(&Recorder::writeTemp<int>,this,this->tempSenData,0));
-       
-        
+        this->threadQue.push(new std::thread(&Recorder::writeTemp<int>,this,this->tempSenData,0));   
     }
-
-
 }
 void Recorder::PushValveCond(unsigned long curTime, std::vector<bool> curValCond){
     this->curValCondData->PushTime(curTime);
@@ -58,10 +56,6 @@ void Recorder::PushValveCond(unsigned long curTime, std::vector<bool> curValCond
         //we need to allocate new memory for storage
         this->tempValCondData = this->curValCondData;
         this->curValCondData = new RecData<bool>();
-        if(!this->threadQue.empty()){
-            this->threadQue.front()->join();
-            this->threadQue.pop();
-        }
         this->threadQue.push(new std::thread(&Recorder::writeTemp<bool>,this,this->tempValCondData,1));
         
     }
@@ -91,6 +85,7 @@ void Recorder::writeTemp(RecData<T> *tempData, int recType)
         ar& (*tempData);
         delete tempData;
     }
+    
 }
 void Recorder::OutputCSV()
 {

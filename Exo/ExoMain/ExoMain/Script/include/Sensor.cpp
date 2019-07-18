@@ -21,6 +21,7 @@ long int ms_cnt = 0;
 
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
+typedef std::chrono::duration<unsigned long, std::micro> microsecs_ul;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
 Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 {
@@ -41,11 +42,6 @@ Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 		this->noHead = true;
 		this->curHead = this->curBuf;
 	
-		// //initialize the recIndex
-		// this->recIndex = 0;
-		// for (int i = 0; i < recLength; i++)
-		// 	this->totSenRec[i] = new int[NUMSEN];
-
 		if (this->serialDevId == -1)
 			cout << "Sensor init failed" << endl;
 
@@ -78,7 +74,7 @@ void Sensor::Stop()
 	cout<<"sensor fully stops\n";
 	
 }
-
+//timer
 void Sensor::tsnorm(struct timespec *ts)
 {
     while (ts->tv_nsec >= NSEC_PER_SEC)
@@ -87,60 +83,30 @@ void Sensor::tsnorm(struct timespec *ts)
         ts->tv_sec++;
     }
 }
+//
 void Sensor::senUpdate()
 {
-	long extraWait = 0L;
-	std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
-	int conLoopCount = 0;
 	Controller con = Controller();
-	bool testSen = true;
-	bool testState = true;
-	std::chrono::system_clock::time_point sendTest;
-	std::chrono::system_clock::time_point senseTest;
-	
 
+	
+	//for accurate timer
 	struct timespec t;
-    struct sched_param param;
+    //struct sched_param param;
     long int interval = this->sampT*USEC;
     long int cnt = 0;
     long int cnt1 = 0;
-
 	clock_gettime(CLOCK_MONOTONIC, &t);
-
-	
 	t.tv_nsec += 0 * MSEC;
     this->tsnorm(&t);
+	//
 	
 	while (this->sw_senUpdate)
-	{
+	{	
+		//timer
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+		//
+
 		this->readSerialPort(this->serialDevId);
-		if (conLoopCount++ ==1)
-		{
-			conLoopCount = 0;
-			if (testSen)
-			{
-				testSen = false;
-				sendTest = std::chrono::system_clock::now();
-				con.SendTestMeasurement(testState);
-				std::cout << "trigger\n";
-			}
-		}
-		else
-		{
-			if (con.WaitTestMeasurement(senseTest, testState, this->senData))
-			{
-				testSen = true;
-				millisecs_t t_duration(std::chrono::duration_cast<millisecs_t>(senseTest - sendTest));
-				std::cout << "we wait for " << t_duration.count() << std::endl;
-			}
-		}
-		
-		std::chrono::system_clock::time_point endReadTime = std::chrono::system_clock::now();
-		nanosecs_t t_duration1(std::chrono::duration_cast<nanosecs_t>(endReadTime - startTime));
-		startTime = endReadTime;
-		
-		std::cout << "duration " << t_duration1.count() << std::endl;
 		try
 		{
 			// std::lock_guard<std::mutex> lock(*this->senLock);
@@ -153,12 +119,11 @@ void Sensor::senUpdate()
 		{
 			std::cout<< "[exception caught]\n";
 		}
-		
+
+		// timer
 		// calculate next shot
         t.tv_nsec += interval;
-
         this->tsnorm(&t);
-
         if (cnt++ >= 1000)
         {
             //printf("%ld\n", cnt1);
@@ -166,7 +131,7 @@ void Sensor::senUpdate()
         }
         ms_cnt++;
         cnt1++;
-
+		//
 
 	}
 	cout << "sensor ends" << endl;
@@ -240,11 +205,7 @@ void Sensor::readSerialPort(int serialPort)
 	// 4. Conver the data back to numbers
 
 	int n_bytes = read(serialPort, this->curBuf, DATALEN);
-	// std::cout<<"buff "<<this->curBuf[0]<<this->curBuf[1]<<this->curBuf[2]<<this->curBuf[3]
-	// <<this->curBuf[4]<<this->curBuf[5]<<this->curBuf[6]<<this->curBuf[7]<<this->curBuf[8]
-	// <<this->curBuf[9]<<this->curBuf[10]<<this->curBuf[11]<<this->curBuf[12]<<this->curBuf[13]
-	// <<this->curBuf[14]<<this->curBuf[15]<<this->curBuf[16]<<this->curBuf[17]<<this->curBuf[18]
-	// <<this->curBuf[19]<<this->curBuf[20]<<this->curBuf[21]<<this->curBuf[22]<<this->curBuf[23]<<std::endl;
+	
 	if(n_bytes==DATALEN){
 		//std::cout<<"got data "<<this->curBufIndex<<std::endl;;
 		this->dataCollect+= n_bytes;
@@ -292,18 +253,21 @@ void Sensor::readSerialPort(int serialPort)
 					}		
 				}
 				if(tempSenData[DATALEN-1]=='\n'){
+					std::chrono::system_clock::time_point curTime= std::chrono::system_clock::now();
+					microsecs_ul sen_time(std::chrono::duration_cast<microsecs_ul>(curTime - this->origin));
+					unsigned long timeNow = sen_time.count(); 
 					{
 						std::lock_guard<std::mutex> lock(*this->senLock);
-						this->senData[0] = (int)(((unsigned long)tempSenData[1]) + ((unsigned long)(tempSenData[2] << 8)) + ((unsigned long)(tempSenData[3] << 16)) + ((unsigned long)(tempSenData[4] << 24)));
-						this->senData[1] = (int)(tempSenData[5]) + (int)(tempSenData[6] << 8);
-						this->senData[2] = (int)(tempSenData[7]) + (int)(tempSenData[8] << 8);
-						this->senData[3] = (int)(tempSenData[9]) + (int)(tempSenData[10] << 8);
-						this->senData[4] = (int)(tempSenData[11]) + (int)(tempSenData[12] << 8);
-						this->senData[5] = (int)(tempSenData[13]) + (int)(tempSenData[14] << 8);
-						this->senData[6] = (int)(tempSenData[15]) + (int)(tempSenData[16] << 8);
-						this->senData[7] = (int)(tempSenData[17]) + (int)(tempSenData[18] << 8);
-						this->senData[8] = (int)(tempSenData[19]) + (int)(tempSenData[20] << 8);
-						this->senData[9] = (int)(tempSenData[21]) + (int)(tempSenData[22] << 8);
+						this->senData[0] = (int)timeNow;
+						this->senData[1] = (int)(tempSenData[1]) + (int)(tempSenData[2] << 8);
+						this->senData[2] = (int)(tempSenData[3]) + (int)(tempSenData[4] << 8);
+						this->senData[3] = (int)(tempSenData[5]) + (int)(tempSenData[6] << 8);
+						this->senData[4] = (int)(tempSenData[7]) + (int)(tempSenData[8] << 8);
+						this->senData[5] = (int)(tempSenData[9]) + (int)(tempSenData[10] << 8);
+						this->senData[6] = (int)(tempSenData[11]) + (int)(tempSenData[12] << 8);
+						this->senData[7] = (int)(tempSenData[13]) + (int)(tempSenData[14] << 8);
+						this->senData[8] = (int)(tempSenData[15]) + (int)(tempSenData[16] << 8);
+						this->senData[9] = (int)(tempSenData[17]) + (int)(tempSenData[18] << 8);
 					}
 					std::vector<int> recSenData;
 					for(int i=1;i<NUMSEN+1;i++){
@@ -357,12 +321,6 @@ void Sensor::serialPortClose(int serial_port)
 
 Sensor::~Sensor()
 {
-
 	std::cout << "start to delete" << std::endl;
 	delete this->senRec;
-	// for (int i = 0; i < this->recIndex; i++)
-	// {
-	// 	delete[] this->totSenRec[i];
-	// }
-	// delete[] this->totSenRec;
 }

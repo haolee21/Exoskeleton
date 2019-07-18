@@ -35,7 +35,7 @@ int main(void)
 	//Controller con = Controller(&sensor,&SenLock);
 	//con.TestValve();
 	
-	for(int i=0;i<800;i++){
+	for(int i=0;i<3000;i++){
 		//ReadSenData(&sensor);
 		DelaySys(1);
 	}

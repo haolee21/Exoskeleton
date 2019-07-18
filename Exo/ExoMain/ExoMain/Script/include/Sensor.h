@@ -45,7 +45,7 @@
 
 using namespace std;
 const int NUMSEN = 9; //numSen
-const int DATALEN = NUMSEN*2+2+4;
+const int DATALEN = NUMSEN*2+2;
 const int SIZEOFBUFFER = DATALEN*1000; 
 
 

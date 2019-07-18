@@ -88,13 +88,13 @@ void loop()
 			testSent2 = 65;
 
 		*bufferPointer++ = '@';
-		curTime.timeVal = micros();
+		// curTime.timeVal = micros();
 
-		for (int sendIndex = 0; sendIndex < 4; sendIndex++)
-		{
-			*bufferPointer++ = curTime.timeByte[sendIndex];
-			//*bufferPointer++ = testSent1;
-		}
+		// for (int sendIndex = 0; sendIndex < 4; sendIndex++)
+		// {
+		// 	*bufferPointer++ = curTime.timeByte[sendIndex];
+		// 	//*bufferPointer++ = testSent1;
+		// }
 		for (int senIndex = 0; senIndex < NUMSEN; senIndex++)
 		{
 			senSum[senIndex] = senSum[senIndex] - senData[senIndex][curIndex];
@@ -124,7 +124,7 @@ void loop()
 		curIndex++; //This is index for moving average filter
 		if (curIndex == NUMSAMP)
 			curIndex = 0;
-		Serial.write(buffer, 24);
+		Serial.write(buffer, 20);
 		readyToSend = false;
 		bufferPointer = buffer;
 	}

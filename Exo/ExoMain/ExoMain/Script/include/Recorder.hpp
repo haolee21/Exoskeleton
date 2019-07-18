@@ -13,7 +13,7 @@
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/vector.hpp>
 #include "RecData.hpp"
-#define MAXRECLENGTH 1000
+#define MAXRECLENGTH 5000
 
 struct RecDataTemp
 {
