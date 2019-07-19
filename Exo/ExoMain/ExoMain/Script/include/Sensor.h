@@ -101,7 +101,7 @@ private:
 	void tsnorm(struct timespec *ts);
 
 	//for data recording
-	Recorder *senRec;
+	Recorder<int> *senRec;
 };
 
 
