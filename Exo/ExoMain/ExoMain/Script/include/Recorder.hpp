@@ -19,54 +19,49 @@ template<class T>
 class Recorder
 {
 private:
-    RecData<int> *curSenData;
-    std::queue<std::string> senTemps;
-    int tempSenCount;
-    RecData<bool> *curValCondData;
-    std::queue<std::string> valCondTemps;
-    int tempValCondCount;
-    // this is for creating temperary object for saving, I am not sure do I really need it
-    RecData<int> *tempSenData;
-    RecData<bool> *tempValCondData;
+    RecData<T> *curData;
+    std::queue<std::string> dataTemps;
+    int tempCount;
     
-    std::string senLabel;
-    std::string valveLabel;
+    // this is for creating temperary object for saving, I am not sure do I really need it
+    RecData<T> *tempData;
+
+    
+    std::string Label;
+
     std::string recorderName;
 
 
     int tempFilesCount;
     
-    void writeTemp(RecData<T> *tempData,int recType); //0: sensor, 1:valveCond
+    void writeTemp(RecData<T> *tempData); 
 
     // saving file
     std::string filePath;
     std::queue<std::thread*> threadQue;
 
 public:
-    Recorder(std::string recName, std::string senLabel,std::string valLabel);
+    Recorder(std::string recName, std::string _label);
     ~Recorder();
-    void PushSen(unsigned long curTime, std::vector<int> curSen);
-    void PushValveCond(unsigned long curTime, std::vector<bool> curValCond);
+    void PushData(unsigned long curTime, std::vector<T> curMea);
     void OutputCSV();
 };
 
 
 template<class T>
-Recorder<T>::Recorder(std::string recName,std::string senLabel,std::string valveLabel)
+Recorder<T>::Recorder(std::string recName,std::string _label)
 {
     std::cout<<"create\n";
     this->recorderName = recName;
-    this->senLabel = senLabel;
-    this->valveLabel = valveLabel;
+    this->Label = _label;
     
-    this->tempSenCount=0;
-    this->tempValCondCount = 0;
+    
+    this->tempCount=0;
     this->filePath = "";
 
     //create memory for temperary storage
     // since it may go out of the scope, we put it in the heap
-    this->curSenData = new RecData<int>();
-    this->curValCondData = new RecData<bool>();
+    this->curData = new RecData<T>();
     this->tempFilesCount =0;
     
 }
@@ -82,57 +77,30 @@ Recorder<T>::~Recorder()
     
     this->OutputCSV();
 
-    if(!this->senTemps.empty())
+    if(!this->dataTemps.empty())
         std::cout<<"Temperary files remaining\n";
-    delete this->curSenData;
-    delete this->curValCondData;
-}
-template<class T>
-void Recorder<T>::PushSen(unsigned long curTime, std::vector<int> curSen){
-    this->curSenData->PushTime(curTime);
-    this->curSenData->PushData(curSen);
-    if((++this->tempSenCount)>=MAXRECLENGTH){
-        this->tempSenCount =0;
-        //we need to allocate new memory for storage
-        this->tempSenData = this->curSenData;
-        this->curSenData = new RecData<int>();
-        this->threadQue.push(new std::thread(&Recorder<int>::writeTemp,this,this->tempSenData,0));   
-    }
-}
-template<class T>
-void Recorder<T>::PushValveCond(unsigned long curTime, std::vector<bool> curValCond){
-    this->curValCondData->PushTime(curTime);
-    this->curValCondData->PushData(curValCond);
-    
-    if((++this->tempValCondCount)>=MAXRECLENGTH){
-        
-        this->tempValCondCount=0;
-        //we need to allocate new memory for storage
-        this->tempValCondData = this->curValCondData;
-        this->curValCondData = new RecData<bool>();
-        this->threadQue.push(new std::thread(&Recorder<bool>::writeTemp,this,this->tempValCondData,1));
-        
-    }
-    
+    delete this->curData;
 
+}
+template<class T>
+void Recorder<T>::PushData(unsigned long curTime, std::vector<T> curData){
+    this->curData->PushTime(curTime);
+    this->curData->PushData(curData);
+    if((++this->tempCount)>=MAXRECLENGTH){
+        this->tempCount =0;
+        //we need to allocate new memory for storage
+        this->tempData = this->curData;
+        this->curData = new RecData<T>();
+        this->threadQue.push(new std::thread(&Recorder<T>::writeTemp,this,this->tempData));   
+    }
 }
 
 template<class T>
-void Recorder<T>::writeTemp(RecData<T> *tempData, int recType)
+void Recorder<T>::writeTemp(RecData<T> *tempData)
 {
     std::string fileName;
     fileName = this->filePath+ this->recorderName + std::to_string(this->tempFilesCount++) + ".temp";
-    //in this file we need to record both sensor data and valve condtion
-    switch (recType)
-    {
-    case 0:
-        this->senTemps.push(fileName);
-        break;
-    case 1:
-        this->valCondTemps.push(fileName);
-    default:
-        break;
-    }
+    this->dataTemps.push(fileName);
     {
         std::ofstream tempSaveFile(fileName);
         boost::archive::text_oarchive ar(tempSaveFile);
@@ -146,56 +114,30 @@ void Recorder<T>::OutputCSV()
 {
     // create senData.csv
     {
-        std::ofstream writeSenCsv;
-        writeSenCsv.open(this->recorderName+"_sen.csv");
+        std::ofstream writeCsv;
+        writeCsv.open(this->recorderName+".csv");
         {
-            writeSenCsv<<this->senLabel<<'\n';
-            while(!this->senTemps.empty()){
-                RecData<int> tempSen = RecData<int>();
-                std::string fileName = this->senTemps.front();
+            writeCsv<<this->Label<<'\n';
+            while(!this->dataTemps.empty()){
+                RecData<T> tempData = RecData<T>();
+                std::string fileName = this->dataTemps.front();
                 std::ifstream ifs(fileName);
                 boost::archive::text_iarchive ar(ifs);
-                this->senTemps.pop();
-                ar & tempSen;
-                std::vector<std::vector<int>> senData = tempSen.getData();
-                std::vector<unsigned long> senTime = tempSen.getTime();
+                this->dataTemps.pop();
+                ar & tempData;
+                std::vector<std::vector<int>> data = tempData.getData();
+                std::vector<unsigned long> time = tempData.getTime();
                 for(unsigned int i=0;i<MAXRECLENGTH;i++){
-                    writeSenCsv<<std::to_string(senTime[i]);
-                    for(unsigned int ii=0;ii<senData[i].size();ii++){
-                        writeSenCsv<<','<<senData[i][ii];
+                    writeCsv<<std::to_string(time[i]);
+                    for(unsigned int ii=0;ii<data[i].size();ii++){
+                        writeCsv<<','<<data[i][ii];
                     }
-                    writeSenCsv<<'\n';
+                    writeCsv<<'\n';
                 }
                 std::remove(&fileName[0]);
             }
         }
-        writeSenCsv.close();
-    }
-    {
-        std::ofstream writeConCsv;
-        writeConCsv.open(this->recorderName+"_con.csv");
-        {
-            writeConCsv<<this->valveLabel<<'\n';
-            while(!this->valCondTemps.empty()){
-                RecData<bool> tempCon = RecData<bool>();
-                std::string fileName = this->valCondTemps.front();
-                std::ifstream ifs(fileName);
-                boost::archive::text_iarchive ar(ifs);
-                this->valCondTemps.pop();
-                ar & tempCon;
-                std::vector<std::vector<bool>> senData = tempCon.getData();
-                std::vector<unsigned long> senTime = tempCon.getTime();
-                for(unsigned int i=0;i<MAXRECLENGTH;i++){
-                    writeConCsv<<std::to_string(senTime[i]);
-                    for(unsigned int ii=0;ii<senData[i].size();ii++){
-                        writeConCsv<<','<<senData[i][ii];
-                    }
-                    writeConCsv<<'\n';
-                }
-                std::remove(&fileName[0]);
-            }
-        }
-        writeConCsv.close();
+        writeCsv.close();
     }
 
 
