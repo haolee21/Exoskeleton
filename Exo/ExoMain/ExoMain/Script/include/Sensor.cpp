@@ -1,5 +1,5 @@
 #include "Sensor.h"
-
+#include <memory>
 
 #define MY_PRIORITY (49)             /* we use 49 as the PRREMPT_RT use 50 \
                                         as the priority of kernel tasklets \
@@ -28,7 +28,7 @@ Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 	std::cout << "creating" << endl;
 	if (!this->is_create)
 	{
-		cout << "Create Sensor" << endl;
+		std::cout << "Create Sensor" << endl;
 		this->serialDevId = this->serialPortConnect(portName);
 		this->sampT = sampT;
 		
@@ -43,14 +43,18 @@ Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 		this->curHead = this->curBuf;
 	
 		if (this->serialDevId == -1)
-			cout << "Sensor init failed" << endl;
+			std::cout << "Sensor init failed" << endl;
 
 		this->curBuf = this->senBuffer;
 		this->curHead = this->curBuf;
-		this->senRec = new Recorder("sen","sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9","val1,val2,val3,val4");
+		this->senRec = new Recorder("sen","time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9","val1,val2,val3,val4");
+
+		
+
+
 	}
 	else
-		cout << "Sensor already created" << endl;
+		std::cout << "Sensor already created" << endl;
 }
 
 void Sensor::Start(std::chrono::system_clock::time_point startTime)
@@ -63,15 +67,16 @@ void Sensor::Start(std::chrono::system_clock::time_point startTime)
 	
 	this->th_SenUpdate = new thread(&Sensor::senUpdate, this);
 	
-	cout << "initial receiving thread" << endl;
+	std::cout << "initial receiving thread" << endl;
+	
 }
 void Sensor::Stop()
 {
-	cout << "get into stop" << endl;
+	std::cout << "get into stop" << endl;
 	this->sw_senUpdate = false;
 	this->serialPortClose(this->serialDevId);
 	this->th_SenUpdate->join();
-	cout<<"sensor fully stops\n";
+	std::cout<<"sensor fully stops\n";
 	
 }
 //timer
@@ -86,9 +91,6 @@ void Sensor::tsnorm(struct timespec *ts)
 //
 void Sensor::senUpdate()
 {
-	Controller con = Controller();
-
-	
 	//for accurate timer
 	struct timespec t;
     //struct sched_param param;
@@ -99,6 +101,10 @@ void Sensor::senUpdate()
 	t.tv_nsec += 0 * MSEC;
     this->tsnorm(&t);
 	//
+	Controller con =  Controller();
+	int conLoopCount = 1;
+	std::unique_ptr<std::thread> conTh;
+	bool conStart = false;
 	
 	while (this->sw_senUpdate)
 	{	
@@ -107,19 +113,16 @@ void Sensor::senUpdate()
 		//
 
 		this->readSerialPort(this->serialDevId);
-		try
-		{
-			// std::lock_guard<std::mutex> lock(*this->senLock);
-			this->senLock->lock();
-			//std::cout << this->senData[0] - this->preTime << std::endl;
-			this->preTime = this->senData[0];
-			this->senLock->unlock();
+		if(conLoopCount++ %5==0){
+			conLoopCount = 0;
+			if(conStart) 
+				(*conTh).join();
+			else
+				conStart = true;
+			conTh.reset(new std::thread(&Controller::ConMainLoop,con,this->senData,this->senLock));
+			
 		}
-		catch (std::logic_error &)
-		{
-			std::cout<< "[exception caught]\n";
-		}
-
+		//this->conTh->join();
 		// timer
 		// calculate next shot
         t.tv_nsec += interval;
@@ -134,8 +137,16 @@ void Sensor::senUpdate()
 		//
 
 	}
-	cout << "sensor ends" << endl;
+	(*conTh).join();
+	std::cout << "sensor ends" << endl;
+	
 }
+void Sensor::callCon(){
+
+}
+
+
+
 
 //reference from https://blog.mbedded.ninja/programming/operating-systems/linux/linux-serial-ports-using-c-cpp/
 
@@ -323,4 +334,6 @@ Sensor::~Sensor()
 {
 	std::cout << "start to delete" << std::endl;
 	delete this->senRec;
+	delete this->th_SenUpdate;
+
 }

@@ -25,6 +25,7 @@ Recorder::~Recorder()
     {
         std::thread *curThread = this->threadQue.front();
         curThread->join();
+        delete curThread;
         this->threadQue.pop();
     }
     
