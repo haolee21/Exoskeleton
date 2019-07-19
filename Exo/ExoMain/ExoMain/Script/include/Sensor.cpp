@@ -47,11 +47,7 @@ Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 
 		this->curBuf = this->senBuffer;
 		this->curHead = this->curBuf;
-		this->senRec = new Recorder("sen","time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9","val1,val2,val3,val4");
-
-		
-
-
+		this->senRec =  new Recorder<int>("sen","time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9");
 	}
 	else
 		std::cout << "Sensor already created" << endl;
@@ -284,7 +280,7 @@ void Sensor::readSerialPort(int serialPort)
 					for(int i=1;i<NUMSEN+1;i++){
 						recSenData.push_back(senData[i]);
 					}
-					this->senRec->PushSen((unsigned long)this->senData[0],recSenData);
+					this->senRec->PushData((unsigned long)this->senData[0],recSenData);
 					// std::cout<<"read ";
 					// for(int i=0;i<DATALEN;i++)
 					// 	std::cout<<tempSenData[i];

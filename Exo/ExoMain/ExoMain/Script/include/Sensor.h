@@ -104,7 +104,7 @@ private:
 	std::thread *conTh;
 	void callCon();
 	//for data recording
-	Recorder *senRec;
+	Recorder<int> *senRec;
 };
 
 
