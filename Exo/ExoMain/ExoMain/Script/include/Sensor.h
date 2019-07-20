@@ -42,13 +42,12 @@
 
 //data recording
 #include "Recorder.hpp"
+const int NUMSEN = 9;
+const int DATALEN =NUMSEN*2+2;
+const int SIZEOFBUFFER= DATALEN*1000;
+
 
 using namespace std;
-const int NUMSEN = 9; //numSen
-const int DATALEN = NUMSEN*2+2;
-const int SIZEOFBUFFER = DATALEN*1000; 
-
-
 
 const int recLength = 240000; //This is the pre-allocate memory for recording sensed data
 
@@ -100,6 +99,10 @@ private:
 	
 	void tsnorm(struct timespec *ts);
 
+	//Controller
+	
+	std::thread *conTh;
+	void callCon();
 	//for data recording
 	Recorder<int> *senRec;
 };

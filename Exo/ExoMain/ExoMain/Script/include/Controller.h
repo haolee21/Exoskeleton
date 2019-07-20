@@ -3,7 +3,7 @@
 #include "Valve.h"
 #include <chrono>
 #include<time.h> //this timer
-
+#include<mutex>
 
 //Define the pin number of the controller
 // Attention, the pin number is different for c++ and python library
@@ -83,7 +83,7 @@ public:
     void TestValve();
     bool SendTestMeasurement(bool sendState);
     bool WaitTestMeasurement(std::chrono::system_clock::time_point &senseTime,bool &testState,int *senData);
-    void ConMainLoop(int *senData);
+    void ConMainLoop(int *curSen,std::mutex *lock);
 };
 
 
