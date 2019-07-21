@@ -1,7 +1,7 @@
 
 #ifndef RECORDER_HPP
 #define RECORDER_HPP
-
+#include <memory>
 #include <string>
 #include <queue>
 #include <fstream>
@@ -14,6 +14,7 @@
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/vector.hpp>
 #include "RecData.hpp"
+
 #define MAXRECLENGTH 5000
 
 template<class T>
@@ -23,10 +24,10 @@ private:
     RecData<T> *curData;
     std::queue<std::string> dataTemps;
     int tempCount;
-    
+    std::unique_ptr<RecData<T>> test;
     // this is for creating temperary object for saving, I am not sure do I really need it
     RecData<T> *tempData;
-
+    
     
     std::string Label;
 
@@ -65,10 +66,12 @@ Recorder<T>::Recorder(std::string recName,std::string _label)
     this->curData = new RecData<T>();
     this->tempFilesCount =0;
     
+
 }
 template<class T>
 Recorder<T>::~Recorder()
 {
+    std::cout<<this->recorderName<<" begin to save\n";
     while (!this->threadQue.empty())
     {
         std::thread *curThread = this->threadQue.front();
@@ -113,6 +116,7 @@ void Recorder<T>::writeTemp(RecData<T> *tempData)
 template<class T>
 void Recorder<T>::OutputCSV()
 {
+    
     // create senData.csv
     {
         std::ofstream writeCsv;
@@ -137,6 +141,19 @@ void Recorder<T>::OutputCSV()
                 }
                 std::remove(&fileName[0]);
             }
+            // save data has not long enough to be in temp
+            for(int i =0;i<this->tempCount;i++){
+                std::vector<std::vector<int>> leftData = this->curData->getData();
+                std::vector<unsigned long> leftTime = this->curData->getTime();
+                writeCsv<<std::to_string(leftTime[i]);
+                for(unsigned int ii=0;ii<leftData[0].size();ii++){
+                    writeCsv<<','<<leftData[i][ii];
+                }
+                writeCsv<<'\n';
+
+            }
+
+
         }
         writeCsv.close();
     }

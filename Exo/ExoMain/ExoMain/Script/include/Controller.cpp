@@ -6,14 +6,12 @@ const int NUMSEN = 9;
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
-void Controller::ConMainLoop(int *senData,std::mutex *senLock){
-    int curSen[NUMSEN+1];
-    {
-        std::lock_guard<std::mutex> lock(*senLock);
-        
-        std::copy(senData,senData+NUMSEN,std::begin(curSen));
-        
-    }
+void Controller::ConMainLoop(int *senData){
+   
+
+    std::vector<int> curSen(senData+1,senData+NUMSEN+1);
+    this->senRec->PushData((unsigned long)senData[0],curSen);
+    
     // std::cout<<"current sensor value: "
     //     <<curSen[0]<<','<<curSen[1]<<','<<curSen[2]<<','<<curSen[3]<<','<<curSen[4]<<','
     //     <<curSen[5]<<','<<curSen[6]<<','<<curSen[7]<<','<<curSen[8]<<std::endl;
@@ -107,8 +105,11 @@ Controller::Controller()
     //     this->ValveList[i].Off();
     // }
     std::cout<<"valve list created\n";
+    this->senRec = new Recorder<int>("con","time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9");
 }
 
 Controller::~Controller()
 {
+    std::cout<<"controller destory recorder\n";
+    delete this->senRec;
 }
