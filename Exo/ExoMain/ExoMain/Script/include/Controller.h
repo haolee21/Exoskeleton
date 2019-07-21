@@ -4,7 +4,7 @@
 #include <chrono>
 #include<time.h> //this timer
 #include<mutex>
-
+#include <Recorder.hpp>
 //Define the pin number of the controller
 // Attention, the pin number is different for c++ and python library
 // Source: https://www.digikey.com/en/maker/blogs/2019/how-to-use-gpio-on-the-raspberry-pi-with-c
@@ -70,8 +70,7 @@ private:
     Valve testOut = Valve("TestMea",8); //this uses gpio2
 
 
- 
-
+    Recorder<int> *senRec;
     void WaitToSync();
     void Sleep(int sleepTime);
     void Wait(long waitMilli);
@@ -83,7 +82,7 @@ public:
     void TestValve();
     bool SendTestMeasurement(bool sendState);
     bool WaitTestMeasurement(std::chrono::system_clock::time_point &senseTime,bool &testState,int *senData);
-    void ConMainLoop(int *curSen,std::mutex *lock);
+    void ConMainLoop(int *curSen);
 };
 
 

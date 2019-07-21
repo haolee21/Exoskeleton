@@ -47,7 +47,8 @@ Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 
 		this->curBuf = this->senBuffer;
 		this->curHead = this->curBuf;
-		this->senRec =  new Recorder<int>("sen","time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9");
+		this->senRec = new Recorder<int>("sen","time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9");
+		
 	}
 	else
 		std::cout << "Sensor already created" << endl;
@@ -97,7 +98,7 @@ void Sensor::senUpdate()
 	t.tv_nsec += 0 * MSEC;
     this->tsnorm(&t);
 	//
-	Controller con =  Controller();
+	Controller *con = new Controller();
 	int conLoopCount = 1;
 	std::unique_ptr<std::thread> conTh;
 	bool conStart = false;
@@ -109,16 +110,16 @@ void Sensor::senUpdate()
 		//
 
 		this->readSerialPort(this->serialDevId);
-		if(conLoopCount++ %5==0){
+		if(conLoopCount++ ==4){
 			conLoopCount = 0;
 			if(conStart) 
 				(*conTh).join();
 			else
 				conStart = true;
-			conTh.reset(new std::thread(&Controller::ConMainLoop,con,this->senData,this->senLock));
+			conTh.reset(new std::thread(&Controller::ConMainLoop,std::ref(*con),this->senData));
 			
 		}
-		//this->conTh->join();
+		
 		// timer
 		// calculate next shot
         t.tv_nsec += interval;
@@ -135,11 +136,9 @@ void Sensor::senUpdate()
 	}
 	(*conTh).join();
 	std::cout << "sensor ends" << endl;
-	
+	delete con;
 }
-void Sensor::callCon(){
 
-}
 
 
 
