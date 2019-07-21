@@ -98,7 +98,7 @@ void Sensor::senUpdate()
 	t.tv_nsec += 0 * MSEC;
     this->tsnorm(&t);
 	//
-	Controller *con = new Controller();
+	Controller con = Controller();
 	int conLoopCount = 1;
 	std::unique_ptr<std::thread> conTh;
 	bool conStart = false;
@@ -116,7 +116,7 @@ void Sensor::senUpdate()
 				(*conTh).join();
 			else
 				conStart = true;
-			conTh.reset(new std::thread(&Controller::ConMainLoop,std::ref(*con),this->senData));
+			conTh.reset(new std::thread(&Controller::ConMainLoop,std::ref(con),this->senData));
 			
 		}
 		
@@ -136,7 +136,7 @@ void Sensor::senUpdate()
 	}
 	(*conTh).join();
 	std::cout << "sensor ends" << endl;
-	delete con;
+	
 }
 
 

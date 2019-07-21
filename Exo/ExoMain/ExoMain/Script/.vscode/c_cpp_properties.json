@@ -4,11 +4,11 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
+                "${workspaceFolder}/include/**",
+                "${workspaceFolder}/include/",
                 "${workspaceFolder}/include",
                 "${workspaceFolder}/src",
                 "~/cdrive/UCLA/lab/Exoskeleton/Controller/PiLib/wiringPi/wiringPi"
-                
-                
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
