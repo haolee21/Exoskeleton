@@ -1,0 +1,5 @@
+/home/pi/Exo/ExoCpp/build/CMakeFiles/rebuild_cache.dir
+/home/pi/Exo/ExoCpp/build/CMakeFiles/lib.dir
+/home/pi/Exo/ExoCpp/build/CMakeFiles/exo_o.dir
+/home/pi/Exo/ExoCpp/build/CMakeFiles/test.dir
+/home/pi/Exo/ExoCpp/build/CMakeFiles/edit_cache.dir
