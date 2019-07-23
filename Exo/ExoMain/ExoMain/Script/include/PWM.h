@@ -3,7 +3,8 @@
 #include <mutex>
 #include<wiringPi.h>
 #include<thread>
-
+#include<Recorder.hpp>
+#include <memory>
 class PWMGen
 {
 	
@@ -25,7 +26,7 @@ private:
 	int timeFactor = 50;
 	int totalTime = 5000;
 	int offTime = totalTime - onTime;
-
+	
 };
 
 #endif //PWM_H

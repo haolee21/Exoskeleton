@@ -13,6 +13,7 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/vector.hpp>
+
 #include "RecData.hpp"
 
 #define MAXRECLENGTH 5000
@@ -27,10 +28,7 @@ private:
     std::unique_ptr<RecData<T>> test;
     // this is for creating temperary object for saving, I am not sure do I really need it
     RecData<T> *tempData;
-    
-    
     std::string Label;
-
     std::string recorderName;
 
 
@@ -45,7 +43,7 @@ private:
     
 
 public:
-    Recorder(std::string recName, std::string _label);
+    Recorder(std::string recName,std::string _filePath, std::string _label);
     
     ~Recorder();
     void PushData(unsigned long curTime, std::vector<T> curMea);
@@ -54,15 +52,15 @@ public:
 
 
 template<class T>
-Recorder<T>::Recorder(std::string recName,std::string _label)
+Recorder<T>::Recorder(std::string recName,std::string _filePath, std::string _label)
 {
-    std::cout<<"create recorder "<<recName<<std::endl;;
+    
     this->recorderName = recName;
     this->Label = _label;
     
     
     this->tempCount=0;
-    this->filePath = "";
+    this->filePath = _filePath;
 
     //create memory for temperary storage
     // since it may go out of the scope, we put it in the heap
@@ -74,7 +72,7 @@ Recorder<T>::Recorder(std::string recName,std::string _label)
 template<class T>
 Recorder<T>::~Recorder()
 {
-    std::cout<<this->recorderName<<" begin to save\n";
+    
     while (!this->threadQue.empty())
     {
         std::thread *curThread = this->threadQue.front();
@@ -95,7 +93,7 @@ void Recorder<T>::PushData(unsigned long curTime, std::vector<T> curData){
     this->curData->PushTime(curTime);
     this->curData->PushData(curData);
     if((++this->tempCount)>=MAXRECLENGTH){
-        std::cout<<this->recorderName<<" has some temp files to save\n";
+        
         this->tempCount =0;
         //we need to allocate new memory for storage
         this->tempData = this->curData;
@@ -125,12 +123,12 @@ void Recorder<T>::OutputCSV()
     // create senData.csv
     {
         std::ofstream writeCsv;
-        writeCsv.open(this->recorderName+".csv");
+        writeCsv.open(this->filePath+"/"+this->recorderName+".csv");
         {
             
             writeCsv<<this->Label<<'\n';
             while(!this->dataTemps.empty()){
-                std::cout<<this->recorderName<<" read temp files\n";
+                
                 RecData<T> tempData = RecData<T>();
                 std::string fileName = this->dataTemps.front();
                 std::ifstream ifs(fileName);
@@ -151,7 +149,7 @@ void Recorder<T>::OutputCSV()
             }
             
             // save data has not long enough to be in temp
-            std::cout<<this->recorderName<< " files not saved yet "<<this->tempCount<<std::endl;
+            
             for(int i =0;i<this->tempCount;i++){
                     
                 std::vector<std::vector<T>> leftData = this->curData->getData();
@@ -164,7 +162,7 @@ void Recorder<T>::OutputCSV()
             }
         }
         writeCsv.close();
-        std::cout<<this->recorderName<<" finish saving\n";
+        
     }
 
 

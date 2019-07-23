@@ -55,7 +55,7 @@ class Sensor
 {
 public:
 	
-	Sensor(char *port,long sampTmilli,mutex* senLock); //sampT is in milli
+	Sensor(string _filePath,char *port,long sampTmilli,mutex* senLock); //sampT is in milli
 	~Sensor();
 	
 	void Start(std::chrono::system_clock::time_point startTime);
@@ -102,6 +102,7 @@ private:
 	void callCon();
 	//for data recording
 
+	std::string filePath;
 	Recorder<int> *senRec;
 	//unique_ptr<Recorder<int>> rec2; //smart pointer test, failed, don't know why since it works in simpler cases
 	

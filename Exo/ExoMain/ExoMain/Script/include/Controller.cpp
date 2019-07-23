@@ -66,7 +66,7 @@ void Controller::WaitToSync()
 void Controller::TestReactingTime(){
     if(this->trParam.dataNotSent){
         this->trParam.dataNotSent = false;
-        this->trParam.testOut.On(this->senData[0]);
+        this->trParam.testOut->On(this->senData[0]);
         this->trParam.sendTime = std::chrono::system_clock::now();
     }
     else{
@@ -74,21 +74,21 @@ void Controller::TestReactingTime(){
             std::chrono::system_clock::time_point curTime = std::chrono::system_clock::now(); 
             microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->trParam.sendTime));;
             std::cout<<" reaction time = "<< sen_time.count()<< "us\n";
-            this->trParam.testOut.Off(this->senData[0]);
+            this->trParam.testOut->Off(this->senData[0]);
             this->trParam.dataNotSent = true;
         }
 
     }
     
 }
-Controller::Controller()
+Controller::Controller(std::string filePath)
 {
-    this->LKneVal1=new Valve("LKneVal1",OP9);
-    this->LKneVal2=new Valve("LKneVal2",OP4);
-    this->LAnkVal1=new Valve("LAnkVal1",OP6);
-    this->LAnkVal2=new Valve("LAnkVal2",OP7);
-    this->BalVal=new Valve("BalVal",OP10);
-    this->LRelVal=new Valve("LRelVal",OP8);
+    this->LKneVal1=new Valve("LKneVal1",filePath,OP9);
+    this->LKneVal2=new Valve("LKneVal2",filePath,OP4);
+    this->LAnkVal1=new Valve("LAnkVal1",filePath,OP6);
+    this->LAnkVal2=new Valve("LAnkVal2",filePath,OP7);
+    this->BalVal=new Valve("BalVal",filePath,OP10);
+    this->LRelVal=new Valve("LRelVal",filePath,OP8);
     this->ValveList[0] = this->LKneVal1;
     this->ValveList[1] = this->LKneVal2;
     this->ValveList[2] = this->LAnkVal1;
@@ -96,31 +96,31 @@ Controller::Controller()
     this->ValveList[4] = this->BalVal;
     this->ValveList[5] = this->LRelVal;
     
-    std::cout<<"start to create controller\n";
+    
    
-    std::cout<<"valve list created\n";
-    //this->senRec.reset(new Recorder<int>("con","time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9"));
-    this->conRec = new Recorder<int>("con","time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9");
+   
+    
+    this->conRec = new Recorder<int>("con",filePath,"time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9");
     
     //turn off all the valve
     Valve **begVal = this->ValveList;
     do{
-        std::cout<<"off valves\n";
         (*begVal)->Off(0);
     }while(++begVal!=std::end(this->ValveList));
  
-    std::cout<<"off mea\n";
-    this->trParam.testOut.Off(0);
+    
+    this->trParam.testOut = new Valve("TestMea",filePath,8); //this uses gpio2
+    this->trParam.testOut->Off(0);
     
 }
 
 Controller::~Controller()
 {
-    std::cout<<"controller destory recorder\n";
+    
     delete this->conRec;
     Valve **begVal = this->ValveList;
     do{
-        std::cout<<"off valves\n";
+        
         delete (*begVal);
     }while(++begVal!=std::end(this->ValveList));
 }

@@ -85,7 +85,7 @@ private:
     {
         std::chrono::system_clock::time_point sendTime;
         bool dataNotSent = true;
-        Valve testOut = Valve("TestMea",8); //this uses gpio2
+        Valve *testOut; 
     };
     TestReactParam trParam; 
     void TestReactingTime();
@@ -106,7 +106,7 @@ private:
 
 public:
     Valve* ValveList[6];
-    Controller();
+    Controller(std::string _filePath);
     ~Controller();
     
     

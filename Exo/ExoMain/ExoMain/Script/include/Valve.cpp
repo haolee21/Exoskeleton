@@ -22,25 +22,18 @@ void Valve::Off(int curTime){
     this->valveRec->PushData((unsigned long)curTime,curRes);
 
 }
-Valve::Valve(string name,int valveId)
+Valve::Valve(string name,string path, int valveId)
 {
     wiringPiSetup(); // This line is required everytime you setup an input output pin!!
     this->name = name;
     this->valveId = valveId;
     pinMode(valveId, OUTPUT);
-    this->valveRec=new Recorder<bool>(this->name,"time,"+this->name);
+    this->valveRec=new Recorder<bool>(this->name,path,"time,"+this->name);
 }
-Valve::Valve(string name, int valveId, bool _dummy){
-    wiringPiSetup(); // This line is required everytime you setup an input output pin!!
-    this->name = name;
-    this->valveId = valveId;
-    pinMode(valveId, OUTPUT);
-    this->valveRec=new Recorder<bool>(this->name,"time,"+this->name);
-    this->dummy = false;
-}
+
 Valve::~Valve()
 {
-    std::cout<<this->GetValveName()<< " destoried\n";
+    
     if(this->dummy)
         delete this->valveRec;
     
