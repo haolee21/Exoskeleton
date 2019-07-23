@@ -1,40 +1,49 @@
 #include "Controller.h"
 #include <iostream>
 #include <wiringPi.h>
-
+#include <thread>
+#include <queue>
 const int NUMSEN = 9;
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
 void Controller::ConMainLoop(int *senData){
-   
-
+    queue<thread> taskQue;
+    this->senData = senData;
     std::vector<int> curSen(senData+1,senData+NUMSEN+1);
-    this->senRec->PushData((unsigned long)senData[0],curSen);
-    
-    // std::cout<<"current sensor value: "
-    //     <<curSen[0]<<','<<curSen[1]<<','<<curSen[2]<<','<<curSen[3]<<','<<curSen[4]<<','
-    //     <<curSen[5]<<','<<curSen[6]<<','<<curSen[7]<<','<<curSen[8]<<std::endl;
+    this->conRec->PushData((unsigned long)senData[0],curSen);
 
+    // assign task to controller
+    //taskQue.push(std::thread(&Controller::TestReactingTime,this));
+    taskQue.push(std::thread(&Controller::TestValve,this));
+    while(!taskQue.empty()){
+        taskQue.front().join();
+        taskQue.pop();
+    }
 }
-
-
 
 void Controller::TestValve()
 {
-
-    for (int i = 0; i < this->ValNum; i++)
-    {
-
-        std::cout << "Test Valve " << i << std::endl;
-        for (int i2 = 0; i2 < 20; i2++)
-        {
-            this->ValveList[i].On();
-            this->Sleep(200);
-            this->ValveList[i].Off();
-            this->Sleep(200);
+    //we will on/off each valve 20 times
+    if(this->tvParam.singleValCount++<this->tvParam.maxTest){
+        if(this->tvParam.curValCond){
+            this->ValveList[this->tvParam.testValIdx]->On(this->senData[0]);
+            this->tvParam.curValCond = false;
+        }
+        else{
+            this->ValveList[this->tvParam.testValIdx]->Off(this->senData[0]);
+            this->tvParam.curValCond = true;
+        } 
+    }
+    else{
+        this->tvParam.singleValCount = 0;
+        this->tvParam.testValIdx++;
+        this->tvParam.curValCond = true;
+        if(this->tvParam.testValIdx==this->ValNum){
+            this->tvParam.testValIdx = 0;
         }
     }
+
 }
 void Controller::Sleep(int sleepTime)
 {
@@ -52,64 +61,66 @@ void Controller::WaitToSync()
     nanosleep(&ts, (struct timespec *)NULL);
 }
 
-void Controller::Wait(long waitMilli)
-{
-    struct timespec ts = {0};
-    ts.tv_sec = 0;
-    ts.tv_nsec = waitMilli*1000000;
-    nanosleep(&ts, (struct timespec *)NULL);
-}
-bool Controller::SendTestMeasurement(bool testState)
-{
-    //This will control the output pin with desired testState
-    if(testState){
-        this->testOut.On();
-    }
-    else{
-        this->testOut.Off();
-    }
-}
-bool Controller::WaitTestMeasurement(std::chrono::system_clock::time_point &senseTime,bool &testState,int *senData){
-    if(testState){
-        if(senData[9]>300){
-            senseTime = std::chrono::system_clock::now(); 
-            testState = false;
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-    else{
-        if(senData[9]<200){
-            senseTime = std::chrono::system_clock::now(); 
-            testState = true;
-            return true;
-        }
-        else{
-            return false;
-        }
-    }
-    return false;
 
+
+void Controller::TestReactingTime(){
+    if(this->trParam.dataNotSent){
+        this->trParam.dataNotSent = false;
+        this->trParam.testOut.On(this->senData[0]);
+        this->trParam.sendTime = std::chrono::system_clock::now();
+    }
+    else{
+        if(this->senData[9]>300){
+            std::chrono::system_clock::time_point curTime = std::chrono::system_clock::now(); 
+            microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->trParam.sendTime));;
+            std::cout<<" reaction time = "<< sen_time.count()<< "us\n";
+            this->trParam.testOut.Off(this->senData[0]);
+            this->trParam.dataNotSent = true;
+        }
+
+    }
+    
 }
 Controller::Controller()
 {
+    this->LKneVal1=new Valve("LKneVal1",OP9);
+    this->LKneVal2=new Valve("LKneVal2",OP4);
+    this->LAnkVal1=new Valve("LAnkVal1",OP6);
+    this->LAnkVal2=new Valve("LAnkVal2",OP7);
+    this->BalVal=new Valve("BalVal",OP10);
+    this->LRelVal=new Valve("LRelVal",OP8);
+    this->ValveList[0] = this->LKneVal1;
+    this->ValveList[1] = this->LKneVal2;
+    this->ValveList[2] = this->LAnkVal1;
+    this->ValveList[3] = this->LAnkVal2;
+    this->ValveList[4] = this->BalVal;
+    this->ValveList[5] = this->LRelVal;
+    
     std::cout<<"start to create controller\n";
-    std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now(); 
-    //turn off all the valves and set start time
-    // for (int i = 0; i < this->ValNum; i++)
-    // {
-    //     this->ValveList[i].SetStartTime(startTime);
-    //     this->ValveList[i].Off();
-    // }
+   
     std::cout<<"valve list created\n";
-    this->senRec = new Recorder<int>("con","time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9");
+    //this->senRec.reset(new Recorder<int>("con","time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9"));
+    this->conRec = new Recorder<int>("con","time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9");
+    
+    //turn off all the valve
+    Valve **begVal = this->ValveList;
+    do{
+        std::cout<<"off valves\n";
+        (*begVal)->Off(0);
+    }while(++begVal!=std::end(this->ValveList));
+ 
+    std::cout<<"off mea\n";
+    this->trParam.testOut.Off(0);
+    
 }
 
 Controller::~Controller()
 {
     std::cout<<"controller destory recorder\n";
-    delete this->senRec;
+    delete this->conRec;
+    Valve **begVal = this->ValveList;
+    do{
+        std::cout<<"off valves\n";
+        delete (*begVal);
+    }while(++begVal!=std::end(this->ValveList));
 }

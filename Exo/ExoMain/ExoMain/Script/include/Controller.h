@@ -5,6 +5,8 @@
 #include<time.h> //this timer
 #include<mutex>
 #include <Recorder.hpp>
+#include <memory>
+#include <PWM.h>
 //Define the pin number of the controller
 // Attention, the pin number is different for c++ and python library
 // Source: https://www.digikey.com/en/maker/blogs/2019/how-to-use-gpio-on-the-raspberry-pi-with-c
@@ -60,28 +62,54 @@ class Controller
 private:
     /* data */
     int ValNum = 6;
-    Valve LKneVal1 = Valve("LKneVal1",OP9);
-    Valve LKneVal2 = Valve("LKneVal2",OP4);
-    Valve LAnkVal1 = Valve("LAnkVal1",OP6);
-    Valve LAnkVal2 = Valve("LAnkVal2",OP7);
-    Valve BalVal = Valve("BalVal",OP10);
-    Valve LRelVal = Valve("LRelVal",OP8);
+    Valve *LKneVal1;
+     
+    Valve *LKneVal2; 
+    Valve *LAnkVal1; 
+    Valve *LAnkVal2; 
+    Valve *BalVal; 
+    Valve *LRelVal; 
     
-    Valve testOut = Valve("TestMea",8); //this uses gpio2
+    int *senData;
 
-
-    Recorder<int> *senRec;
+    
+    //std::unique_ptr<Recorder<int>> senRec;
+    Recorder<int> *conRec;
     void WaitToSync();
     void Sleep(int sleepTime);
-    void Wait(long waitMilli);
-    int preTime; //this is for testing sen
+
+    
+    // valve control func and parameter
+    // test reacting time
+    struct TestReactParam
+    {
+        std::chrono::system_clock::time_point sendTime;
+        bool dataNotSent = true;
+        Valve testOut = Valve("TestMea",8); //this uses gpio2
+    };
+    TestReactParam trParam; 
+    void TestReactingTime();
+
+    // test if valve is still functioning
+    struct TestValParam
+    {
+        int testValIdx=0;
+        int singleValCount =0;
+        bool curValCond=false;
+        const int maxTest = 20;
+    };
+    TestValParam tvParam;
+    void TestValve();
+    
+    
+
+
 public:
-    Valve ValveList[6]={LKneVal1,LKneVal2,LAnkVal1,LAnkVal2,BalVal,LRelVal};
+    Valve* ValveList[6];
     Controller();
     ~Controller();
-    void TestValve();
-    bool SendTestMeasurement(bool sendState);
-    bool WaitTestMeasurement(std::chrono::system_clock::time_point &senseTime,bool &testState,int *senData);
+    
+    
     void ConMainLoop(int *curSen);
 };
 

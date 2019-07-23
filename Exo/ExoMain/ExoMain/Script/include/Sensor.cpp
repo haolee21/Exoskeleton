@@ -25,6 +25,7 @@ typedef std::chrono::duration<unsigned long, std::micro> microsecs_ul;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
 Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 {
+	//this->rec2.reset(new Recorder<int>("123","456")); //don't know why but cannot use smart pointer for this
 	std::cout << "creating" << endl;
 	if (!this->is_create)
 	{
@@ -36,7 +37,7 @@ Sensor::Sensor(char *portName, long sampT, mutex *senLock)
 		
 		this->senLock = senLock;
 		this->curBufIndex = 0;
-		this->preTime = 0; //for testing purpose
+		
 
 		this->dataCollect = 0;
 		this->noHead = true;
@@ -116,7 +117,7 @@ void Sensor::senUpdate()
 				(*conTh).join();
 			else
 				conStart = true;
-			conTh.reset(new std::thread(&Controller::ConMainLoop,std::ref(con),this->senData));
+			conTh.reset(new std::thread(&Controller::ConMainLoop,&con,this->senData));
 			
 		}
 		

@@ -53,6 +53,7 @@ void setup()
 	pinMode(50, OUTPUT);
 
 	// Timer setting: http://www.8bit-era.cz/arduino-timer-interrupts-calculator.html
+
 // TIMER 1 for interrupt frequency 625 Hz:
 cli(); // stop interrupts
 TCCR1A = 0; // set entire TCCR1A register to 0

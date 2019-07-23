@@ -42,8 +42,11 @@ private:
     std::string filePath;
     std::queue<std::thread*> threadQue;
 
+    
+
 public:
     Recorder(std::string recName, std::string _label);
+    
     ~Recorder();
     void PushData(unsigned long curTime, std::vector<T> curMea);
     void OutputCSV();
@@ -53,7 +56,7 @@ public:
 template<class T>
 Recorder<T>::Recorder(std::string recName,std::string _label)
 {
-    std::cout<<"create\n";
+    std::cout<<"create recorder "<<recName<<std::endl;;
     this->recorderName = recName;
     this->Label = _label;
     
@@ -80,6 +83,7 @@ Recorder<T>::~Recorder()
     }
     
     this->OutputCSV();
+    
 
     if(!this->dataTemps.empty())
         std::cout<<"Temperary files remaining\n";
@@ -91,6 +95,7 @@ void Recorder<T>::PushData(unsigned long curTime, std::vector<T> curData){
     this->curData->PushTime(curTime);
     this->curData->PushData(curData);
     if((++this->tempCount)>=MAXRECLENGTH){
+        std::cout<<this->recorderName<<" has some temp files to save\n";
         this->tempCount =0;
         //we need to allocate new memory for storage
         this->tempData = this->curData;
@@ -122,40 +127,44 @@ void Recorder<T>::OutputCSV()
         std::ofstream writeCsv;
         writeCsv.open(this->recorderName+".csv");
         {
+            
             writeCsv<<this->Label<<'\n';
             while(!this->dataTemps.empty()){
+                std::cout<<this->recorderName<<" read temp files\n";
                 RecData<T> tempData = RecData<T>();
                 std::string fileName = this->dataTemps.front();
                 std::ifstream ifs(fileName);
                 boost::archive::text_iarchive ar(ifs);
                 this->dataTemps.pop();
                 ar & tempData;
-                std::vector<std::vector<int>> data = tempData.getData();
+                std::vector<std::vector<T>> data = tempData.getData();
                 std::vector<unsigned long> time = tempData.getTime();
                 for(unsigned int i=0;i<MAXRECLENGTH;i++){
                     writeCsv<<std::to_string(time[i]);
-                    for(unsigned int ii=0;ii<data[i].size();ii++){
+                    for(unsigned int ii=0;ii<data[0].size();ii++){
+                        
                         writeCsv<<','<<data[i][ii];
                     }
                     writeCsv<<'\n';
                 }
                 std::remove(&fileName[0]);
             }
+            
             // save data has not long enough to be in temp
+            std::cout<<this->recorderName<< " files not saved yet "<<this->tempCount<<std::endl;
             for(int i =0;i<this->tempCount;i++){
-                std::vector<std::vector<int>> leftData = this->curData->getData();
+                    
+                std::vector<std::vector<T>> leftData = this->curData->getData();
                 std::vector<unsigned long> leftTime = this->curData->getTime();
                 writeCsv<<std::to_string(leftTime[i]);
                 for(unsigned int ii=0;ii<leftData[0].size();ii++){
                     writeCsv<<','<<leftData[i][ii];
                 }
                 writeCsv<<'\n';
-
             }
-
-
         }
         writeCsv.close();
+        std::cout<<this->recorderName<<" finish saving\n";
     }
 
 

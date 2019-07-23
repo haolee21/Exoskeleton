@@ -39,7 +39,7 @@
 #include <termios.h> // Contains POSIX terminal control definitions
 #include <unistd.h> // write(), read(), close()
 #include <mutex>
-
+#include <memory>
 //data recording
 #include "Recorder.hpp"
 const int NUMSEN = 9;
@@ -63,10 +63,7 @@ public:
 	int senData[NUMSEN+1]; //data get from ADC
 	thread *th_SenUpdate;
 
-	//create array to storage sensing data
-	int **totSenRec = new int*[recLength];
 	
-	int recIndex;
 private:
 	std::chrono::system_clock::time_point origin;
 	bool is_create = false;
@@ -89,11 +86,11 @@ private:
 
 	mutex* senLock;
 	
-	int preTime;
+	
 	int serialPortConnect(char *portName);
 	void readSerialPort(int serialPort);
 	void serialPortClose(int serial_port);
-	void waitToSync(std::chrono::system_clock::time_point,long extraWait);
+	
 	
 	//functions that Ji used
 	
@@ -104,7 +101,11 @@ private:
 	std::thread *conTh;
 	void callCon();
 	//for data recording
+
 	Recorder<int> *senRec;
+	//unique_ptr<Recorder<int>> rec2; //smart pointer test, failed, don't know why since it works in simpler cases
+	
+	
 };
 
 

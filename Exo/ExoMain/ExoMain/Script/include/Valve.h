@@ -5,7 +5,8 @@
 
 #include <chrono>
 #include<ctime> //this timer
-
+#include "Recorder.hpp"
+#include <memory>
 #define MAXRECLENGTHVAL 24000
 using namespace std;
 
@@ -19,20 +20,20 @@ private:
     void writeTempFile();
     bool recCond[MAXRECLENGTHVAL];
     int curRecIndex;
+    //unique_ptr<Recorder<bool>> valveRec;
+    Recorder<bool> *valveRec;
+
+    bool dummy=true;
 public:
     Valve(string name, int valveId);
+    Valve(string name, int valveId, bool _dummy);
     ~Valve();
-    void On();
-    void Off();
+    void On(int curTime);
+    void Off(int curTime);
     
-    void WriteWholeFile();
-    // Time is recorded under raspberry pi's timer, need to be sync with arduino later
-    // We record the time difference 
-    // The size of the array is too big to only use the memory on stack, we must allocate it on heap
-    // Need to delete the array when valve object is destoried
-    //double *valTimeRec = new double[recLength];
-    //int recIndex;
-    //bool *valCondRec=new bool[recLength];
+   
+    string GetValveName();
+    
 };
 
 #endif //VALVE_H
