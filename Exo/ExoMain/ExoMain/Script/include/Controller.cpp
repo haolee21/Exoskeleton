@@ -16,6 +16,7 @@ void Controller::ConMainLoop(int *senData){
     // assign task to controller
     //taskQue.push(std::thread(&Controller::TestReactingTime,this));
     taskQue.push(std::thread(&Controller::TestValve,this));
+    taskQue.push(std::thread(&Controller::TestPWM,this));
     while(!taskQue.empty()){
         taskQue.front().join();
         taskQue.pop();
@@ -81,6 +82,32 @@ void Controller::TestReactingTime(){
     }
     
 }
+void Controller::TestPWM(){
+    if(this->tpParam.notStart){
+        this->KnePreVal->SetDuty(0,this->senData[0]);
+        this->AnkPreVal->SetDuty(0,this->senData[0]);
+        this->tpParam.notStart = false;
+        //this->KnePreVal->Start();
+    }
+    else
+    {
+        if(this->tpParam.dutyLoopCount==100){
+            this->tpParam.dutyLoopCount=0;
+            if(this->tpParam.curTestDuty<100){
+                this->tpParam.curTestDuty+=10;
+            }
+            else{
+                this->KnePreVal->Stop();
+            }
+        }
+        else
+        {
+            this->tpParam.dutyLoopCount++;
+        }
+        this->KnePreVal->SetDuty(this->tpParam.curTestDuty,this->senData[0]);
+        //this->KnePreVal->SetDuty(50,this->senData[0]);
+    }
+}
 Controller::Controller(std::string filePath)
 {
     this->LKneVal1=new Valve("LKneVal1",filePath,OP9);
@@ -89,6 +116,9 @@ Controller::Controller(std::string filePath)
     this->LAnkVal2=new Valve("LAnkVal2",filePath,OP7);
     this->BalVal=new Valve("BalVal",filePath,OP10);
     this->LRelVal=new Valve("LRelVal",filePath,OP8);
+    this->KnePreVal = new PWMGen("KnePreVal",filePath,OP1,30000L);
+    this->AnkPreVal = new PWMGen("AnkPreVal",filePath,OP2,30000L);
+
     this->ValveList[0] = this->LKneVal1;
     this->ValveList[1] = this->LKneVal2;
     this->ValveList[2] = this->LAnkVal1;
@@ -96,7 +126,10 @@ Controller::Controller(std::string filePath)
     this->ValveList[4] = this->BalVal;
     this->ValveList[5] = this->LRelVal;
     
-    
+    this->KnePreVal->SetDuty(0,0);
+    this->AnkPreVal->SetDuty(0,0);
+    this->knePreValTh = this->KnePreVal->Start();
+    this->ankPreValTh = this->AnkPreVal->Start();
    
    
     
@@ -116,7 +149,13 @@ Controller::Controller(std::string filePath)
 
 Controller::~Controller()
 {
-    
+    this->KnePreVal->Stop();
+    this->AnkPreVal->Stop();
+
+    this->knePreValTh->join();
+    this->ankPreValTh->join();
+    delete this->KnePreVal;
+    delete this->AnkPreVal;
     delete this->conRec;
     Valve **begVal = this->ValveList;
     do{

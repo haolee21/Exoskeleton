@@ -4,31 +4,36 @@
 #include<wiringPi.h>
 #include<thread>
 #include<Recorder.hpp>
-
+#include <string>
+#include <chrono>
+#include<ctime> //this timer
 class PWMGen
 {
 	
 public:
-	PWMGen(int pinId,int* duty,std::mutex* lock);
+	PWMGen(std::string valveName,std::string filePath, int pinId,int _sampTMicro);
 	~PWMGen();
-	void SetDuty(int onDuty);
+	void SetDuty(int onDuty,int curTime);
 	std::thread *Start();
 	std::mutex* DutyLock;
 	void Stop();
 private:
-	int duty = 0;
+	int pinId;
+	
 	bool on = false;
 	void Mainloop();
 
-	int pinId;
-	// time unit is micro second, 5000 us => 200 Hz
-	int onTime = 0;
-	int timeFactor = 50;
-	int totalTime = 5000;
-	int offTime = totalTime - onTime;
-
-	Recorder<float> *pwmRec;
+	void CalTime(int duty);
 	
+	//calculate on time
+	int onTime;
+	
+
+	Recorder<int> *pwmRec;
+	//timer 
+	void tsnorm(struct timespec *ts);
+	int sampT;
+	long int ms_cnt = 0;
 };
 
 #endif //PWM_H

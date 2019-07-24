@@ -7,6 +7,7 @@
 #include <Recorder.hpp>
 #include <memory>
 #include <PWM.h>
+#include <thread>
 //Define the pin number of the controller
 // Attention, the pin number is different for c++ and python library
 // Source: https://www.digikey.com/en/maker/blogs/2019/how-to-use-gpio-on-the-raspberry-pi-with-c
@@ -71,8 +72,10 @@ private:
     Valve *LRelVal; 
     
     int *senData;
-
-    
+    PWMGen *KnePreVal;
+    PWMGen *AnkPreVal;
+    std::thread *knePreValTh;
+    std::thread *ankPreValTh;
     //std::unique_ptr<Recorder<int>> senRec;
     Recorder<int> *conRec;
     void WaitToSync();
@@ -101,7 +104,15 @@ private:
     TestValParam tvParam;
     void TestValve();
     
-    
+    // test PWM Valve function
+    struct TestPwmParam
+    {
+        bool notStart = true;
+        int dutyLoopCount = 0;
+        int curTestDuty=0;
+    };
+    TestPwmParam tpParam;
+    void TestPWM();
 
 
 public:

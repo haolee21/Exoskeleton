@@ -16,7 +16,7 @@
 #define MSEC (1000 * USEC)
 #define SEC (1000 * MSEC)
 
-long int ms_cnt = 0;
+
 
 
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
@@ -94,8 +94,8 @@ void Sensor::senUpdate()
 	struct timespec t;
     //struct sched_param param;
     long int interval = this->sampT*USEC;
-    long int cnt = 0;
-    long int cnt1 = 0;
+    // long int cnt = 0;
+    // long int cnt1 = 0;
 	clock_gettime(CLOCK_MONOTONIC, &t);
 	t.tv_nsec += 0 * MSEC;
     this->tsnorm(&t);
@@ -126,14 +126,7 @@ void Sensor::senUpdate()
 		// calculate next shot
         t.tv_nsec += interval;
         this->tsnorm(&t);
-        if (cnt++ >= 1000)
-        {
-            //printf("%ld\n", cnt1);
-            cnt = 1;
-        }
-        ms_cnt++;
-        cnt1++;
-		//
+
 
 	}
 	(*conTh).join();
