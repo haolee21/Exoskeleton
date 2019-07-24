@@ -23,7 +23,7 @@ typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<unsigned long, std::micro> microsecs_ul;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
-Sensor::Sensor(std::string _filePath,char *portName, long sampT, mutex *senLock)
+Sensor::Sensor(std::string _filePath,char *portName, long sampT)
 {
 	//this->rec2.reset(new Recorder<int>("123","456")); //don't know why but cannot use smart pointer for this
 	std::cout << "creating" << endl;
@@ -36,7 +36,7 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT, mutex *senLock)
 		
 		//initialize data receiving buffer
 		
-		this->senLock = senLock;
+		
 		this->curBufIndex = 0;
 		
 
@@ -258,7 +258,7 @@ void Sensor::readSerialPort(int serialPort)
 					microsecs_ul sen_time(std::chrono::duration_cast<microsecs_ul>(curTime - this->origin));
 					unsigned long timeNow = sen_time.count(); 
 					{
-						std::lock_guard<std::mutex> lock(*this->senLock);
+						
 						this->senData[0] = (int)timeNow;
 						this->senData[1] = (int)(tempSenData[1]) + (int)(tempSenData[2] << 8);
 						this->senData[2] = (int)(tempSenData[3]) + (int)(tempSenData[4] << 8);

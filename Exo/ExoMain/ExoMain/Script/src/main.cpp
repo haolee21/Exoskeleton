@@ -11,7 +11,7 @@
 #include <boost/date_time.hpp>
 
 #include <string>
-mutex SenLock;
+
 void DelaySys(int waitTime) {
 	struct timespec ts2 = { 0 };
 	ts2.tv_sec = 0;
@@ -19,7 +19,7 @@ void DelaySys(int waitTime) {
 	nanosleep(&ts2, (struct timespec*)NULL);
 }
 void ReadSenData(Sensor *sensor){
-	std::lock_guard<std::mutex> lock(SenLock);
+	
 	std::cout<<"main"<<sensor->senData[0];
 	std::cout<<endl;
 }
@@ -41,13 +41,27 @@ int main(void)
 
 	
 	char portName[] = "/dev/ttyACM0";
-	Sensor sensor = Sensor(filePath,portName, 1600L,&SenLock);
+	Sensor sensor = Sensor(filePath,portName, 1600L);
 	std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
 	sensor.Start(startTime);
 	cout << "finish creating" << endl;
 	
-	
-	for(int i=0;i<1000;i++){
+	while(true){
+		cout<<"Command: ";
+		string command;
+		cin>>command;
+
+
+		if(command == "end")
+			break;
+
+
+
+
+	}
+
+
+	for(int i=0;i<100;i++){
 		
 		DelaySys(1);
 	}
