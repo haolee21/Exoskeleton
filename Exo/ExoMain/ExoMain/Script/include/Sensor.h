@@ -55,7 +55,7 @@ class Sensor
 {
 public:
 	
-	Sensor(string _filePath,char *port,long sampTmilli,mutex* senLock); //sampT is in milli
+	Sensor(string _filePath,char *port,long sampTmicro,mutex* senLock); //sampT is in milli
 	~Sensor();
 	
 	void Start(std::chrono::system_clock::time_point startTime);
