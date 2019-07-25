@@ -24,6 +24,7 @@ void ReadSenData(Sensor *sensor){
 	std::cout<<endl;
 }
 
+
 using namespace std;
 int main(void)
 {
@@ -39,34 +40,43 @@ int main(void)
 
 	wiringPiSetupSys(); //setup the system ports, timer, etc. 
 
+	//define command array
+	Com com;
+	// const int comLen =2;
+	// bool *comArray= new bool[comLen];
+	// bool *start = comArray;
+
+	for(int i = 0;i<com.comLen;i++){
+		com.comArray[i] = false;
+
+	}
 	
 	char portName[] = "/dev/ttyACM0";
-	Sensor sensor = Sensor(filePath,portName, 1600L);
+	Sensor sensor = Sensor(filePath,portName, 1600L,&com);
 	std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
 	sensor.Start(startTime);
 	cout << "finish creating" << endl;
+	
 	
 	while(true){
 		cout<<"Command: ";
 		string command;
 		cin>>command;
-
-
-		if(command == "end")
-			break;
-
-
-
-
+		{
+			lock_guard<mutex> lock(com.comLock);
+			if(command=="testpwm")
+				com.comArray[TESTPWM] = true;
+			else if(command=="testval")
+				com.comArray[TESTVAL] = true;
+			else if(command == "end")
+				break;
+			else
+				cout<<"not such command\n";	
+		}
 	}
-
-
-	for(int i=0;i<100;i++){
-		
+	for(int i=0;i<100;i++){	
 		DelaySys(1);
 	}
-	
-	
 	sensor.Stop();
 	
 
@@ -74,5 +84,6 @@ int main(void)
 
 
 	DelaySys(5);
+	
 	return 0;
 }

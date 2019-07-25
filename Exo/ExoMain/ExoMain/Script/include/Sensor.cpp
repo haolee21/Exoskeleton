@@ -23,7 +23,7 @@ typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<unsigned long, std::micro> microsecs_ul;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
-Sensor::Sensor(std::string _filePath,char *portName, long sampT)
+Sensor::Sensor(std::string _filePath,char *portName, long sampT,Com *_com)
 {
 	//this->rec2.reset(new Recorder<int>("123","456")); //don't know why but cannot use smart pointer for this
 	std::cout << "creating" << endl;
@@ -35,15 +35,11 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT)
 		this->sampT = sampT;
 		
 		//initialize data receiving buffer
-		
-		
 		this->curBufIndex = 0;
-		
-
 		this->dataCollect = 0;
 		this->noHead = true;
 		this->curHead = this->curBuf;
-	
+
 		if (this->serialDevId == -1)
 			std::cout << "Sensor init failed" << endl;
 
@@ -51,6 +47,8 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT)
 		this->curHead = this->curBuf;
 		this->senRec = new Recorder<int>("sen",_filePath,"time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9");
 		
+		//Controller
+		this->com = _com;		
 	}
 	else
 		std::cout << "Sensor already created" << endl;
@@ -100,7 +98,7 @@ void Sensor::senUpdate()
 	t.tv_nsec += 0 * MSEC;
     this->tsnorm(&t);
 	//
-	Controller con = Controller(this->filePath);
+	Controller con = Controller(this->filePath,this->com);
 	int conLoopCount = 1;
 	std::unique_ptr<std::thread> conTh;
 	bool conStart = false;
@@ -323,6 +321,8 @@ void Sensor::serialPortClose(int serial_port)
 Sensor::~Sensor()
 {
 	std::cout << "start to delete" << std::endl;
+	
+
 	delete this->senRec;
 	delete this->th_SenUpdate;
 

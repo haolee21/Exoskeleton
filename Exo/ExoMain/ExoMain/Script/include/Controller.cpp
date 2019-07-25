@@ -15,8 +15,14 @@ void Controller::ConMainLoop(int *senData){
 
     // assign task to controller
     //taskQue.push(std::thread(&Controller::TestReactingTime,this));
-    taskQue.push(std::thread(&Controller::TestValve,this));
-    taskQue.push(std::thread(&Controller::TestPWM,this));
+    {
+        std::lock_guard<std::mutex> lock(this->com->comLock);
+        if(this->com->comArray[TESTVAL])
+            taskQue.push(std::thread(&Controller::TestValve,this));
+        if(this->com->comArray[TESTPWM])
+            taskQue.push(std::thread(&Controller::TestPWM,this));
+    }
+    
     while(!taskQue.empty()){
         taskQue.front().join();
         taskQue.pop();
@@ -108,8 +114,10 @@ void Controller::TestPWM(){
         //this->KnePreVal->SetDuty(50,this->senData[0]);
     }
 }
-Controller::Controller(std::string filePath)
+Controller::Controller(std::string filePath,Com *_com)
 {
+    this->com = _com;
+
     this->LKneVal1=new Valve("LKneVal1",filePath,OP9);
     this->LKneVal2=new Valve("LKneVal2",filePath,OP4);
     this->LAnkVal1=new Valve("LAnkVal1",filePath,OP6);

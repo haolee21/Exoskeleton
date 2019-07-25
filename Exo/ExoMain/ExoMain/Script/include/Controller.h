@@ -56,7 +56,15 @@ const int OP13 = 9;
 const int OP14 = 0;
 const int OP15 = 2;
 const int OP16 = 3;
-
+// index of command
+#define TESTVAL 0
+#define TESTPWM 1
+struct Com
+{
+	const int comLen =2;
+	bool comArray[2];
+	mutex comLock;
+};
 
 class Controller
 {
@@ -81,7 +89,9 @@ private:
     void WaitToSync();
     void Sleep(int sleepTime);
 
-    
+    //command
+    Com *com;
+
     // valve control func and parameter
     // test reacting time
     struct TestReactParam
@@ -117,7 +127,7 @@ private:
 
 public:
     Valve* ValveList[6];
-    Controller(std::string _filePath);
+    Controller(std::string _filePath,Com *_com);
     ~Controller();
     
     
