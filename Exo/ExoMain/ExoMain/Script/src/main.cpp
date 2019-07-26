@@ -11,6 +11,7 @@
 #include <boost/date_time.hpp>
 
 #include <string>
+#include "Displayer.hpp"
 
 void DelaySys(int waitTime) {
 	struct timespec ts2 = { 0 };
@@ -55,8 +56,15 @@ int main(void)
 	Sensor sensor = Sensor(filePath,portName, 1600L,&com);
 	std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
 	sensor.Start(startTime);
-	cout << "finish creating" << endl;
 	
+	
+	//connect to pc
+	std::cout<<"Do you want to connect to PC? (y/n)\n";
+	char ans;
+	std::cin>>ans;
+	if(ans == 'y' || ans == 'Y'){
+		Displayer client = Displayer();
+	}
 	
 	while(true){
 		cout<<"Command: ";

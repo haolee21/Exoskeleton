@@ -18,6 +18,7 @@ add_library(
     include/Valve.h
     include/Controller.h
     include/Sensor.h
+    include/Displayer.hpp
 
 )
 set_target_properties(lib PROPERTIES LINKER_LANGUAGE CXX)

@@ -281,7 +281,7 @@ void Sensor::readSerialPort(int serialPort)
 					// for some reason, I cannot just let noHead = true after I find the data
 					// Also, we shouldn't search for the head again since we know the next byte is head
 					if(*(this->curHead)!='@'){
-						std::cout<<"next is not head "<<*this->curHead<<std::endl;
+						//std::cout<<"next is not head "<<*this->curHead<<std::endl;
 						this->noHead = true;
 						this->dataCollect = 0;
 					}
@@ -289,7 +289,7 @@ void Sensor::readSerialPort(int serialPort)
 				}
 				else{
 					// this is not possible to have enough data but no tail, directly redo everything
-					std::cout<<"no tail\n\n\n";
+					//std::cout<<"no tail\n\n\n";
 					this->curBuf = this->senBuffer;
 					this->dataCollect =0;
 					this->curBufIndex =0;
