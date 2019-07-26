@@ -46,7 +46,7 @@ void Controller::TestValve()
         this->tvParam.singleValCount = 0;
         this->tvParam.testValIdx++;
         this->tvParam.curValCond = true;
-        if(this->tvParam.testValIdx==this->ValNum){
+        if(this->tvParam.testValIdx==VALNUM){
             this->tvParam.testValIdx = 0;
         }
     }
@@ -114,16 +114,27 @@ void Controller::TestPWM(){
         //this->KnePreVal->SetDuty(50,this->senData[0]);
     }
 }
+bool* Controller::GetValCond(){
+    return this->valveCond;
+}
+void Controller::ValveOn(Valve *val,int curTime){
+    val->On(curTime);
+    this->valveCond[val->GetValIdx()]= true;
+}
+void Controller::ValveOff(Valve *val,int curTime){
+    val->Off(curTime);
+    this->valveCond[val->GetValIdx()]= false;
+}
 Controller::Controller(std::string filePath,Com *_com)
 {
     this->com = _com;
 
-    this->LKneVal1=new Valve("LKneVal1",filePath,OP9);
-    this->LKneVal2=new Valve("LKneVal2",filePath,OP4);
-    this->LAnkVal1=new Valve("LAnkVal1",filePath,OP6);
-    this->LAnkVal2=new Valve("LAnkVal2",filePath,OP7);
-    this->BalVal=new Valve("BalVal",filePath,OP10);
-    this->LRelVal=new Valve("LRelVal",filePath,OP8);
+    this->LKneVal1=new Valve("LKneVal1",filePath,OP9,0);
+    this->LKneVal2=new Valve("LKneVal2",filePath,OP4,1);
+    this->LAnkVal1=new Valve("LAnkVal1",filePath,OP6,2);
+    this->LAnkVal2=new Valve("LAnkVal2",filePath,OP7,3);
+    this->BalVal=new Valve("BalVal",filePath,OP10,4);
+    this->LRelVal=new Valve("LRelVal",filePath,OP8,5);
     this->KnePreVal = new PWMGen("KnePreVal",filePath,OP1,30000L);
     this->AnkPreVal = new PWMGen("AnkPreVal",filePath,OP2,30000L);
 
@@ -138,7 +149,7 @@ Controller::Controller(std::string filePath,Com *_com)
     this->AnkPreVal->SetDuty(0,0);
     this->knePreValTh = this->KnePreVal->Start();
     this->ankPreValTh = this->AnkPreVal->Start();
-   
+    
    
     
     this->conRec = new Recorder<int>("con",filePath,"time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9");
@@ -146,12 +157,13 @@ Controller::Controller(std::string filePath,Com *_com)
     //turn off all the valve
     Valve **begVal = this->ValveList;
     do{
-        (*begVal)->Off(0);
+        this->ValveOff(*begVal,0);
     }while(++begVal!=std::end(this->ValveList));
  
     
-    this->trParam.testOut = new Valve("TestMea",filePath,8); //this uses gpio2
-    this->trParam.testOut->Off(0);
+    this->trParam.testOut = new Valve("TestMea",filePath,8,6); //this uses gpio2
+    this->ValveOff(this->trParam.testOut,0);
+    
     
 }
 

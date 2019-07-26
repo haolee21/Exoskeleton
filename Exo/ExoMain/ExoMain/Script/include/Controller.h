@@ -65,12 +65,12 @@ struct Com
 	bool comArray[2];
 	mutex comLock;
 };
-
+const int VALNUM = 7; //additional one for testing output
 class Controller
 {
 private:
     /* data */
-    int ValNum = 6;
+    
     Valve *LKneVal1;
      
     Valve *LKneVal2; 
@@ -78,6 +78,8 @@ private:
     Valve *LAnkVal2; 
     Valve *BalVal; 
     Valve *LRelVal; 
+
+    bool valveCond[VALNUM];
     
     int *senData;
     PWMGen *KnePreVal;
@@ -88,7 +90,8 @@ private:
     Recorder<int> *conRec;
     void WaitToSync();
     void Sleep(int sleepTime);
-
+    void ValveOn(Valve *val,int curTime);
+    void ValveOff(Valve *val,int curTime);
     //command
     Com *com;
 
@@ -127,6 +130,7 @@ private:
 
 public:
     Valve* ValveList[6];
+    bool* GetValCond();
     Controller(std::string _filePath,Com *_com);
     ~Controller();
     
