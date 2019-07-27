@@ -8,6 +8,7 @@
 #include <memory>
 #include <PWM.h>
 #include <thread>
+#include "Displayer.hpp"
 //Define the pin number of the controller
 // Attention, the pin number is different for c++ and python library
 // Source: https://www.digikey.com/en/maker/blogs/2019/how-to-use-gpio-on-the-raspberry-pi-with-c
@@ -79,8 +80,15 @@ private:
     Valve *BalVal; 
     Valve *LRelVal; 
 
+    //displayer
     bool valveCond[VALNUM];
-    
+    bool hasDisp=false;
+    //connect to pc
+    Displayer *client;
+
+
+
+
     int *senData;
     PWMGen *KnePreVal;
     PWMGen *AnkPreVal;

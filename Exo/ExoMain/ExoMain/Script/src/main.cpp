@@ -43,9 +43,7 @@ int main(void)
 
 	//define command array
 	Com com;
-	// const int comLen =2;
-	// bool *comArray= new bool[comLen];
-	// bool *start = comArray;
+
 
 	for(int i = 0;i<com.comLen;i++){
 		com.comArray[i] = false;
@@ -58,13 +56,7 @@ int main(void)
 	sensor.Start(startTime);
 	
 	
-	//connect to pc
-	std::cout<<"Do you want to connect to PC? (y/n)\n";
-	char ans;
-	std::cin>>ans;
-	if(ans == 'y' || ans == 'Y'){
-		Displayer client = Displayer();
-	}
+	
 	
 	while(true){
 		cout<<"Command: ";

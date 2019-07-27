@@ -1,6 +1,7 @@
 #ifndef SENSOR_H
 #define SENSOR_H
 #include "Controller.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>

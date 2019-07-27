@@ -99,10 +99,13 @@ void Sensor::senUpdate()
     this->tsnorm(&t);
 	//
 	Controller con = Controller(this->filePath,this->com);
+	
+
+	
 	int conLoopCount = 1;
 	std::unique_ptr<std::thread> conTh;
 	bool conStart = false;
-	
+
 	while (this->sw_senUpdate)
 	{	
 		//timer
@@ -117,6 +120,9 @@ void Sensor::senUpdate()
 			else
 				conStart = true;
 			conTh.reset(new std::thread(&Controller::ConMainLoop,&con,this->senData));
+		
+			//std::cout<<"data len= "<<sizeof(con.GetValCond());
+			//disp.send(&((char)con.GetValCond()),sizeof(con.GetValCond()))
 			
 		}
 		

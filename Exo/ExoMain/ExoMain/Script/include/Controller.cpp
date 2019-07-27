@@ -3,6 +3,7 @@
 #include <wiringPi.h>
 #include <thread>
 #include <queue>
+
 const int NUMSEN = 9;
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
@@ -127,6 +128,17 @@ void Controller::ValveOff(Valve *val,int curTime){
 }
 Controller::Controller(std::string filePath,Com *_com)
 {
+    std::cout<<"controller created\n";
+    std::cout<<"Do you want to connect to PC? (y/n)\n";
+	char ans;
+	std::cin>>ans;
+	if(ans == 'y' || ans == 'Y'){
+		//std::cout<<"create displayer\n";
+		this->client = new Displayer();
+		hasDisp = true;
+	}
+
+
     this->com = _com;
 
     this->LKneVal1=new Valve("LKneVal1",filePath,OP9,0);
@@ -182,4 +194,6 @@ Controller::~Controller()
         
         delete (*begVal);
     }while(++begVal!=std::end(this->ValveList));
+
+    delete client;
 }
