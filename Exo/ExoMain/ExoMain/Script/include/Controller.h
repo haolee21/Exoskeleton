@@ -60,13 +60,14 @@ const int OP16 = 3;
 // index of command
 #define TESTVAL 0
 #define TESTPWM 1
+
 struct Com
 {
 	const int comLen =2;
 	bool comArray[2];
 	mutex comLock;
 };
-const int VALNUM = 7; //additional one for testing output
+const int VALNUM = 6; //this cannot work with test reacting
 class Controller
 {
 private:
@@ -137,7 +138,7 @@ private:
 
 
 public:
-    Valve* ValveList[6];
+    Valve* ValveList[VALNUM];
     bool* GetValCond();
     Controller(std::string _filePath,Com *_com,bool display);
     ~Controller();

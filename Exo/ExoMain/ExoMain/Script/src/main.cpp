@@ -30,14 +30,8 @@ using namespace std;
 int main(void)
 {
 	//create the folder for result saving
-	//check data folder exist
-	if(!boost::filesystem::exists("../data")){
-		cout<<"no data folder\n";
+	if(!boost::filesystem::exists("../data"))
 		boost::filesystem::create_directory("../data");
-	}
-
-	
-
 	string filePath;
 	{
 		boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();
@@ -92,9 +86,7 @@ int main(void)
 				cout<<"not such command\n";	
 		}
 	}
-	for(int i=0;i<100;i++){	
-		DelaySys(1);
-	}
+	
 	sensor.Stop();
 	
 
