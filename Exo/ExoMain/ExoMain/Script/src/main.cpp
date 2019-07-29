@@ -30,14 +30,32 @@ using namespace std;
 int main(void)
 {
 	//create the folder for result saving
+	//check data folder exist
+	if(!boost::filesystem::exists("../data")){
+		cout<<"no data folder\n";
+		boost::filesystem::create_directory("../data");
+	}
+
+	
+
 	string filePath;
 	{
 		boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();
-		
 		filePath = "../data/"+to_string(timeLocal.time_of_day().hours())+to_string(timeLocal.time_of_day().minutes())+
 		to_string(timeLocal.date().month())+to_string(timeLocal.date().day())+to_string(timeLocal.date().year());
 	}
 	boost::filesystem::create_directory(filePath);
+
+	std::cout<<"Do you want to connect to PC? (y/n)\n";
+	char ans;
+	bool display = false;
+	std::cin>>ans;
+
+	if(ans == 'y' || ans == 'Y'){
+		//std::cout<<"create displayer\n";
+		display = true;
+	}
+
 
 	wiringPiSetupSys(); //setup the system ports, timer, etc. 
 
@@ -51,7 +69,7 @@ int main(void)
 	}
 	
 	char portName[] = "/dev/ttyACM0";
-	Sensor sensor = Sensor(filePath,portName, 1600L,&com);
+	Sensor sensor = Sensor(filePath,portName, 1600L,&com,display);
 	std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
 	sensor.Start(startTime);
 	

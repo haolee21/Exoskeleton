@@ -126,17 +126,13 @@ void Controller::ValveOff(Valve *val,int curTime){
     val->Off(curTime);
     this->valveCond[val->GetValIdx()]= false;
 }
-Controller::Controller(std::string filePath,Com *_com)
+Controller::Controller(std::string filePath,Com *_com,bool _display)
 {
-    std::cout<<"controller created\n";
-    std::cout<<"Do you want to connect to PC? (y/n)\n";
-	char ans;
-	std::cin>>ans;
-	if(ans == 'y' || ans == 'Y'){
-		//std::cout<<"create displayer\n";
-		this->client = new Displayer();
-		hasDisp = true;
-	}
+    this->display= _display;
+    if(_display)
+        this->client = new Displayer();
+    
+	
 
 
     this->com = _com;
@@ -194,6 +190,6 @@ Controller::~Controller()
         
         delete (*begVal);
     }while(++begVal!=std::end(this->ValveList));
-
-    delete client;
+    if(this->display)
+        delete client;
 }

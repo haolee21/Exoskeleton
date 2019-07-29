@@ -23,9 +23,9 @@ typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<unsigned long, std::micro> microsecs_ul;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
-Sensor::Sensor(std::string _filePath,char *portName, long sampT,Com *_com)
+Sensor::Sensor(std::string _filePath,char *portName, long sampT,Com *_com,bool _display)
 {
-	//this->rec2.reset(new Recorder<int>("123","456")); //don't know why but cannot use smart pointer for this
+	this->display = _display;
 	std::cout << "creating" << endl;
 	if (!this->is_create)
 	{
@@ -98,7 +98,7 @@ void Sensor::senUpdate()
 	t.tv_nsec += 0 * MSEC;
     this->tsnorm(&t);
 	//
-	Controller con = Controller(this->filePath,this->com);
+	Controller con = Controller(this->filePath,this->com,this->display);
 	
 
 	

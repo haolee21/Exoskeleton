@@ -82,7 +82,7 @@ private:
 
     //displayer
     bool valveCond[VALNUM];
-    bool hasDisp=false;
+    bool display=false;
     //connect to pc
     Displayer *client;
 
@@ -139,7 +139,7 @@ private:
 public:
     Valve* ValveList[6];
     bool* GetValCond();
-    Controller(std::string _filePath,Com *_com);
+    Controller(std::string _filePath,Com *_com,bool display);
     ~Controller();
     
     

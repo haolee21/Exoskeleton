@@ -56,7 +56,7 @@ class Sensor
 {
 public:
 	
-	Sensor(string _filePath,char *port,long sampTmicro,Com *com); //sampT is in milli
+	Sensor(string _filePath,char *port,long sampTmicro,Com *com,bool display); //sampT is in milli
 	~Sensor();
 	
 	void Start(std::chrono::system_clock::time_point startTime);
@@ -97,6 +97,8 @@ private:
 	
 	void tsnorm(struct timespec *ts);
 
+	//Displayer
+	bool display;
 	//Controller
 	Com *com;
 	std::thread *conTh;

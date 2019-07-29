@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(TestProject)
-set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -pthread -lboost_serialization -lwiringPi") #you can set with add_definitions("-Wall -std=c+11, etc")
+set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -pthread -lboost_serialization -lwiringPi -g") #you can set with add_definitions("-Wall -std=c+11, etc")
 set(Boost_INCLUDE_DIR /home/pi/Lib/boost_1_70_0)
 set(Boost_LIBRARY_DIR /home/pi/Lib/boost_1_70_0/stage/lib)
 find_package(Boost COMPONENTS serialization date_time filesystem REQUIRED)

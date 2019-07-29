@@ -23,7 +23,7 @@ def main():
 	    s.bind((HOST, PORT))
     except socket.error:
 	    print ('Bind failed ')
-    s.listen(5)
+    s.listen()
 
     print ('Socket awaiting messages')
     conn, addr = s.accept()
