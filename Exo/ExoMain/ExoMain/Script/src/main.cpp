@@ -29,6 +29,8 @@ using namespace std;
 int main(void)
 {
 	//create the folder for result saving
+	if(!boost::filesystem::exists("../data"))
+		boost::filesystem::create_directory("../data");
 	string filePath;
 	{
 		boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();

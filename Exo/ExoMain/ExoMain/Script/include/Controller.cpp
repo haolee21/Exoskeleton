@@ -27,6 +27,7 @@ void Controller::ConMainLoop(int *senData){
         taskQue.front().join();
         taskQue.pop();
     }
+    
 }
 
 void Controller::TestValve()
@@ -103,7 +104,7 @@ void Controller::TestPWM(){
                 this->tpParam.curTestDuty+=10;
             }
             else{
-                this->KnePreVal->Stop();
+                this->tpParam.curTestDuty = 0;
             }
         }
         else
@@ -111,7 +112,7 @@ void Controller::TestPWM(){
             this->tpParam.dutyLoopCount++;
         }
         this->KnePreVal->SetDuty(this->tpParam.curTestDuty,this->senData[0]);
-        //this->KnePreVal->SetDuty(50,this->senData[0]);
+        
     }
 }
 Controller::Controller(std::string filePath,Com *_com)
