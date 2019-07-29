@@ -30,7 +30,7 @@ def main():
     print ('Connected')
 
     while True:
-        data = (conn.recv(6)).decode('ascii')
+        data = (conn.recv(5)).decode('ascii')
         print(data)
         if(data =='end'):
             print(data=='end')

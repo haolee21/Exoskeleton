@@ -13,7 +13,7 @@ void Controller::ConMainLoop(int *senData){
     this->senData = senData;
     std::vector<int> curSen(senData+1,senData+NUMSEN+1);
     this->conRec->PushData((unsigned long)senData[0],curSen);
-
+    this->client->send("12345");
     // assign task to controller
     //taskQue.push(std::thread(&Controller::TestReactingTime,this));
     {

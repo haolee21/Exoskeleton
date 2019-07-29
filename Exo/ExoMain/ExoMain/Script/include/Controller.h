@@ -8,6 +8,7 @@
 #include <memory>
 #include <PWM.h>
 #include <thread>
+#include <memory>
 #include "Displayer.hpp"
 //Define the pin number of the controller
 // Attention, the pin number is different for c++ and python library
@@ -71,7 +72,7 @@ const int VALNUM = 6; //this cannot work with test reacting
 class Controller
 {
 private:
-    /* data */
+    
     
     Valve *LKneVal1;
      
