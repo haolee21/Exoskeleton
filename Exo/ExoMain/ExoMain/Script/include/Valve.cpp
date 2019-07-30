@@ -22,6 +22,7 @@ void Valve::Off(int curTime){
     this->valveRec->PushData((unsigned long)curTime,curRes);
 
 }
+
 Valve::Valve(string name,string path, int valveId,int _valIdx)
 {
     wiringPiSetup(); // This line is required everytime you setup an input output pin!!

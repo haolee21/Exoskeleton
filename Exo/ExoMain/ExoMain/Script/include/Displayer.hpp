@@ -12,12 +12,13 @@ using ip::tcp;
 class Displayer
 { 
 private:
-    //tcp::socket *s;
+   
     std::unique_ptr<tcp::socket> s;
     
 public:
     Displayer();
-    void send(std::string msg);
+  
+    void send(char*,unsigned int );
     ~Displayer();
 };
 

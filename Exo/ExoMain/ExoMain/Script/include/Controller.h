@@ -73,35 +73,47 @@ class Controller
 {
 private:
     
+
+    std::shared_ptr<Valve> LKneVal1;
+    std::shared_ptr<Valve> LKneVal2;
+    std::shared_ptr<Valve> LAnkVal1;
+    std::shared_ptr<Valve> LAnkVal2;
+    std::shared_ptr<Valve> BalVal;
+    std::shared_ptr<Valve> LRelVal;
     
-    Valve *LKneVal1;
-     
-    Valve *LKneVal2; 
-    Valve *LAnkVal1; 
-    Valve *LAnkVal2; 
-    Valve *BalVal; 
-    Valve *LRelVal; 
+    // Valve *LKneVal1;
+    // Valve *LKneVal2; 
+    // Valve *LAnkVal1; 
+    // Valve *LAnkVal2; 
+    // Valve *BalVal; 
+    // Valve *LRelVal; 
 
     //displayer
     bool valveCond[VALNUM];
     bool display=false;
     //connect to pc
+    // std::shared_ptr<Displayer> client;  //shared_ptr doesn't work here since it cannot be automatically shutdown
     Displayer *client;
 
 
 
 
     int *senData;
-    PWMGen *KnePreVal;
-    PWMGen *AnkPreVal;
+
+    std::shared_ptr<PWMGen> KnePreVal;
+    std::shared_ptr<PWMGen> AnkPreVal;
+    
     std::thread *knePreValTh;
     std::thread *ankPreValTh;
     //std::unique_ptr<Recorder<int>> senRec;
-    Recorder<int> *conRec;
+    std::shared_ptr<Recorder<int>> conRec;
+    //Recorder<int> *conRec;
     void WaitToSync();
     void Sleep(int sleepTime);
-    void ValveOn(Valve *val,int curTime);
-    void ValveOff(Valve *val,int curTime);
+    // void ValveOn(Valve *val,int curTime);
+    void ValveOn(std::shared_ptr<Valve> val,int curTime);
+    // void ValveOff(Valve *val,int curTime);
+    void ValveOff(std::shared_ptr<Valve> val,int curTime);
     //command
     Com *com;
 
@@ -111,7 +123,8 @@ private:
     {
         std::chrono::system_clock::time_point sendTime;
         bool dataNotSent = true;
-        Valve *testOut; 
+        std::shared_ptr<Valve> testOut;
+        // Valve *testOut; 
     };
     TestReactParam trParam; 
     void TestReactingTime();
@@ -139,8 +152,9 @@ private:
 
 
 public:
-    Valve* ValveList[VALNUM];
-    bool* GetValCond();
+    // Valve* ValveList[VALNUM];
+    std::shared_ptr<Valve> ValveList[VALNUM];
+
     Controller(std::string _filePath,Com *_com,bool display);
     ~Controller();
     

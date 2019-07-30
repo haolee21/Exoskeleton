@@ -259,11 +259,11 @@ void Sensor::readSerialPort(int serialPort)
 				}
 				if(tempSenData[DATALEN-1]=='\n'){
 					std::chrono::system_clock::time_point curTime= std::chrono::system_clock::now();
-					microsecs_ul sen_time(std::chrono::duration_cast<microsecs_ul>(curTime - this->origin));
-					unsigned long timeNow = sen_time.count(); 
+					microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->origin));
+					int timeNow = sen_time.count(); 
 					{
 						
-						this->senData[0] = (int)timeNow;
+						this->senData[0] = timeNow;
 						this->senData[1] = (int)(tempSenData[1]) + (int)(tempSenData[2] << 8);
 						this->senData[2] = (int)(tempSenData[3]) + (int)(tempSenData[4] << 8);
 						this->senData[3] = (int)(tempSenData[5]) + (int)(tempSenData[6] << 8);

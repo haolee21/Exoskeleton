@@ -25,6 +25,7 @@ private:
 
     bool dummy=true;
 public:
+   
     Valve(string name,string path, int valveId, int valIdx);
     ~Valve();
     void On(int curTime);
