@@ -19,17 +19,18 @@ private:
     chrono::system_clock::time_point startTime;
     void writeTempFile();
     bool recCond[MAXRECLENGTHVAL];
-    int curRecIndex;
+    int valIdx;//the index of this valve in valveCond array
     //unique_ptr<Recorder<bool>> valveRec;
     Recorder<bool> *valveRec;
 
     bool dummy=true;
 public:
-    Valve(string name,string path, int valveId);
+   
+    Valve(string name,string path, int valveId, int valIdx);
     ~Valve();
     void On(int curTime);
     void Off(int curTime);
-    
+    int GetValIdx();
    
     string GetValveName();
     

@@ -23,9 +23,9 @@ typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<unsigned long, std::micro> microsecs_ul;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
-Sensor::Sensor(std::string _filePath,char *portName, long sampT,Com *_com)
+Sensor::Sensor(std::string _filePath,char *portName, long sampT,Com *_com,bool _display)
 {
-	//this->rec2.reset(new Recorder<int>("123","456")); //don't know why but cannot use smart pointer for this
+	this->display = _display;
 	std::cout << "creating" << endl;
 	if (!this->is_create)
 	{
@@ -60,7 +60,7 @@ void Sensor::Start(std::chrono::system_clock::time_point startTime)
 	this->sw_senUpdate = true;
 	memset(&this->senBuffer, '\0', SIZEOFBUFFER);
 	memset(&this->senData, 0, DATALEN + 1);
-	//printf("current senBuffer: %s\n", this->senBuffer);
+	
 	
 	this->th_SenUpdate = new thread(&Sensor::senUpdate, this);
 	
@@ -98,11 +98,14 @@ void Sensor::senUpdate()
 	t.tv_nsec += 0 * MSEC;
     this->tsnorm(&t);
 	//
-	Controller con = Controller(this->filePath,this->com);
+	Controller con = Controller(this->filePath,this->com,this->display);
+	
+
+	
 	int conLoopCount = 1;
 	std::unique_ptr<std::thread> conTh;
 	bool conStart = false;
-	
+
 	while (this->sw_senUpdate)
 	{	
 		//timer
@@ -117,6 +120,9 @@ void Sensor::senUpdate()
 			else
 				conStart = true;
 			conTh.reset(new std::thread(&Controller::ConMainLoop,&con,this->senData));
+		
+			//std::cout<<"data len= "<<sizeof(con.GetValCond());
+			//disp.send(&((char)con.GetValCond()),sizeof(con.GetValCond()))
 			
 		}
 		
@@ -253,11 +259,11 @@ void Sensor::readSerialPort(int serialPort)
 				}
 				if(tempSenData[DATALEN-1]=='\n'){
 					std::chrono::system_clock::time_point curTime= std::chrono::system_clock::now();
-					microsecs_ul sen_time(std::chrono::duration_cast<microsecs_ul>(curTime - this->origin));
-					unsigned long timeNow = sen_time.count(); 
+					microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->origin));
+					int timeNow = sen_time.count(); 
 					{
 						
-						this->senData[0] = (int)timeNow;
+						this->senData[0] = timeNow;
 						this->senData[1] = (int)(tempSenData[1]) + (int)(tempSenData[2] << 8);
 						this->senData[2] = (int)(tempSenData[3]) + (int)(tempSenData[4] << 8);
 						this->senData[3] = (int)(tempSenData[5]) + (int)(tempSenData[6] << 8);
@@ -281,7 +287,7 @@ void Sensor::readSerialPort(int serialPort)
 					// for some reason, I cannot just let noHead = true after I find the data
 					// Also, we shouldn't search for the head again since we know the next byte is head
 					if(*(this->curHead)!='@'){
-						std::cout<<"next is not head "<<*this->curHead<<std::endl;
+						//std::cout<<"next is not head "<<*this->curHead<<std::endl;
 						this->noHead = true;
 						this->dataCollect = 0;
 					}
@@ -289,7 +295,7 @@ void Sensor::readSerialPort(int serialPort)
 				}
 				else{
 					// this is not possible to have enough data but no tail, directly redo everything
-					std::cout<<"no tail\n\n\n";
+					//std::cout<<"no tail\n\n\n";
 					this->curBuf = this->senBuffer;
 					this->dataCollect =0;
 					this->curBufIndex =0;

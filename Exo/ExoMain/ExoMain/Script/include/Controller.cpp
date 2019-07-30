@@ -3,6 +3,7 @@
 #include <wiringPi.h>
 #include <thread>
 #include <queue>
+
 const int NUMSEN = 9;
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
@@ -13,6 +14,26 @@ void Controller::ConMainLoop(int *senData){
     std::vector<int> curSen(senData+1,senData+NUMSEN+1);
     this->conRec->PushData((unsigned long)senData[0],curSen);
 
+    if(this->testSendCount++==0){
+        char tempData[] = {'1','1','1','1','1'};
+        this->client->send(tempData,5);
+    }
+    if(this->testSendCount++==1){
+        char tempData[] = {'2','2','2','2','2'};
+        this->client->send(tempData,5);
+    }
+    if(this->testSendCount++==2){
+        char tempData[] = {'3','3','3','3','3'};
+        this->client->send(tempData,5);
+    }
+    if(this->testSendCount++==3){
+        char tempData[] = {'4','4','4','4','4'};
+        this->client->send(tempData,5);
+        this->testSendCount=0;
+    }
+
+    
+    
     // assign task to controller
     //taskQue.push(std::thread(&Controller::TestReactingTime,this));
     {
@@ -35,11 +56,13 @@ void Controller::TestValve()
     //we will on/off each valve 20 times
     if(this->tvParam.singleValCount++<this->tvParam.maxTest){
         if(this->tvParam.curValCond){
-            this->ValveList[this->tvParam.testValIdx]->On(this->senData[0]);
+            // this->ValveList[this->tvParam.testValIdx]->On(this->senData[0]);
+            this->ValveOn(this->ValveList[this->tvParam.testValIdx],this->senData[0]);
             this->tvParam.curValCond = false;
         }
         else{
-            this->ValveList[this->tvParam.testValIdx]->Off(this->senData[0]);
+            // this->ValveList[this->tvParam.testValIdx]->Off(this->senData[0]);
+            this->ValveOff(this->ValveList[this->tvParam.testValIdx],this->senData[0]);
             this->tvParam.curValCond = true;
         } 
     }
@@ -47,7 +70,7 @@ void Controller::TestValve()
         this->tvParam.singleValCount = 0;
         this->tvParam.testValIdx++;
         this->tvParam.curValCond = true;
-        if(this->tvParam.testValIdx==this->ValNum){
+        if(this->tvParam.testValIdx==VALNUM){
             this->tvParam.testValIdx = 0;
         }
     }
@@ -115,18 +138,43 @@ void Controller::TestPWM(){
         
     }
 }
-Controller::Controller(std::string filePath,Com *_com)
+
+void Controller::ValveOn(std::shared_ptr<Valve> val,int curTime){
+    val->On(curTime);
+    this->valveCond[val->GetValIdx()]='1';
+    
+}
+
+void Controller::ValveOff(std::shared_ptr<Valve> val,int curTime){
+    val->Off(curTime);
+    this->valveCond[val->GetValIdx()]='0';
+    
+}
+Controller::Controller(std::string filePath,Com *_com,bool _display)
 {
+    this->testSendCount=0;
+
+    this->display= _display;
+    if(_display){
+        this->client.reset(new Displayer());
+        // this->client.reset(new Displayer());
+    }
+	
+    this->valveCond = new char[VALNUM];
+
     this->com = _com;
 
-    this->LKneVal1=new Valve("LKneVal1",filePath,OP9);
-    this->LKneVal2=new Valve("LKneVal2",filePath,OP4);
-    this->LAnkVal1=new Valve("LAnkVal1",filePath,OP6);
-    this->LAnkVal2=new Valve("LAnkVal2",filePath,OP7);
-    this->BalVal=new Valve("BalVal",filePath,OP10);
-    this->LRelVal=new Valve("LRelVal",filePath,OP8);
-    this->KnePreVal = new PWMGen("KnePreVal",filePath,OP1,30000L);
-    this->AnkPreVal = new PWMGen("AnkPreVal",filePath,OP2,30000L);
+    this->LKneVal1.reset(new Valve("LKneVal1",filePath,OP9,0));
+    this->LKneVal2.reset(new Valve("LKneVal2",filePath,OP4,1));
+    this->LAnkVal1.reset(new Valve("LAnkVal1",filePath,OP6,2));
+    this->LAnkVal2.reset(new Valve("LAnkVal2",filePath,OP7,3));
+    this->BalVal.reset(new Valve("BalVal",filePath,OP10,4));
+    this->LRelVal.reset(new Valve("LRelVal",filePath,OP8,5));
+
+    // this->KnePreVal = new PWMGen("KnePreVal",filePath,OP1,30000L);
+    // this->AnkPreVal = new PWMGen("AnkPreVal",filePath,OP2,30000L);
+    this->KnePreVal.reset(new PWMGen("KnePreVal",filePath,OP1,30000L));
+    this->AnkPreVal.reset(new PWMGen("AnkPreVal",filePath,OP2,30000L));
 
     this->ValveList[0] = this->LKneVal1;
     this->ValveList[1] = this->LKneVal2;
@@ -139,20 +187,25 @@ Controller::Controller(std::string filePath,Com *_com)
     this->AnkPreVal->SetDuty(0,0);
     this->knePreValTh = this->KnePreVal->Start();
     this->ankPreValTh = this->AnkPreVal->Start();
-   
+    
    
     
-    this->conRec = new Recorder<int>("con",filePath,"time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9");
+    this->conRec.reset(new Recorder<int>("con",filePath,"time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9"));
     
     //turn off all the valve
-    Valve **begVal = this->ValveList;
-    do{
-        (*begVal)->Off(0);
-    }while(++begVal!=std::end(this->ValveList));
+    // Valve **begVal = this->ValveList;
+    // do{
+    //     this->ValveOff(*begVal,0);
+    // }while(++begVal!=std::end(this->ValveList));
  
+    std::shared_ptr<Valve> *begVal = this->ValveList;
+    do{
+        this->ValveOff(*begVal,0);
+    }while(++begVal!=std::end(this->ValveList));
     
-    this->trParam.testOut = new Valve("TestMea",filePath,8); //this uses gpio2
-    this->trParam.testOut->Off(0);
+    this->trParam.testOut.reset(new Valve("TestMea",filePath,8,6)); //this uses gpio2
+    this->ValveOff(this->trParam.testOut,0);
+    
     
 }
 
@@ -163,12 +216,6 @@ Controller::~Controller()
 
     this->knePreValTh->join();
     this->ankPreValTh->join();
-    delete this->KnePreVal;
-    delete this->AnkPreVal;
-    delete this->conRec;
-    Valve **begVal = this->ValveList;
-    do{
-        
-        delete (*begVal);
-    }while(++begVal!=std::end(this->ValveList));
+    delete valveCond;
+
 }

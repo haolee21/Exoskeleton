@@ -11,6 +11,7 @@
 #include <boost/date_time.hpp>
 
 #include <string>
+#include "Displayer.hpp"
 
 void DelaySys(int waitTime) {
 	struct timespec ts2 = { 0 };
@@ -34,19 +35,27 @@ int main(void)
 	string filePath;
 	{
 		boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();
-		
 		filePath = "../data/"+to_string(timeLocal.time_of_day().hours())+to_string(timeLocal.time_of_day().minutes())+
 		to_string(timeLocal.date().month())+to_string(timeLocal.date().day())+to_string(timeLocal.date().year());
 	}
 	boost::filesystem::create_directory(filePath);
 
+	std::cout<<"Do you want to connect to PC? (y/n)\n";
+	char ans;
+	bool display = false;
+	std::cin>>ans;
+
+	if(ans == 'y' || ans == 'Y'){
+		//std::cout<<"create displayer\n";
+		display = true;
+	}
+
+
 	wiringPiSetupSys(); //setup the system ports, timer, etc. 
 
 	//define command array
 	Com com;
-	// const int comLen =2;
-	// bool *comArray= new bool[comLen];
-	// bool *start = comArray;
+
 
 	for(int i = 0;i<com.comLen;i++){
 		com.comArray[i] = false;
@@ -54,10 +63,11 @@ int main(void)
 	}
 	
 	char portName[] = "/dev/ttyACM0";
-	Sensor sensor = Sensor(filePath,portName, 1600L,&com);
+	Sensor sensor = Sensor(filePath,portName, 1600L,&com,display);
 	std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
 	sensor.Start(startTime);
-	cout << "finish creating" << endl;
+	
+	
 	
 	
 	while(true){
@@ -76,9 +86,7 @@ int main(void)
 				cout<<"not such command\n";	
 		}
 	}
-	for(int i=0;i<100;i++){	
-		DelaySys(1);
-	}
+	
 	sensor.Stop();
 	
 
