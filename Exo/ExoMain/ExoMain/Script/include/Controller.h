@@ -80,13 +80,6 @@ private:
     std::shared_ptr<Valve> LAnkVal2;
     std::shared_ptr<Valve> BalVal;
     std::shared_ptr<Valve> LRelVal;
-    
-    // Valve *LKneVal1;
-    // Valve *LKneVal2; 
-    // Valve *LAnkVal1; 
-    // Valve *LAnkVal2; 
-    // Valve *BalVal; 
-    // Valve *LRelVal; 
 
     //displayer
     bool valveCond[VALNUM];
@@ -105,14 +98,14 @@ private:
     
     std::thread *knePreValTh;
     std::thread *ankPreValTh;
-    //std::unique_ptr<Recorder<int>> senRec;
+
     std::shared_ptr<Recorder<int>> conRec;
-    //Recorder<int> *conRec;
+
     void WaitToSync();
     void Sleep(int sleepTime);
-    // void ValveOn(Valve *val,int curTime);
+
     void ValveOn(std::shared_ptr<Valve> val,int curTime);
-    // void ValveOff(Valve *val,int curTime);
+
     void ValveOff(std::shared_ptr<Valve> val,int curTime);
     //command
     Com *com;
