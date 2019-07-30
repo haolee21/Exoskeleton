@@ -72,7 +72,7 @@ const int VALNUM = 6; //this cannot work with test reacting
 class Controller
 {
 private:
-    
+    int testSendCount; //test sending data, need to be removed
 
     std::shared_ptr<Valve> LKneVal1;
     std::shared_ptr<Valve> LKneVal2;
@@ -82,11 +82,11 @@ private:
     std::shared_ptr<Valve> LRelVal;
 
     //displayer
-    bool valveCond[VALNUM];
+    char *valveCond;
     bool display=false;
     //connect to pc
-    // std::shared_ptr<Displayer> client;  //shared_ptr doesn't work here since it cannot be automatically shutdown
-    Displayer *client;
+    std::shared_ptr<Displayer> client;  //shared_ptr doesn't work here since it cannot be automatically shutdown
+    //Displayer *client;
 
 
 

@@ -60,7 +60,7 @@ void Sensor::Start(std::chrono::system_clock::time_point startTime)
 	this->sw_senUpdate = true;
 	memset(&this->senBuffer, '\0', SIZEOFBUFFER);
 	memset(&this->senData, 0, DATALEN + 1);
-	//printf("current senBuffer: %s\n", this->senBuffer);
+	
 	
 	this->th_SenUpdate = new thread(&Sensor::senUpdate, this);
 	

@@ -14,8 +14,26 @@ void Controller::ConMainLoop(int *senData){
     std::vector<int> curSen(senData+1,senData+NUMSEN+1);
     this->conRec->PushData((unsigned long)senData[0],curSen);
 
-    char tempData[] = {'1','2','3','4','5'};
-    this->client->send(tempData,5);
+    if(this->testSendCount++==0){
+        char tempData[] = {'1','1','1','1','1'};
+        this->client->send(tempData,5);
+    }
+    if(this->testSendCount++==1){
+        char tempData[] = {'2','2','2','2','2'};
+        this->client->send(tempData,5);
+    }
+    if(this->testSendCount++==2){
+        char tempData[] = {'3','3','3','3','3'};
+        this->client->send(tempData,5);
+    }
+    if(this->testSendCount++==3){
+        char tempData[] = {'4','4','4','4','4'};
+        this->client->send(tempData,5);
+        this->testSendCount=0;
+    }
+
+    
+    
     // assign task to controller
     //taskQue.push(std::thread(&Controller::TestReactingTime,this));
     {
@@ -38,11 +56,13 @@ void Controller::TestValve()
     //we will on/off each valve 20 times
     if(this->tvParam.singleValCount++<this->tvParam.maxTest){
         if(this->tvParam.curValCond){
-            this->ValveList[this->tvParam.testValIdx]->On(this->senData[0]);
+            // this->ValveList[this->tvParam.testValIdx]->On(this->senData[0]);
+            this->ValveOn(this->ValveList[this->tvParam.testValIdx],this->senData[0]);
             this->tvParam.curValCond = false;
         }
         else{
-            this->ValveList[this->tvParam.testValIdx]->Off(this->senData[0]);
+            // this->ValveList[this->tvParam.testValIdx]->Off(this->senData[0]);
+            this->ValveOff(this->ValveList[this->tvParam.testValIdx],this->senData[0]);
             this->tvParam.curValCond = true;
         } 
     }
@@ -119,40 +139,30 @@ void Controller::TestPWM(){
     }
 }
 
-// void Controller::ValveOn(Valve *val,int curTime){
-//     val->On(curTime);
-//     this->valveCond[val->GetValIdx()]= true;
-// }
 void Controller::ValveOn(std::shared_ptr<Valve> val,int curTime){
     val->On(curTime);
-    this->valveCond[val->GetValIdx()]= true;
+    this->valveCond[val->GetValIdx()]='1';
+    
 }
-// void Controller::ValveOff(Valve *val,int curTime){
-//     val->Off(curTime);
-//     this->valveCond[val->GetValIdx()]= false;
-// }
+
 void Controller::ValveOff(std::shared_ptr<Valve> val,int curTime){
     val->Off(curTime);
-    this->valveCond[val->GetValIdx()]= false;
+    this->valveCond[val->GetValIdx()]='0';
+    
 }
 Controller::Controller(std::string filePath,Com *_com,bool _display)
 {
+    this->testSendCount=0;
+
     this->display= _display;
     if(_display){
-        this->client = new Displayer();
+        this->client.reset(new Displayer());
         // this->client.reset(new Displayer());
     }
 	
-
+    this->valveCond = new char[VALNUM];
 
     this->com = _com;
-
-    // this->LKneVal1=new Valve("LKneVal1",filePath,OP9,0);
-    // this->LKneVal2=new Valve("LKneVal2",filePath,OP4,1);
-    // this->LAnkVal1=new Valve("LAnkVal1",filePath,OP6,2);
-    // this->LAnkVal2=new Valve("LAnkVal2",filePath,OP7,3);
-    // this->BalVal=new Valve("BalVal",filePath,OP10,4);
-    // this->LRelVal=new Valve("LRelVal",filePath,OP8,5);
 
     this->LKneVal1.reset(new Valve("LKneVal1",filePath,OP9,0));
     this->LKneVal2.reset(new Valve("LKneVal2",filePath,OP4,1));
@@ -206,13 +216,6 @@ Controller::~Controller()
 
     this->knePreValTh->join();
     this->ankPreValTh->join();
-    
+    delete valveCond;
 
-    // Valve **begVal = this->ValveList;
-    // do{
-        
-    //     delete (*begVal);
-    // }while(++begVal!=std::end(this->ValveList));
-    if(this->display)
-        delete client;
 }
