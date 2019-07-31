@@ -128,13 +128,13 @@ void Controller::TestPWM(){
 
 void Controller::ValveOn(std::shared_ptr<Valve> val,int curTime){
     val->On(curTime);
-    this->valveCond[val->GetValIdx()]='1';
+    this->valveCond[val->GetValIdx()]='d';
     
 }
 
 void Controller::ValveOff(std::shared_ptr<Valve> val,int curTime){
     val->Off(curTime);
-    this->valveCond[val->GetValIdx()]='0';
+    this->valveCond[val->GetValIdx()]='!';
     
 }
 Controller::Controller(std::string filePath,Com *_com,bool _display)

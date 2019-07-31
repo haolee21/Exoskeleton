@@ -1,12 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
-class Displayer(object):
+class Plotter(object):
     def __init__(self,tTot,sampF,figNum,yLabelList,yLimList,titleList):
-        self.ncols = np.floor(np.sqrt(figNum))
-        self.nrows = np.round(figNum/self.ncols)
+        self.ncols = int(np.floor(np.sqrt(figNum)))
+        self.nrows = int(np.round(figNum/self.ncols))
         #initial data
         self.time = np.linspace(start =0,stop=tTot,num=np.round(tTot*sampF))
-        rowData = np.zeros()
+        rowData = np.zeros(len(self.time))
+        self.totalData=[]
         for i in range(self.nrows*self.ncols):
             self.totalData.append(rowData)
         if(figNum<self.ncols*self.nrows):
@@ -26,32 +27,33 @@ class Displayer(object):
         plt.show(block=False)
         # create lines that can be update later
         self.lineList =[]
-        index =0
+        idx =0
         for row in range(self.nrows):
             for col in range(self.ncols):
-                line,=self.ax[row,col].plot(self.time,self.totalData[index])
+                line,=self.ax[row,col].plot(self.time,self.totalData[idx])
                 self.lineList.append(line)
                 self.fig.canvas.draw()
                 self.ax[row,col].draw_artist(self.ax[row,col].patch)
                 self.ax[row,col].draw_artist(line)
-                self.ax[row,col].set_title(titleList[index])
-                self.ax[row,col].set_ylim(yLimList[index])
+                self.ax[row,col].set_title(titleList[idx])
+                self.ax[row,col].set_ylim(yLimList[idx])
                 self.ax[row,col].set_xlabel('Time')
-                self.ax[row,col].set_ylabel(yLabelList[index])
-                index = index+1
-        return 0
+                self.ax[row,col].set_ylabel(yLabelList[idx])
+                idx = idx+1
+        
+    
     def UpdateFig(self,_data):
         if(len(_data)<self.ncols*self.nrows):
-            _data = np.append(_data,np.zeros(self.ncols*self.nrows-(len(_data)))
-        index = 0
+            _data = np.append(_data,np.zeros(self.ncols*self.nrows-(len(_data))))
+        idx2 = 0
         for row in range(self.nrows):
             for col in range(self.ncols):
-                self.totalData[index] = self.totalData[index][1:]
-                self.totalData[index] = np.append(self.totalData[index],_data[index])
-                self.lineList[index].set_ydata(self.totalData[index])
+                self.totalData[idx2] = self.totalData[idx2][1:]
+                self.totalData[idx2] = np.append(self.totalData[idx2],_data[idx2])
+                self.lineList[idx2].set_ydata(self.totalData[idx2])
                 self.ax[row,col].draw_artist(self.ax[row,col].patch)
-                self.ax[row,col].draw_artist(lineList[index])
-                index = index+1
+                self.ax[row,col].draw_artist(self.lineList[idx2])
+                idx2 = idx2+1
         self.fig.canvas.update()
         self.fig.canvas.flush_events()
 
