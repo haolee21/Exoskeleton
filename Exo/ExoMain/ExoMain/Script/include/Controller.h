@@ -42,22 +42,22 @@
 //  +-----+-----+---------+------+---+---Pi 3---+---+------+---------+-----+-----+
 
 // I use common name: OP# to sync them
-const int OP1 = 15;
-const int OP2 = 16;
-const int OP3 = 1;
-const int OP4 = 4;
-const int OP5 = 5;
-const int OP6 = 6;
-const int OP7 = 10;
-const int OP8 = 26;
-const int OP9 = 27;
-const int OP10 = 28;
-const int OP11 = 29;
-const int OP12 = 8;
-const int OP13 = 9;
-const int OP14 = 0;
-const int OP15 = 2;
-const int OP16 = 3;
+#define OP1  15
+#define OP2  16
+#define OP3   1
+#define OP4   4
+#define OP5   5
+#define OP6   6
+#define OP7  10
+#define OP8  26
+#define OP9  27
+#define OP10 28
+#define OP11 29
+#define OP12  8
+#define OP13  9
+#define OP14  0
+#define OP15  2
+#define OP16  3
 // index of command
 #define TESTVAL 0
 #define TESTPWM 1
@@ -81,9 +81,7 @@ private:
     std::shared_ptr<Valve> BalVal;
     std::shared_ptr<Valve> LRelVal;
 
-    //displayer
-    char *valveCond;
-    bool display=false;
+    
     //connect to pc
     std::shared_ptr<Displayer> client;  //shared_ptr doesn't work here since it cannot be automatically shutdown
     //Displayer *client;
@@ -104,9 +102,15 @@ private:
     void WaitToSync();
     void Sleep(int sleepTime);
 
+    //displayer
+    char *valveCond;
+    bool display=false;
+    // Valve control
     void ValveOn(std::shared_ptr<Valve> val,int curTime);
-
     void ValveOff(std::shared_ptr<Valve> val,int curTime);
+    // PWM control
+    void SetDuty(PWMGen pwmVal,int duty);
+    char *pwmDuty;
     //command
     Com *com;
 

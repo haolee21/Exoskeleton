@@ -28,8 +28,9 @@ void PWMGen::tsnorm(struct timespec *ts)
     }
 }
 //
-PWMGen::PWMGen(std::string valveName, std::string filePath,int pinId,int _sampT)
+PWMGen::PWMGen(std::string valveName, std::string filePath,int pinId,int _sampT,int _pwmIdx)
 {
+	this->pwmIdx = _pwmIdx;
 	this->sampT = _sampT;
 	this->onTime =0;
 	this->pwmRec = new Recorder<int>(valveName,filePath,"time,"+valveName);
@@ -94,6 +95,9 @@ void PWMGen::Mainloop() {
 		//
 
 	}
+}
+int PWMGen::GetIdx(){
+	return this->pwmIdx;
 }
 
 PWMGen::~PWMGen()
