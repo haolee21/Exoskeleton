@@ -29,9 +29,17 @@ def main():
     conn, addr = s.accept()
     print ('Connected')
 
+
+    DATALEN=20
+    VALNUM=6
     while True:
-        data = (conn.recv(5)).decode('ascii')
-        print(data)
+        data = conn.recv(DATALEN+VALNUM)
+        senData=[]
+        if(int(data[0])==64):
+            for i in range(1,DATALEN-1,2): #remove @ and \n
+                senData.append(int(data[i+1]<<8)+int(data[i]))
+        
+            print(senData)
         if(data =='end'):
             print(data=='end')
             break

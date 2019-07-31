@@ -152,7 +152,7 @@ public:
     ~Controller();
     
     
-    void ConMainLoop(int *curSen);
+    void ConMainLoop(int *curSen,char* senRaw);
 };
 
 

@@ -5,33 +5,16 @@
 #include <queue>
 
 const int NUMSEN = 9;
+#define RAWDATALEN 20 //this has to be the same as defined in Sensor.h
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
-void Controller::ConMainLoop(int *senData){
+void Controller::ConMainLoop(int *senData,char* senRaw){
     queue<thread> taskQue;
     this->senData = senData;
     std::vector<int> curSen(senData+1,senData+NUMSEN+1);
     this->conRec->PushData((unsigned long)senData[0],curSen);
-
-    if(this->testSendCount++==0){
-        char tempData[] = {'1','1','1','1','1'};
-        this->client->send(tempData,5);
-    }
-    if(this->testSendCount++==1){
-        char tempData[] = {'2','2','2','2','2'};
-        this->client->send(tempData,5);
-    }
-    if(this->testSendCount++==2){
-        char tempData[] = {'3','3','3','3','3'};
-        this->client->send(tempData,5);
-    }
-    if(this->testSendCount++==3){
-        char tempData[] = {'4','4','4','4','4'};
-        this->client->send(tempData,5);
-        this->testSendCount=0;
-    }
-
+    
     
     
     // assign task to controller
@@ -48,6 +31,10 @@ void Controller::ConMainLoop(int *senData){
         taskQue.front().join();
         taskQue.pop();
     }
+    char sendData[RAWDATALEN+VALNUM];
+    std::copy(senRaw,senRaw+RAWDATALEN,sendData);
+    std::copy(this->valveCond,this->valveCond+VALNUM,sendData+RAWDATALEN);
+    this->client->send(sendData,RAWDATALEN+VALNUM);
     
 }
 

@@ -17,8 +17,6 @@
 #define SEC (1000 * MSEC)
 
 
-
-
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<unsigned long, std::micro> microsecs_ul;
@@ -119,7 +117,7 @@ void Sensor::senUpdate()
 				(*conTh).join();
 			else
 				conStart = true;
-			conTh.reset(new std::thread(&Controller::ConMainLoop,&con,this->senData));
+			conTh.reset(new std::thread(&Controller::ConMainLoop,&con,this->senData,this->senDataRaw));
 		
 			//std::cout<<"data len= "<<sizeof(con.GetValCond());
 			//disp.send(&((char)con.GetValCond()),sizeof(con.GetValCond()))
@@ -262,7 +260,7 @@ void Sensor::readSerialPort(int serialPort)
 					microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->origin));
 					int timeNow = sen_time.count(); 
 					{
-						
+						std::copy(tempSenData,tempSenData+DATALEN,this->senDataRaw);
 						this->senData[0] = timeNow;
 						this->senData[1] = (int)(tempSenData[1]) + (int)(tempSenData[2] << 8);
 						this->senData[2] = (int)(tempSenData[3]) + (int)(tempSenData[4] << 8);
