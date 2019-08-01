@@ -43,7 +43,7 @@
 #include <memory>
 //data recording
 #include "Recorder.hpp"
-const int NUMSEN = 9;
+const int NUMSEN = 16; //need to sync with controller's
 const int DATALEN =NUMSEN*2+2;
 const int SIZEOFBUFFER= DATALEN*1000;
 

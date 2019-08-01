@@ -2,19 +2,30 @@
  Name:    	ExoArduino.ino
  Author:	Hao Lee
 */
+#define FASTADC 1
+
+// defines for setting and clearing register bits
+#ifndef cbi
+#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+#endif
+#ifndef sbi
+#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+#endif
+
+
+
 
 //This is for the test pin
 bool pinCond = true;
 //
 
-const int NUMSAMP = 2;
-const int NUMSEN = 12;
-const int SAMPDIV = 1; //This actually take 4 samples, use measurement>>2 to divide by 4
-int sensorArray[] = {0, 1, 2, 3, 4, 5, 6,7,8,9,10,11};
+
+const int NUMSEN = 16;
+
+int sensorArray[] = {0, 1, 2, 3, 4, 5, 6,7,8,9,10,11,12,13,14,15};
 int curIndex;
 
-//int senData[NUMSEN][NUMSAMP];
-int senSum[NUMSEN];
+
 char buffer[100];
 char *bufferPointer;
 int curCont = 1;
@@ -37,6 +48,12 @@ int testSent2;
 // the setup function runs once when you press reset or power the board
 void setup()
 {
+	#if FASTADC
+ 	// set prescale to 16
+ 	sbi(ADCSRA,ADPS2) ;
+ 	cbi(ADCSRA,ADPS1) ;
+ 	cbi(ADCSRA,ADPS0) ;
+	#endif
 
 	testSent1 = 97;
 	testSent2 = 65;
@@ -93,18 +110,10 @@ void loop()
 
 		for (int senIndex = 0; senIndex < NUMSEN; senIndex++)
 		{
-			// senSum[senIndex] = senSum[senIndex] - senData[senIndex][curIndex];
-			// senData[senIndex][curIndex] = analogRead(sensorArray[senIndex]);
-			senSum[senIndex] = analogRead(sensorArray[senIndex]);
+			curSen.senVal = analogRead(sensorArray[senIndex]);
+			*bufferPointer++ = curSen.senByte[0];
+			*bufferPointer++ = curSen.senByte[1];
 
-			// senSum[senIndex] = senSum[senIndex] + senData[senIndex][curIndex];
-			// curSen.senVal = senSum[senIndex] >> SAMPDIV;
-			curSen.senVal = senSum[senIndex];
-			for (int sendIndex = 0; sendIndex < 2; sendIndex++)
-			{
-				*bufferPointer++ = curSen.senByte[sendIndex];
-				//*bufferPointer++ = testSent2;
-			}
 		}
 		*bufferPointer++ = '\n';
 		//Create the output data
@@ -119,10 +128,8 @@ void loop()
 			digitalWrite(50, LOW);
 			pinCond = true;
 		}
-		curIndex++; //This is index for moving average filter
-		if (curIndex == NUMSAMP)
-			curIndex = 0;
-		Serial.write(buffer, 26);
+		
+		Serial.write(buffer,NUMSEN*2+2);
 		readyToSend = false;
 		bufferPointer = buffer;
 	}

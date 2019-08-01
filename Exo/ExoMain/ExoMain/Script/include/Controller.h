@@ -106,6 +106,7 @@ private:
     //displayer
     char *valveCond;
     bool display=false;
+    bool preSend; //scale the sending freq since matplotlib cannot handle it
     // Valve control
     void ValveOn(std::shared_ptr<Valve> val,int curTime);
     void ValveOff(std::shared_ptr<Valve> val,int curTime);

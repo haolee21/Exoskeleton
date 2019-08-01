@@ -260,17 +260,23 @@ void Sensor::readSerialPort(int serialPort)
 					microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->origin));
 					int timeNow = sen_time.count(); 
 					{
+						int idx=1;
 						std::copy(tempSenData,tempSenData+DATALEN,this->senDataRaw);
 						this->senData[0] = timeNow;
-						this->senData[1] = (int)(tempSenData[1]) + (int)(tempSenData[2] << 8);
-						this->senData[2] = (int)(tempSenData[3]) + (int)(tempSenData[4] << 8);
-						this->senData[3] = (int)(tempSenData[5]) + (int)(tempSenData[6] << 8);
-						this->senData[4] = (int)(tempSenData[7]) + (int)(tempSenData[8] << 8);
-						this->senData[5] = (int)(tempSenData[9]) + (int)(tempSenData[10] << 8);
-						this->senData[6] = (int)(tempSenData[11]) + (int)(tempSenData[12] << 8);
-						this->senData[7] = (int)(tempSenData[13]) + (int)(tempSenData[14] << 8);
-						this->senData[8] = (int)(tempSenData[15]) + (int)(tempSenData[16] << 8);
-						this->senData[9] = (int)(tempSenData[17]) + (int)(tempSenData[18] << 8);
+						for(int i=1;i<NUMSEN+1;i++)
+						{
+							this->senData[i]=(int)(tempSenData[idx]) + (int)(tempSenData[idx+1] << 8);
+							idx+=2;
+						}
+						// this->senData[1] = (int)(tempSenData[1]) + (int)(tempSenData[2] << 8);
+						// this->senData[2] = (int)(tempSenData[3]) + (int)(tempSenData[4] << 8);
+						// this->senData[3] = (int)(tempSenData[5]) + (int)(tempSenData[6] << 8);
+						// this->senData[4] = (int)(tempSenData[7]) + (int)(tempSenData[8] << 8);
+						// this->senData[5] = (int)(tempSenData[9]) + (int)(tempSenData[10] << 8);
+						// this->senData[6] = (int)(tempSenData[11]) + (int)(tempSenData[12] << 8);
+						// this->senData[7] = (int)(tempSenData[13]) + (int)(tempSenData[14] << 8);
+						// this->senData[8] = (int)(tempSenData[15]) + (int)(tempSenData[16] << 8);
+						// this->senData[9] = (int)(tempSenData[17]) + (int)(tempSenData[18] << 8);
 					}
 					std::vector<int> recSenData;
 					for(int i=1;i<NUMSEN+1;i++){

@@ -5,7 +5,7 @@
 #include <queue>
 
 const int NUMSEN = 9;
-#define RAWDATALEN 20 //this has to be the same as defined in Sensor.h
+#define RAWDATALEN 34 //this has to be the same as defined in Sensor.h
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
@@ -13,9 +13,6 @@ void Controller::ConMainLoop(int *senData,char* senRaw){
     queue<thread> taskQue;
     this->senData = senData;
     std::vector<int> curSen(senData+1,senData+NUMSEN+1);
-    
-    
-    
     
     // assign task to controller
     //taskQue.push(std::thread(&Controller::TestReactingTime,this));
@@ -31,12 +28,19 @@ void Controller::ConMainLoop(int *senData,char* senRaw){
         taskQue.front().join();
         taskQue.pop();
     }
-    char sendData[RAWDATALEN+VALNUM+PWMNUM];
-    std::copy(senRaw,senRaw+RAWDATALEN,sendData);
-    std::copy(this->valveCond,this->valveCond+VALNUM,sendData+RAWDATALEN);
-    std::copy(this->pwmDuty,this->pwmDuty+PWMNUM,sendData+RAWDATALEN+VALNUM);
-    this->client->send(sendData,RAWDATALEN+VALNUM+PWMNUM);
-
+    if(this->display){
+        if(this->preSend){
+            char sendData[RAWDATALEN+VALNUM+PWMNUM];
+            std::copy(senRaw,senRaw+RAWDATALEN,sendData);
+            std::copy(this->valveCond,this->valveCond+VALNUM,sendData+RAWDATALEN);
+            std::copy(this->pwmDuty,this->pwmDuty+PWMNUM,sendData+RAWDATALEN+VALNUM);
+            this->client->send(sendData,RAWDATALEN+VALNUM+PWMNUM);
+            this->preSend = false;
+        }
+        else{
+            this->preSend = true;
+        }
+    }
     
 }
 
@@ -144,7 +148,7 @@ void Controller::ValveOff(std::shared_ptr<Valve> val,int curTime){
 Controller::Controller(std::string filePath,Com *_com,bool _display)
 {
     this->testSendCount=0;
-
+    this->preSend = true;
     this->display= _display;
     if(_display){
         this->client.reset(new Displayer());
