@@ -31,10 +31,12 @@ void Controller::ConMainLoop(int *senData,char* senRaw){
         taskQue.front().join();
         taskQue.pop();
     }
-    char sendData[RAWDATALEN+VALNUM];
+    char sendData[RAWDATALEN+VALNUM+PWMNUM];
     std::copy(senRaw,senRaw+RAWDATALEN,sendData);
     std::copy(this->valveCond,this->valveCond+VALNUM,sendData+RAWDATALEN);
-    this->client->send(sendData,RAWDATALEN+VALNUM);
+    std::copy(this->pwmDuty,this->pwmDuty+PWMNUM,sendData+RAWDATALEN+VALNUM);
+    this->client->send(sendData,RAWDATALEN+VALNUM+PWMNUM);
+
     
 }
 
@@ -101,8 +103,8 @@ void Controller::TestReactingTime(){
 }
 void Controller::TestPWM(){
     if(this->tpParam.notStart){
-        this->KnePreVal->SetDuty(0,this->senData[0]);
-        this->AnkPreVal->SetDuty(0,this->senData[0]);
+        this->SetDuty(this->KnePreVal,0,this->senData[0]);
+        this->SetDuty(this->AnkPreVal,0,this->senData[0]);
         this->tpParam.notStart = false;
         //this->KnePreVal->Start();
     }
@@ -121,7 +123,8 @@ void Controller::TestPWM(){
         {
             this->tpParam.dutyLoopCount++;
         }
-        this->KnePreVal->SetDuty(this->tpParam.curTestDuty,this->senData[0]);
+        this->SetDuty(this->KnePreVal,this->tpParam.curTestDuty,this->senData[0]);
+        // this->KnePreVal->SetDuty(this->tpParam.curTestDuty,this->senData[0]);
         
     }
 }
@@ -148,6 +151,7 @@ Controller::Controller(std::string filePath,Com *_com,bool _display)
     }
 	
     this->valveCond = new char[VALNUM];
+    this->pwmDuty = new char[PWMNUM];
 
     this->com = _com;
 
@@ -160,8 +164,8 @@ Controller::Controller(std::string filePath,Com *_com,bool _display)
 
     // this->KnePreVal = new PWMGen("KnePreVal",filePath,OP1,30000L);
     // this->AnkPreVal = new PWMGen("AnkPreVal",filePath,OP2,30000L);
-    this->KnePreVal.reset(new PWMGen("KnePreVal",filePath,OP1,30000L));
-    this->AnkPreVal.reset(new PWMGen("AnkPreVal",filePath,OP2,30000L));
+    this->KnePreVal.reset(new PWMGen("KnePreVal",filePath,OP1,30000L,0));
+    this->AnkPreVal.reset(new PWMGen("AnkPreVal",filePath,OP2,30000L,1));
 
     this->ValveList[0] = this->LKneVal1;
     this->ValveList[1] = this->LKneVal2;
@@ -170,8 +174,9 @@ Controller::Controller(std::string filePath,Com *_com,bool _display)
     this->ValveList[4] = this->BalVal;
     this->ValveList[5] = this->LRelVal;
     
-    this->KnePreVal->SetDuty(0,0);
-    this->AnkPreVal->SetDuty(0,0);
+    this->SetDuty(this->KnePreVal,0,0);
+    this->SetDuty(this->AnkPreVal,0,0);
+
     this->knePreValTh = this->KnePreVal->Start();
     this->ankPreValTh = this->AnkPreVal->Start();
     
@@ -195,6 +200,11 @@ Controller::Controller(std::string filePath,Com *_com,bool _display)
     
     
 }
+void Controller::SetDuty(std::shared_ptr<PWMGen> pwmVal,int duty,int curTime){
+    pwmVal->SetDuty(duty,curTime);
+    this->pwmDuty[pwmVal->GetIdx()]=pwmVal->duty.byte[0];
+    
+}
 
 Controller::~Controller()
 {
@@ -204,5 +214,6 @@ Controller::~Controller()
     this->knePreValTh->join();
     this->ankPreValTh->join();
     delete valveCond;
+    delete pwmDuty;
 
 }

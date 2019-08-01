@@ -23,6 +23,7 @@ public:
 	std::mutex* DutyLock;
 	void Stop();
 	int GetIdx();
+	Duty duty;
 private:
 	int pinId;
 	int pwmIdx;

@@ -32,7 +32,8 @@ PWMGen::PWMGen(std::string valveName, std::string filePath,int pinId,int _sampT,
 {
 	this->pwmIdx = _pwmIdx;
 	this->sampT = _sampT;
-	this->onTime =0;
+	// this->onTime =0;
+	// this->SetDuty(0,0);
 	this->pwmRec = new Recorder<int>(valveName,filePath,"time,"+valveName);
 	this->DutyLock = new std::mutex;
 	this->pinId = pinId;
@@ -40,6 +41,7 @@ PWMGen::PWMGen(std::string valveName, std::string filePath,int pinId,int _sampT,
 	pinMode(this->pinId, OUTPUT);
 }
 void PWMGen::SetDuty(int onDuty,int curTime) {
+	this->duty.num=onDuty;
 	{
 		std::lock_guard<std::mutex> lock(*this->DutyLock);
 		this->CalTime(onDuty);

@@ -68,7 +68,8 @@ struct Com
 	bool comArray[2];
 	mutex comLock;
 };
-const int VALNUM = 6; //this cannot work with test reacting
+#define VALNUM 6 //this cannot work with test reacting
+#define PWMNUM 2
 class Controller
 {
 private:
@@ -109,7 +110,7 @@ private:
     void ValveOn(std::shared_ptr<Valve> val,int curTime);
     void ValveOff(std::shared_ptr<Valve> val,int curTime);
     // PWM control
-    void SetDuty(PWMGen pwmVal,int duty);
+    void SetDuty(std::shared_ptr<PWMGen> pwmVal,int duty,int curTime);
     char *pwmDuty;
     //command
     Com *com;
