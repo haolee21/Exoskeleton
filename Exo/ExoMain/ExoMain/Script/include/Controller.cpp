@@ -5,33 +5,16 @@
 #include <queue>
 
 const int NUMSEN = 9;
+#define RAWDATALEN 20 //this has to be the same as defined in Sensor.h
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
-void Controller::ConMainLoop(int *senData){
+void Controller::ConMainLoop(int *senData,char* senRaw){
     queue<thread> taskQue;
     this->senData = senData;
     std::vector<int> curSen(senData+1,senData+NUMSEN+1);
-    this->conRec->PushData((unsigned long)senData[0],curSen);
-
-    if(this->testSendCount++==0){
-        char tempData[] = {'1','1','1','1','1'};
-        this->client->send(tempData,5);
-    }
-    if(this->testSendCount++==1){
-        char tempData[] = {'2','2','2','2','2'};
-        this->client->send(tempData,5);
-    }
-    if(this->testSendCount++==2){
-        char tempData[] = {'3','3','3','3','3'};
-        this->client->send(tempData,5);
-    }
-    if(this->testSendCount++==3){
-        char tempData[] = {'4','4','4','4','4'};
-        this->client->send(tempData,5);
-        this->testSendCount=0;
-    }
-
+    
+    
     
     
     // assign task to controller
@@ -48,6 +31,12 @@ void Controller::ConMainLoop(int *senData){
         taskQue.front().join();
         taskQue.pop();
     }
+    char sendData[RAWDATALEN+VALNUM+PWMNUM];
+    std::copy(senRaw,senRaw+RAWDATALEN,sendData);
+    std::copy(this->valveCond,this->valveCond+VALNUM,sendData+RAWDATALEN);
+    std::copy(this->pwmDuty,this->pwmDuty+PWMNUM,sendData+RAWDATALEN+VALNUM);
+    this->client->send(sendData,RAWDATALEN+VALNUM+PWMNUM);
+
     
 }
 
@@ -114,8 +103,8 @@ void Controller::TestReactingTime(){
 }
 void Controller::TestPWM(){
     if(this->tpParam.notStart){
-        this->KnePreVal->SetDuty(0,this->senData[0]);
-        this->AnkPreVal->SetDuty(0,this->senData[0]);
+        this->SetDuty(this->KnePreVal,0,this->senData[0]);
+        this->SetDuty(this->AnkPreVal,0,this->senData[0]);
         this->tpParam.notStart = false;
         //this->KnePreVal->Start();
     }
@@ -134,20 +123,22 @@ void Controller::TestPWM(){
         {
             this->tpParam.dutyLoopCount++;
         }
-        this->KnePreVal->SetDuty(this->tpParam.curTestDuty,this->senData[0]);
+        this->SetDuty(this->KnePreVal,this->tpParam.curTestDuty,this->senData[0]);
+        this->SetDuty(this->AnkPreVal,100-this->tpParam.curTestDuty,this->senData[0]);
+        // this->KnePreVal->SetDuty(this->tpParam.curTestDuty,this->senData[0]);
         
     }
 }
 
 void Controller::ValveOn(std::shared_ptr<Valve> val,int curTime){
     val->On(curTime);
-    this->valveCond[val->GetValIdx()]='1';
+    this->valveCond[val->GetValIdx()]='d';
     
 }
 
 void Controller::ValveOff(std::shared_ptr<Valve> val,int curTime){
     val->Off(curTime);
-    this->valveCond[val->GetValIdx()]='0';
+    this->valveCond[val->GetValIdx()]='!';
     
 }
 Controller::Controller(std::string filePath,Com *_com,bool _display)
@@ -161,6 +152,7 @@ Controller::Controller(std::string filePath,Com *_com,bool _display)
     }
 	
     this->valveCond = new char[VALNUM];
+    this->pwmDuty = new char[PWMNUM];
 
     this->com = _com;
 
@@ -173,8 +165,8 @@ Controller::Controller(std::string filePath,Com *_com,bool _display)
 
     // this->KnePreVal = new PWMGen("KnePreVal",filePath,OP1,30000L);
     // this->AnkPreVal = new PWMGen("AnkPreVal",filePath,OP2,30000L);
-    this->KnePreVal.reset(new PWMGen("KnePreVal",filePath,OP1,30000L));
-    this->AnkPreVal.reset(new PWMGen("AnkPreVal",filePath,OP2,30000L));
+    this->KnePreVal.reset(new PWMGen("KnePreVal",filePath,OP1,30000L,0));
+    this->AnkPreVal.reset(new PWMGen("AnkPreVal",filePath,OP2,30000L,1));
 
     this->ValveList[0] = this->LKneVal1;
     this->ValveList[1] = this->LKneVal2;
@@ -183,20 +175,12 @@ Controller::Controller(std::string filePath,Com *_com,bool _display)
     this->ValveList[4] = this->BalVal;
     this->ValveList[5] = this->LRelVal;
     
-    this->KnePreVal->SetDuty(0,0);
-    this->AnkPreVal->SetDuty(0,0);
+    this->SetDuty(this->KnePreVal,0,0);
+    this->SetDuty(this->AnkPreVal,0,0);
+
     this->knePreValTh = this->KnePreVal->Start();
     this->ankPreValTh = this->AnkPreVal->Start();
     
-   
-    
-    this->conRec.reset(new Recorder<int>("con",filePath,"time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9"));
-    
-    //turn off all the valve
-    // Valve **begVal = this->ValveList;
-    // do{
-    //     this->ValveOff(*begVal,0);
-    // }while(++begVal!=std::end(this->ValveList));
  
     std::shared_ptr<Valve> *begVal = this->ValveList;
     do{
@@ -208,6 +192,11 @@ Controller::Controller(std::string filePath,Com *_com,bool _display)
     
     
 }
+void Controller::SetDuty(std::shared_ptr<PWMGen> pwmVal,int duty,int curTime){
+    pwmVal->SetDuty(duty,curTime);
+    this->pwmDuty[pwmVal->GetIdx()]=pwmVal->duty.byte[0];
+    
+}
 
 Controller::~Controller()
 {
@@ -217,5 +206,6 @@ Controller::~Controller()
     this->knePreValTh->join();
     this->ankPreValTh->join();
     delete valveCond;
+    delete pwmDuty;
 
 }

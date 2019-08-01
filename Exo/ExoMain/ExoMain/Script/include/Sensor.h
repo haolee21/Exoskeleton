@@ -62,6 +62,7 @@ public:
 	void Start(std::chrono::system_clock::time_point startTime);
 	void Stop();
 	int senData[NUMSEN+1]; //data get from ADC
+	char senDataRaw[DATALEN];
 	thread *th_SenUpdate;
 
 	

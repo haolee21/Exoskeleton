@@ -13,7 +13,7 @@ Displayer::Displayer()
 
 Displayer::~Displayer()
 {
-    std::cout<<"try to shutdown\n";
+    
     this->s->shutdown(boost::asio::ip::tcp::socket::shutdown_both);
     this->s->close();
    

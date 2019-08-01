@@ -12,6 +12,7 @@
 
 #include <string>
 #include "Displayer.hpp"
+#include <iomanip>
 
 void DelaySys(int waitTime) {
 	struct timespec ts2 = { 0 };
@@ -35,8 +36,17 @@ int main(void)
 	string filePath;
 	{
 		boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();
-		filePath = "../data/"+to_string(timeLocal.time_of_day().hours())+to_string(timeLocal.time_of_day().minutes())+
-		to_string(timeLocal.date().month())+to_string(timeLocal.date().day())+to_string(timeLocal.date().year());
+		stringstream hour;
+		hour<<setw(2)<<std::setfill('0')<<to_string(timeLocal.time_of_day().hours());
+		stringstream min;
+		min<<setw(2)<<std::setfill('0')<<to_string(timeLocal.time_of_day().minutes());
+		stringstream date;
+		date<<setw(2)<<setfill('0')<<to_string(timeLocal.date().day());
+		stringstream month;
+		month<<setw(2)<<setfill('0')<<to_string(timeLocal.date().month());
+		// filePath = "../data/"+to_string(timeLocal.time_of_day().hours())+to_string(timeLocal.time_of_day().minutes())+
+		// to_string(timeLocal.date().month())+to_string(timeLocal.date().day())+to_string(timeLocal.date().year());
+		filePath = "../data/"+month.str()+date.str()+hour.str()+min.str()+to_string(timeLocal.date().year());
 	}
 	boost::filesystem::create_directory(filePath);
 
@@ -76,10 +86,11 @@ int main(void)
 		cin>>command;
 		{
 			lock_guard<mutex> lock(com.comLock);
-			if(command=="testpwm")
-				com.comArray[TESTPWM] = true;
+			if(command=="testpwm"){
+				com.comArray[TESTPWM] = !com.comArray[TESTPWM];
+			}
 			else if(command=="testval")
-				com.comArray[TESTVAL] = true;
+				com.comArray[TESTVAL] = !com.comArray[TESTVAL];
 			else if(command == "end")
 				break;
 			else
