@@ -7,13 +7,13 @@
 bool pinCond = true;
 //
 
-const int NUMSAMP = 4;
-const int NUMSEN = 9;
-const int SAMPDIV = 2; //This actually take 4 samples, use measurement>>2 to divide by 4
-int sensorArray[] = {0, 1, 2, 3, 4, 5, 6, A15, A10};
+const int NUMSAMP = 2;
+const int NUMSEN = 12;
+const int SAMPDIV = 1; //This actually take 4 samples, use measurement>>2 to divide by 4
+int sensorArray[] = {0, 1, 2, 3, 4, 5, 6,7,8,9,10,11};
 int curIndex;
 
-int senData[NUMSEN][NUMSAMP];
+//int senData[NUMSEN][NUMSAMP];
 int senSum[NUMSEN];
 char buffer[100];
 char *bufferPointer;
@@ -26,11 +26,11 @@ union SenDataType {
 	int senVal;
 	char senByte[4];
 };
-union TimeDataType {
-	unsigned long timeVal;
-	char timeByte[4];
-};
-TimeDataType curTime;
+// union TimeDataType {
+// 	unsigned long timeVal;
+// 	char timeByte[4];
+// };
+// TimeDataType curTime;
 SenDataType curSen;
 int testSent1;
 int testSent2;
@@ -43,15 +43,15 @@ void setup()
 	curIndex = 0;
 	bufferPointer = buffer;
 	Serial.begin(1000000, SERIAL_8E1);
-	for (int i = 0; i < NUMSEN; i++)
-	{
-		for (int k = 0; k < NUMSAMP; k++)
-			senData[i][k] = 0;
-	}
+	// for (int i = 0; i < NUMSEN; i++)
+	// {
+	// 	for (int k = 0; k < NUMSAMP; k++)
+	// 		senData[i][k] = 0;
+	// }
 	readyToSend = false;
 	//I use this pin to test the frequency
 	pinMode(50, OUTPUT);
-
+	pinMode(51,OUTPUT);
 	// Timer setting: http://www.8bit-era.cz/arduino-timer-interrupts-calculator.html
 
 // TIMER 1 for interrupt frequency 625 Hz:
@@ -80,29 +80,26 @@ void loop()
 
 	if (readyToSend)
 	{
-		// testSent is for testing the receiving end got correct data
-		testSent1++;
-		testSent2++;
-		if (testSent1 > 122)
-			testSent1 = 97;
-		if (testSent2 > 90)
-			testSent2 = 65;
+		digitalWrite(51,HIGH);
+		// // testSent is for testing the receiving end got correct data
+		// testSent1++;
+		// testSent2++;
+		// if (testSent1 > 122)
+		// 	testSent1 = 97;
+		// if (testSent2 > 90)
+		// 	testSent2 = 65;
 
 		*bufferPointer++ = '@';
-		// curTime.timeVal = micros();
 
-		// for (int sendIndex = 0; sendIndex < 4; sendIndex++)
-		// {
-		// 	*bufferPointer++ = curTime.timeByte[sendIndex];
-		// 	//*bufferPointer++ = testSent1;
-		// }
 		for (int senIndex = 0; senIndex < NUMSEN; senIndex++)
 		{
-			senSum[senIndex] = senSum[senIndex] - senData[senIndex][curIndex];
-			senData[senIndex][curIndex] = analogRead(sensorArray[senIndex]);
+			// senSum[senIndex] = senSum[senIndex] - senData[senIndex][curIndex];
+			// senData[senIndex][curIndex] = analogRead(sensorArray[senIndex]);
+			senSum[senIndex] = analogRead(sensorArray[senIndex]);
 
-			senSum[senIndex] = senSum[senIndex] + senData[senIndex][curIndex];
-			curSen.senVal = senSum[senIndex] >> SAMPDIV;
+			// senSum[senIndex] = senSum[senIndex] + senData[senIndex][curIndex];
+			// curSen.senVal = senSum[senIndex] >> SAMPDIV;
+			curSen.senVal = senSum[senIndex];
 			for (int sendIndex = 0; sendIndex < 2; sendIndex++)
 			{
 				*bufferPointer++ = curSen.senByte[sendIndex];
@@ -111,7 +108,7 @@ void loop()
 		}
 		*bufferPointer++ = '\n';
 		//Create the output data
-
+		digitalWrite(51,LOW);
 		if (pinCond)
 		{
 			digitalWrite(50, HIGH);
@@ -125,7 +122,7 @@ void loop()
 		curIndex++; //This is index for moving average filter
 		if (curIndex == NUMSAMP)
 			curIndex = 0;
-		Serial.write(buffer, 20);
+		Serial.write(buffer, 26);
 		readyToSend = false;
 		bufferPointer = buffer;
 	}
