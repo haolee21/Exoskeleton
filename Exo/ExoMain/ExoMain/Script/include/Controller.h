@@ -98,7 +98,7 @@ private:
     std::thread *knePreValTh;
     std::thread *ankPreValTh;
 
-    std::shared_ptr<Recorder<int>> conRec;
+   
 
     void WaitToSync();
     void Sleep(int sleepTime);

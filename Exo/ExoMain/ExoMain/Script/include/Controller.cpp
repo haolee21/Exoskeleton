@@ -13,7 +13,7 @@ void Controller::ConMainLoop(int *senData,char* senRaw){
     queue<thread> taskQue;
     this->senData = senData;
     std::vector<int> curSen(senData+1,senData+NUMSEN+1);
-    this->conRec->PushData((unsigned long)senData[0],curSen);
+    
     
     
     
@@ -124,6 +124,7 @@ void Controller::TestPWM(){
             this->tpParam.dutyLoopCount++;
         }
         this->SetDuty(this->KnePreVal,this->tpParam.curTestDuty,this->senData[0]);
+        this->SetDuty(this->AnkPreVal,100-this->tpParam.curTestDuty,this->senData[0]);
         // this->KnePreVal->SetDuty(this->tpParam.curTestDuty,this->senData[0]);
         
     }
@@ -180,15 +181,6 @@ Controller::Controller(std::string filePath,Com *_com,bool _display)
     this->knePreValTh = this->KnePreVal->Start();
     this->ankPreValTh = this->AnkPreVal->Start();
     
-   
-    
-    this->conRec.reset(new Recorder<int>("con",filePath,"time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9"));
-    
-    //turn off all the valve
-    // Valve **begVal = this->ValveList;
-    // do{
-    //     this->ValveOff(*begVal,0);
-    // }while(++begVal!=std::end(this->ValveList));
  
     std::shared_ptr<Valve> *begVal = this->ValveList;
     do{

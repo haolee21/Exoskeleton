@@ -86,6 +86,7 @@ Recorder<T>::~Recorder()
     if(!this->dataTemps.empty())
         std::cout<<"Temperary files remaining\n";
     delete this->curData;
+    
 
 }
 template<class T>
