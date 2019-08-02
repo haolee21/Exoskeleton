@@ -79,9 +79,9 @@ Recorder<T>::~Recorder()
         curThread->join();
         this->threadQue.pop();
     }
-    
-    this->OutputCSV();
-    
+    std::thread saveTh = std::thread(&Recorder::OutputCSV,this);
+    // this->OutputCSV();
+    saveTh.join();
 
     if(!this->dataTemps.empty())
         std::cout<<"Temperary files remaining\n";

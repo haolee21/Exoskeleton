@@ -70,12 +70,12 @@ def main():
                 valData = np.array(valData)
                 pwmData = np.array(pwmData)
 
-                start=time.time()
+                
                 graph_sen.UpdateFig(senData)
                 graph_val.UpdateFig(valData)
                 graph_pwm.UpdateFig(pwmData)
-                end = time.time()
-                print('total time: ',end-start)
+                
+                
         except IndexError:
             print('socket ends')
             break

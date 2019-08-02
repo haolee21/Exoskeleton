@@ -135,6 +135,8 @@ private:
         int singleValCount =0;
         bool curValCond=false;
         const int maxTest = 20;
+        int curTestCount=0; //valve cannot operate in such high freq, need to prescale
+        int maxTestCount=13;
     };
     TestValParam tvParam;
     void TestValve();
