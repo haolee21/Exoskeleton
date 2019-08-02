@@ -23,6 +23,10 @@ void Controller::ConMainLoop(int *senData, char *senRaw)
             taskQue.push(std::thread(&Controller::TestValve, this));
         if (this->com->comArray[TESTPWM])
             taskQue.push(std::thread(&Controller::TestPWM, this));
+        if (this->com->comArray[SHUTPWM]){
+            taskQue.push(std::thread(&Controller::ShutDownPWM,this));
+            this->com->comArray[SHUTPWM]=false;
+        }
     }
 
     while (!taskQue.empty())
@@ -113,16 +117,11 @@ void Controller::TestReactingTime()
         }
     }
 }
+
 void Controller::TestPWM()
 {
-    if (this->tpParam.notStart)
-    {
-        this->SetDuty(this->KnePreVal, 0, this->senData[0]);
-        this->SetDuty(this->AnkPreVal, 0, this->senData[0]);
-        this->tpParam.notStart = false;
-        //this->KnePreVal->Start();
-    }
-    else
+    
+   
     {
         if (this->tpParam.dutyLoopCount == 100)
         {
@@ -145,7 +144,11 @@ void Controller::TestPWM()
         // this->KnePreVal->SetDuty(this->tpParam.curTestDuty,this->senData[0]);
     }
 }
+void Controller::ShutDownPWM(){
+    this->SetDuty(this->KnePreVal, 0, this->senData[0]);
+    this->SetDuty(this->AnkPreVal, 0, this->senData[0]);
 
+}
 void Controller::ValveOn(std::shared_ptr<Valve> val, int curTime)
 {
     val->On(curTime);
@@ -184,6 +187,8 @@ Controller::Controller(std::string filePath, Com *_com, bool _display)
     // this->AnkPreVal = new PWMGen("AnkPreVal",filePath,OP2,30000L);
     this->KnePreVal.reset(new PWMGen("KnePreVal", filePath, OP1, 40000L, 0));
     this->AnkPreVal.reset(new PWMGen("AnkPreVal", filePath, OP2, 40000L, 1));
+    this->PWMList[0]=this->KnePreVal;
+    this->PWMList[1]=this->AnkPreVal;
 
     this->ValveList[0] = this->LKneVal1;
     this->ValveList[1] = this->LKneVal2;
@@ -192,6 +197,10 @@ Controller::Controller(std::string filePath, Com *_com, bool _display)
     this->ValveList[4] = this->BalVal;
     this->ValveList[5] = this->LRelVal;
 
+    std::shared_ptr<PWMGen> *begPWM=this->PWMList;
+    do{
+        this->SetDuty(*begPWM,0,0);
+    }while(++begPWM!=std::end(this->PWMList));
     this->SetDuty(this->KnePreVal, 0, 0);
     this->SetDuty(this->AnkPreVal, 0, 0);
 

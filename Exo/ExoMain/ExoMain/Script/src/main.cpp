@@ -87,7 +87,14 @@ int main(void)
 		{
 			lock_guard<mutex> lock(com.comLock);
 			if(command=="testpwm"){
-				com.comArray[TESTPWM] = !com.comArray[TESTPWM];
+				if (com.comArray[TESTPWM]==false)
+					com.comArray[TESTPWM]=true;
+				else{
+					com.comArray[TESTPWM]=false;
+					com.comArray[SHUTPWM]=true;
+
+				}
+					 
 			}
 			else if(command=="testval")
 				com.comArray[TESTVAL] = !com.comArray[TESTVAL];

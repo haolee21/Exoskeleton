@@ -61,11 +61,11 @@
 // index of command
 #define TESTVAL 0
 #define TESTPWM 1
-
+#define SHUTPWM 2
 struct Com
 {
-	const int comLen =2;
-	bool comArray[2];
+	const int comLen =3;
+	bool comArray[3];
 	mutex comLock;
 };
 #define VALNUM 6 //this cannot work with test reacting
@@ -94,7 +94,7 @@ private:
 
     std::shared_ptr<PWMGen> KnePreVal;
     std::shared_ptr<PWMGen> AnkPreVal;
-    
+    std::shared_ptr<PWMGen> PWMList[PWMNUM];
     std::thread *knePreValTh;
     std::thread *ankPreValTh;
 
@@ -150,7 +150,7 @@ private:
     };
     TestPwmParam tpParam;
     void TestPWM();
-
+    void ShutDownPWM();
 
 public:
     // Valve* ValveList[VALNUM];
