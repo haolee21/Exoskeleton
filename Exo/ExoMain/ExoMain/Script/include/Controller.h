@@ -133,10 +133,10 @@ private:
     {
         int testValIdx=0;
         int singleValCount =0;
-        bool curValCond=false;
+        bool curValCond=true;
         const int maxTest = 20;
         int curTestCount=0; //valve cannot operate in such high freq, need to prescale
-        int maxTestCount=13;
+        const int maxTestCount=12;
     };
     TestValParam tvParam;
     void TestValve();
@@ -144,9 +144,11 @@ private:
     // test PWM Valve function
     struct TestPwmParam
     {
+        int testPWMidx=0;
         bool notStart = true;
         int dutyLoopCount = 0;
         int curTestDuty=0;
+        const int preScaler = 100;
     };
     TestPwmParam tpParam;
     void TestPWM();

@@ -3,10 +3,18 @@ import sys
 import time
 import Display as dp
 import numpy as np
-
+import paramiko
+import datetime
 
 def main():
+    #sync time with pc
+    ssh = paramiko.SSHClient()
+    ssh.load_system_host_keys()
+    ssh.connect('192.168.1.134',username='pi',password='bionics')
+    ssh.exec_command('sudo timedatectl set-time \''+ str(datetime.datetime.now())+'\'')
+    ssh.close()
 
+    #create tcp server
     HOST = '192.168.1.142'  # Server IP or Hostname
     # Pick an open Port (1000+ recommended), must match the client sport
     PORT = 12345

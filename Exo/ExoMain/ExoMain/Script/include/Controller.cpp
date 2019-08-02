@@ -120,29 +120,49 @@ void Controller::TestReactingTime()
 
 void Controller::TestPWM()
 {
-    
-   
-    {
-        if (this->tpParam.dutyLoopCount == 100)
-        {
-            this->tpParam.dutyLoopCount = 0;
-            if (this->tpParam.curTestDuty < 100)
-            {
-                this->tpParam.curTestDuty += 10;
-            }
-            else
-            {
-                this->tpParam.curTestDuty = 0;
-            }
+    if(this->tpParam.dutyLoopCount==this->tpParam.preScaler){
+        this->tpParam.dutyLoopCount=0;
+        if(this->tpParam.curTestDuty==100){
+            this->tpParam.curTestDuty=0;
+            this->tpParam.testPWMidx++;
+            if(this->tpParam.testPWMidx==PWMNUM)
+                this->tpParam.testPWMidx=0;
         }
         else
-        {
-            this->tpParam.dutyLoopCount++;
-        }
-        this->SetDuty(this->KnePreVal, this->tpParam.curTestDuty, this->senData[0]);
-        this->SetDuty(this->AnkPreVal, 100 - this->tpParam.curTestDuty, this->senData[0]);
-        // this->KnePreVal->SetDuty(this->tpParam.curTestDuty,this->senData[0]);
+            this->tpParam.curTestDuty+=10;
+        this->SetDuty(this->PWMList[this->tpParam.testPWMidx],this->tpParam.curTestDuty,this->senData[0]);
+        
     }
+    else{
+        this->tpParam.dutyLoopCount++;
+        
+    }
+    
+    // if(this->tpParam.testPWMidx==PWMNUM){
+    //     this->tpParam.testPWMidx = 0;
+    // }
+    // else
+    // {
+    //     if (this->tpParam.dutyLoopCount == 100)
+    //     {
+    //         this->tpParam.dutyLoopCount = 0;
+    //         if (this->tpParam.curTestDuty < 100)
+    //         {
+    //             this->tpParam.curTestDuty += 10;
+    //         }
+    //         else
+    //         {
+    //             this->tpParam.curTestDuty = 0;
+    //         }
+    //     }
+    //     else
+    //     {
+    //         this->tpParam.dutyLoopCount++;
+    //     }
+    //     this->SetDuty(this->KnePreVal, this->tpParam.curTestDuty, this->senData[0]);
+    //     this->SetDuty(this->AnkPreVal, 100 - this->tpParam.curTestDuty, this->senData[0]);
+    //     // this->KnePreVal->SetDuty(this->tpParam.curTestDuty,this->senData[0]);
+    // }
 }
 void Controller::ShutDownPWM(){
     this->SetDuty(this->KnePreVal, 0, this->senData[0]);
