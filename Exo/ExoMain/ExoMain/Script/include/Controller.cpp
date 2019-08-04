@@ -9,11 +9,11 @@ const int NUMSEN = 9;
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
-void Controller::ConMainLoop(int *senData, char *senRaw)
+void Controller::ConMainLoop(unsigned int *senData, char *senRaw)
 {
     queue<thread> taskQue;
     this->senData = senData;
-    std::vector<int> curSen(senData + 1, senData + NUMSEN + 1);
+    std::vector<unsigned int> curSen(senData + 1, senData + NUMSEN + 1);
 
     // assign task to controller
     //taskQue.push(std::thread(&Controller::TestReactingTime,this));

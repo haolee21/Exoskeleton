@@ -5,6 +5,7 @@ import Display as dp
 import numpy as np
 import paramiko
 import datetime
+from numba import jit
 
 def main():
     #sync time with pc
@@ -26,7 +27,7 @@ def main():
         s.bind((HOST, PORT))
     except socket.error:
         print('Bind failed ')
-    s.listen()
+    s.listen(5) #this number I believe determine how low we are going to connect to this socket
 
     print('Socket awaiting messages')
     conn, addr = s.accept()
@@ -58,7 +59,8 @@ def main():
     title_pwm = ['KnePre', 'AnkPre', 'No use', 'No use']
     graph_pwm = dp.Plotter(tTot=2, sampF=sampFreq, figNum=4,
                            yLabelList=ylabel_pwm, yLimList=ylim_pwm, titleList=title_pwm)
-    
+    # start = time.time()
+    gotOne = True
     while True:
         data = conn.recv(DATALEN+VALNUM+PWMNUM)
         senData = []
@@ -78,15 +80,22 @@ def main():
                 valData = np.array(valData)
                 pwmData = np.array(pwmData)
 
-                
-                graph_sen.UpdateFig(senData)
-                graph_val.UpdateFig(valData)
-                graph_pwm.UpdateFig(pwmData)
-                
-                
+                # g_start = time.time()
+                if gotOne:
+                    graph_sen.UpdateFig(senData)
+                    graph_val.UpdateFig(valData)
+                    graph_pwm.UpdateFig(pwmData)      
+                    # g_end = time.time()
+                    gotOne=False
+                else:
+                    gotOne=True
+                # print("graph time: ",g_end-g_start)
         except IndexError:
             print('socket ends')
             break
+        # end = time.time()
+        # print("duration: ",end-start)
+        # start = end 
 
 
 if __name__ == '__main__':

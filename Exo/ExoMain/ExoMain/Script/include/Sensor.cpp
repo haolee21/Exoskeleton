@@ -43,8 +43,8 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT,Com *_com,bool _
 
 		this->curBuf = this->senBuffer;
 		this->curHead = this->curBuf;
-		this->senRec = new Recorder<int>("sen",_filePath,"time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9");
-		
+		// this->senRec = new Recorder<unsigned int>("sen",_filePath,"time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9");
+		this->senRec.reset(new Recorder<unsigned int>("sen",_filePath,"time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9"));
 		//Controller
 		this->com = _com;		
 	}
@@ -259,13 +259,16 @@ void Sensor::readSerialPort(int serialPort)
 					std::chrono::system_clock::time_point curTime= std::chrono::system_clock::now();
 					microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->origin));
 					int timeNow = sen_time.count(); 
+					if(timeNow<0){
+						std::cout<<"time need to reset\n";
+					}
 					{
 						int idx=1;
 						std::copy(tempSenData,tempSenData+DATALEN,this->senDataRaw);
 						this->senData[0] = timeNow;
 						for(int i=1;i<NUMSEN+1;i++)
 						{
-							this->senData[i]=(int)(tempSenData[idx]) + (int)(tempSenData[idx+1] << 8);
+							this->senData[i]=(unsigned int)(tempSenData[idx]) + (unsigned int)(tempSenData[idx+1] << 8);
 							idx+=2;
 						}
 						// this->senData[1] = (int)(tempSenData[1]) + (int)(tempSenData[2] << 8);
@@ -278,7 +281,7 @@ void Sensor::readSerialPort(int serialPort)
 						// this->senData[8] = (int)(tempSenData[15]) + (int)(tempSenData[16] << 8);
 						// this->senData[9] = (int)(tempSenData[17]) + (int)(tempSenData[18] << 8);
 					}
-					std::vector<int> recSenData;
+					std::vector<unsigned int> recSenData;
 					for(int i=1;i<NUMSEN+1;i++){
 						recSenData.push_back(senData[i]);
 					}
@@ -333,7 +336,7 @@ Sensor::~Sensor()
 	std::cout << "start to delete" << std::endl;
 	
 
-	delete this->senRec;
+	// delete this->senRec;
 	delete this->th_SenUpdate;
 
 }

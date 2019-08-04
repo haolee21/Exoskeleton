@@ -16,7 +16,7 @@
 
 #include "RecData.hpp"
 
-#define MAXRECLENGTH 5000
+#define MAXRECLENGTH 10000
 
 template<class T>
 class Recorder

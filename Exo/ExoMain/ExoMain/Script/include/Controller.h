@@ -90,7 +90,7 @@ private:
 
 
 
-    int *senData;
+    unsigned int *senData;
 
     std::shared_ptr<PWMGen> KnePreVal;
     std::shared_ptr<PWMGen> AnkPreVal;
@@ -162,7 +162,7 @@ public:
     ~Controller();
     
     
-    void ConMainLoop(int *curSen,char* senRaw);
+    void ConMainLoop(unsigned int *curSen,char* senRaw);
 };
 
 

@@ -61,7 +61,7 @@ public:
 	
 	void Start(std::chrono::system_clock::time_point startTime);
 	void Stop();
-	int senData[NUMSEN+1]; //data get from ADC
+	unsigned int senData[NUMSEN+1]; //data get from ADC
 	char senDataRaw[DATALEN];
 	thread *th_SenUpdate;
 
@@ -107,8 +107,8 @@ private:
 	//for data recording
 
 	std::string filePath;
-	Recorder<int> *senRec;
-	//unique_ptr<Recorder<int>> rec2; //smart pointer test, failed, don't know why since it works in simpler cases
+	// Recorder<unsigned int> *senRec;
+	shared_ptr<Recorder<unsigned int>> senRec; //smart pointer test, failed, don't know why since it works in simpler cases
 	
 	
 };

@@ -8,7 +8,8 @@
                 "${workspaceFolder}/include/",
                 "${workspaceFolder}/include",
                 "${workspaceFolder}/src",
-                "~/cdrive/UCLA/lab/Exoskeleton/Controller/PiLib/wiringPi/wiringPi"
+                "~/cdrive/UCLA/lab/Exoskeleton/Controller/PiLib/wiringPi/wiringPi",
+                "/home/lowlimb/Downloads/eigen-eigen-323c052e1731"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
@@ -16,7 +17,6 @@
             "cppStandard": "c++11",
             "intelliSenseMode": "clang-x64"
         }
-        
     ],
     "version": 4
 }
