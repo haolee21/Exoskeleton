@@ -63,10 +63,11 @@
 #define TESTPWM 1
 #define SHUTPWM 2
 #define ENGRECL 3
+#define CONMODSAMP 4
 struct Com
 {
-	const int comLen =4;
-	bool comArray[4];
+	const int comLen =5;
+	bool comArray[5];
 	mutex comLock;
 };
 // index of senData
@@ -191,6 +192,11 @@ private:
     int Phase7Con();
     int Phase8Con();
     
+    //sample Model data 
+    struct ConModSamp{
+        int testDuty;
+        
+    };
 
 public:
     // Valve* ValveList[VALNUM];

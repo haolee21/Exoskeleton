@@ -106,6 +106,9 @@ int main(void)
 				cout<<"recl sensed\n";
 				cout<<com.comArray[ENGRECL]<<endl;
 			}
+			else if(command=="conmodsamp"){
+				com.comArray[CONMODSAMP] = !com.comArray[CONMODSAMP];
+			}
 			else if(command == "end")
 				break;
 			else
