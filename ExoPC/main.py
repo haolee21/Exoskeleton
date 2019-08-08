@@ -42,15 +42,15 @@ def main():
                   'volt', 'volt', 'volt', 'volt', 'volt','volt','volt','volt']
     ylim_sen = [(0, 1000), (0, 1000), (0, 1000), (0, 1000),(0, 1000),(0, 1000),(0, 1000),(0, 1000),
                 (0, 1000), (0, 1000), (0, 1000), (0, 1000), (0, 1000),(0, 1000),(0, 1000),(0, 1000)]
-    title_sen = ['title1', 'title2', 'title3', 'title4', 'title5', 'title6', 'title7', 'title8',
-                 'title9','title10','title11', 'title12', 'title13', 'title14', 'title15', 'title16',]
+    title_sen = ['LAnkPos', 'LKnePos', 'LHipPos', 'RAnkPos', 'RKnePos', 'RHipPos', 'title7', 'title8',
+                 'TankPre','LKnePre','LAnkPre', 'title12', 'title13', 'title14', 'title15', 'title16',]
     graph_sen = dp.Plotter(tTot=2, sampF=sampFreq, figNum=NUMSEN,
                            yLabelList=ylabel_sen, yLimList=ylim_sen, titleList=title_sen)
 
     ylabel_val = ['on', 'on', 'on', 'on', 'on', 'on']
     ylim_val = [(33, 101), (33, 101), (33, 101),
                 (33, 101), (33, 101), (33, 101)]
-    title_val = ['val1', 'val2', 'val3', 'val4', 'val5', 'val6']
+    title_val = ['LKneVal1', 'LKneVal2', 'LAnkVal1', 'LAnkVal2', 'LBalVal', 'LRelVal']
     graph_val = dp.Plotter(tTot=2, sampF=sampFreq, figNum=VALNUM,
                            yLabelList=ylabel_val, yLimList=ylim_val, titleList=title_val)
 
