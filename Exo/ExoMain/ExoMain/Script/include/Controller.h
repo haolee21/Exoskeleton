@@ -62,12 +62,30 @@
 #define TESTVAL 0
 #define TESTPWM 1
 #define SHUTPWM 2
+#define ENGRECL 3
 struct Com
 {
-	const int comLen =3;
-	bool comArray[3];
+	const int comLen =4;
+	bool comArray[4];
 	mutex comLock;
 };
+// index of senData
+#define TIME 0
+#define LANKPOS 1
+#define LKNEPOS 2
+#define LHIPPOS 3
+#define RANKPOS 4
+#define RKNEPOS 5
+#define RHIPPOS 6
+#define TANKPRE 9
+#define LKNEPRE 10
+#define LANKPRE 11
+
+//Some setting constant
+#define RELTIME 10 //time that the valve will open to release pressure
+
+
+
 #define VALNUM 6 //this cannot work with test reacting
 #define PWMNUM 2
 class Controller
@@ -89,7 +107,7 @@ private:
 
 
 
-
+    //std::shared_ptr<unsigned int> senData;
     unsigned int *senData;
 
     std::shared_ptr<PWMGen> KnePreVal;
@@ -108,10 +126,10 @@ private:
     bool display=false;
     bool preSend; //scale the sending freq since matplotlib cannot handle it
     // Valve control
-    void ValveOn(std::shared_ptr<Valve> val,int curTime);
-    void ValveOff(std::shared_ptr<Valve> val,int curTime);
+    void ValveOn(std::shared_ptr<Valve> val);
+    void ValveOff(std::shared_ptr<Valve> val);
     // PWM control
-    void SetDuty(std::shared_ptr<PWMGen> pwmVal,int duty,int curTime);
+    void SetDuty(std::shared_ptr<PWMGen> pwmVal,int duty);
     char *pwmDuty;
     //command
     Com *com;
@@ -154,13 +172,33 @@ private:
     void TestPWM();
     void ShutDownPWM();
 
+    // initialize cylinder for supporting body weight
+    unsigned int sup_LKnePre=300;
+    // left leg energy recycle
+    struct LeftEngRecycle
+    {
+        int curPhase=1;
+    };
+    LeftEngRecycle LEngRec;
+    int CalDuty(unsigned int curPre, unsigned int desPre,unsigned int tankPre);
+    void FSM_loop();
+    int Phase1Con();
+    int Phase2Con();
+    int Phase3Con();
+    int Phase4Con();
+    int Phase5Con();
+    int Phase6Con();
+    int Phase7Con();
+    int Phase8Con();
+    
+
 public:
     // Valve* ValveList[VALNUM];
     std::shared_ptr<Valve> ValveList[VALNUM];
 
     Controller(std::string _filePath,Com *_com,bool display);
     ~Controller();
-    
+    void PreRel();
     
     void ConMainLoop(unsigned int *curSen,char* senRaw);
 };
