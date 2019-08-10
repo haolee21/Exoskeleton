@@ -96,7 +96,7 @@ void Sensor::senUpdate()
 	t.tv_nsec += 0 * MSEC;
     this->tsnorm(&t);
 	//
-	Controller con = Controller(this->filePath,this->com,this->display);
+	Controller con = Controller(this->filePath,this->com,this->display,this->origin);
 	
 
 	
@@ -271,26 +271,13 @@ void Sensor::readSerialPort(int serialPort)
 							this->senData[i]=(unsigned int)(tempSenData[idx]) + (unsigned int)(tempSenData[idx+1] << 8);
 							idx+=2;
 						}
-						// this->senData[1] = (int)(tempSenData[1]) + (int)(tempSenData[2] << 8);
-						// this->senData[2] = (int)(tempSenData[3]) + (int)(tempSenData[4] << 8);
-						// this->senData[3] = (int)(tempSenData[5]) + (int)(tempSenData[6] << 8);
-						// this->senData[4] = (int)(tempSenData[7]) + (int)(tempSenData[8] << 8);
-						// this->senData[5] = (int)(tempSenData[9]) + (int)(tempSenData[10] << 8);
-						// this->senData[6] = (int)(tempSenData[11]) + (int)(tempSenData[12] << 8);
-						// this->senData[7] = (int)(tempSenData[13]) + (int)(tempSenData[14] << 8);
-						// this->senData[8] = (int)(tempSenData[15]) + (int)(tempSenData[16] << 8);
-						// this->senData[9] = (int)(tempSenData[17]) + (int)(tempSenData[18] << 8);
+						
 					}
 					std::vector<unsigned int> recSenData;
 					for(int i=1;i<NUMSEN+1;i++){
 						recSenData.push_back(senData[i]);
 					}
-					this->senRec->PushData((unsigned long)this->senData[0],recSenData);
-					// std::cout<<"read ";
-					// for(int i=0;i<DATALEN;i++)
-					// 	std::cout<<tempSenData[i];
-					
-					
+					this->senRec->PushData((unsigned long)this->senData[0],recSenData);		
 					// for some reason, I cannot just let noHead = true after I find the data
 					// Also, we shouldn't search for the head again since we know the next byte is head
 					if(*(this->curHead)!='@'){

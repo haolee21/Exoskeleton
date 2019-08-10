@@ -7,16 +7,18 @@
 #include <string>
 #include <chrono>
 #include<ctime> //this timer
+#include<memory>
 union Duty
 {
     int num;
     char byte[4];
 };
+
 class PWMGen
 {
 	
 public:
-	PWMGen(std::string valveName,std::string filePath, int pinId,int _sampTMicro,int pwmIdx);
+	PWMGen(std::string valveName,std::string filePath, int pinId,int _sampTMicro,int pwmIdx,std::chrono::system_clock::time_point origin);
 	~PWMGen();
 	void SetDuty(int onDuty,int curTime);
 	std::thread *Start();
@@ -25,6 +27,7 @@ public:
 	int GetIdx();
 	Duty duty;
 private:
+	std::chrono::system_clock::time_point origin;
 	int pinId;
 	int pwmIdx;
 	bool on = false;
@@ -36,7 +39,9 @@ private:
 	int onTime;
 	
 
-	Recorder<int> *pwmRec;
+	// Recorder<int> *pwmRec;
+	std::shared_ptr<Recorder<int>> pwmRec;
+	std::shared_ptr<Recorder<int>> pwmOnOffRec;
 	//timer 
 	void tsnorm(struct timespec *ts);
 	int sampT;

@@ -158,7 +158,7 @@ void Controller::ValveOff(std::shared_ptr<Valve> val)
     val->Off(this->senData[TIME]);
     this->valveCond[val->GetValIdx()] = '!';
 }
-Controller::Controller(std::string filePath, Com *_com, bool _display)
+Controller::Controller(std::string filePath, Com *_com, bool _display,std::chrono::system_clock::time_point _origin)
 {
 
     this->senData=new unsigned int(0);
@@ -186,8 +186,8 @@ Controller::Controller(std::string filePath, Com *_com, bool _display)
 
     // this->KnePreVal = new PWMGen("KnePreVal",filePath,OP1,30000L);
     // this->AnkPreVal = new PWMGen("AnkPreVal",filePath,OP2,30000L);
-    this->KnePreVal.reset(new PWMGen("KnePreVal", filePath, OP1, 40000L, 0));
-    this->AnkPreVal.reset(new PWMGen("AnkPreVal", filePath, OP2, 40000L, 1));
+    this->KnePreVal.reset(new PWMGen("KnePreVal", filePath, OP1, 40000L, 0,_origin));
+    this->AnkPreVal.reset(new PWMGen("AnkPreVal", filePath, OP2, 40000L, 1,_origin));
     this->PWMList[0]=this->KnePreVal;
     this->PWMList[1]=this->AnkPreVal;
 

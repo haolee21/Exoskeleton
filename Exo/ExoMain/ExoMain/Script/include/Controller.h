@@ -174,7 +174,7 @@ private:
     void ShutDownPWM();
 
     // initialize cylinder for supporting body weight
-    unsigned int sup_LKnePre=300;
+    unsigned int sup_LKnePre=250;
     // left leg energy recycle
     struct LeftEngRecycle
     {
@@ -195,14 +195,14 @@ private:
     //sample Model data 
     struct ConModSamp{
         int testDuty;
-        
+
     };
 
 public:
     // Valve* ValveList[VALNUM];
     std::shared_ptr<Valve> ValveList[VALNUM];
 
-    Controller(std::string _filePath,Com *_com,bool display);
+    Controller(std::string _filePath,Com *_com,bool display,std::chrono::system_clock::time_point origin);
     ~Controller();
     void PreRel();
     
