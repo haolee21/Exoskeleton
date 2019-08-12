@@ -79,9 +79,9 @@ Recorder<T>::~Recorder()
         curThread->join();
         this->threadQue.pop();
     }
-    std::thread saveTh = std::thread(&Recorder::OutputCSV,this);
-    // this->OutputCSV();
-    saveTh.join();
+    // std::thread saveTh = std::thread(&Recorder::OutputCSV,this);
+    this->OutputCSV();
+    // saveTh.join();
 
     if(!this->dataTemps.empty())
         std::cout<<"Temperary files remaining\n";
@@ -120,7 +120,6 @@ void Recorder<T>::writeTemp(RecData<T> *tempData)
 template<class T>
 void Recorder<T>::OutputCSV()
 {
-    
     // create senData.csv
     {
         std::ofstream writeCsv;

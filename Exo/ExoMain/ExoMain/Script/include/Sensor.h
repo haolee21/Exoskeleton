@@ -63,7 +63,8 @@ public:
 	void Stop();
 	unsigned int senData[NUMSEN+1]; //data get from ADC
 	char senDataRaw[DATALEN];
-	thread *th_SenUpdate;
+	shared_ptr<thread> th_SenUpdate;
+	// thread *th_SenUpdate;
 
 	
 private:
@@ -107,6 +108,8 @@ private:
 	//for data recording
 
 	std::string filePath;
+	std::shared_ptr<std::thread> saveData_th;
+	void SaveAllData();
 	// Recorder<unsigned int> *senRec;
 	shared_ptr<Recorder<unsigned int>> senRec; //smart pointer test, failed, don't know why since it works in simpler cases
 	

@@ -60,7 +60,7 @@ void Sensor::Start(std::chrono::system_clock::time_point startTime)
 	memset(&this->senData, 0, DATALEN + 1);
 	
 	
-	this->th_SenUpdate = new thread(&Sensor::senUpdate, this);
+	this->th_SenUpdate.reset(new thread(&Sensor::senUpdate, this));
 	
 	std::cout << "initial receiving thread" << endl;
 	
@@ -133,9 +133,12 @@ void Sensor::senUpdate()
 	}
 	(*conTh).join();
 	std::cout << "sensor ends" << endl;
-	
+	this->saveData_th.reset(new std::thread(&Sensor::SaveAllData,this));
+	// this->senRec.reset();
 }
-
+void Sensor::SaveAllData(){
+	this->senRec.reset();
+}
 
 
 
@@ -320,10 +323,7 @@ void Sensor::serialPortClose(int serial_port)
 
 Sensor::~Sensor()
 {
+	this->saveData_th->join();
 	std::cout << "start to delete" << std::endl;
-	
-
-	// delete this->senRec;
-	delete this->th_SenUpdate;
 
 }
