@@ -63,12 +63,13 @@
 #define TESTPWM 1
 #define SHUTPWM 2
 #define ENGRECL 3
-#define CONMODSAMP 4
+#define KNEMODSAMP 4
 struct Com
 {
 	const int comLen =5;
 	bool comArray[5];
 	mutex comLock;
+    int comVal[5];//if any value need to be passed
 };
 // index of senData
 #define TIME 0
@@ -194,9 +195,13 @@ private:
     
     //sample Model data 
     struct ConModSamp{
-        int testDuty;
-
+        const int maxCycle=5;
+        int cycleCount=0;
+        int outLoopCount=0;
+        const int maxOuterLoop=299;
     };
+    ConModSamp sampKneMod;
+    void SampKneMod(int testDuty);
 
 public:
     // Valve* ValveList[VALNUM];

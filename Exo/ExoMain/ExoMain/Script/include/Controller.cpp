@@ -28,8 +28,11 @@ void Controller::ConMainLoop(unsigned int *_senData, char *senRaw)
             taskQue.push(std::thread(&Controller::ShutDownPWM,this));
             this->com->comArray[SHUTPWM]=false;
         }
-         if (this->com->comArray[ENGRECL]){
+        if (this->com->comArray[ENGRECL]){
             taskQue.push(std::thread(&Controller::FSM_loop,this));
+        }
+        if(this->com->comArray[KNEMODSAMP]){
+            taskQue.push(std::thread(&Controller::SampKneMod,this,com->comVal[KNEMODSAMP]));
         }
     }
 
@@ -355,8 +358,43 @@ void Controller::PreRel(){
     this->SetDuty(this->AnkPreVal,0);
     this->KnePreVal->SetDuty(0,senData[TIME]+RELTIME*1000000);
     this->AnkPreVal->SetDuty(0,senData[TIME]+RELTIME*1000000);
+}
+void Controller::SampKneMod(int testDuty){
+    if(this->sampKneMod.outLoopCount==0){
+        if(this->sampKneMod.cycleCount==0){
+            this->ValveOn(this->BalVal);
+            this->ValveOff(this->LKneVal1);
+            this->ValveOn(this->LKneVal2);
 
+            this->SetDuty(this->KnePreVal,testDuty);
+            this->sampKneMod.cycleCount++;
+        }
+        else{
+            if(this->sampKneMod.cycleCount==this->sampKneMod.maxCycle){
+                this->sampKneMod.cycleCount=0;
+                
+                // this->ValveOff(this->BalVal);
+                // this->ValveOff(this->LKneVal1);
+                // this->ValveOff(this->LKneVal2);
 
-
+                this->SetDuty(this->KnePreVal,0);
+                this->sampKneMod.outLoopCount++;
+            }
+            else
+                this->sampKneMod.cycleCount++;
+        }
+    }
+    else
+    {
+        if(this->sampKneMod.outLoopCount==this->sampKneMod.maxOuterLoop){
+            this->sampKneMod.outLoopCount=0;
+            // this->com->comArray[KNEMODSAMP]=false;
+        }
+        else{
+            
+            this->sampKneMod.outLoopCount++;
+        }
+    }
+    
 
 }

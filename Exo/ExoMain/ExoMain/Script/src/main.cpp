@@ -114,8 +114,12 @@ int main(void)
 				cout<<"recl sensed\n";
 				cout<<com.comArray[ENGRECL]<<endl;
 			}
-			else if(command=="conmodsamp"){
-				com.comArray[CONMODSAMP] = !com.comArray[CONMODSAMP];
+			else if(command.substr(0,4)=="samp"){
+				com.comArray[KNEMODSAMP] = !com.comArray[KNEMODSAMP];
+				stringstream numVal(command.substr(4,5));
+				int num;
+				numVal>>num;
+				com.comVal[KNEMODSAMP]=num;
 			}
 			else if(command == "end")
 				break;
