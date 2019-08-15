@@ -5,8 +5,14 @@ import Display as dp
 import numpy as np
 import paramiko
 import datetime
-from numba import jit
 
+import multiprocessing as mp
+
+NUMSEN=16
+DATALEN = NUMSEN*2+2
+VALNUM = 6
+PWMNUM = 2
+sampFreq = 615/10
 def main():
     #sync time with pc
     ssh = paramiko.SSHClient()
@@ -33,11 +39,6 @@ def main():
     conn, addr = s.accept()
     print('Connected')
 
-    NUMSEN=16
-    DATALEN = NUMSEN*2+2
-    VALNUM = 6
-    PWMNUM = 2
-    sampFreq = 615/10
     ylabel_sen = ['volt', 'volt', 'volt', 'volt','volt','volt','volt','volt',
                   'volt', 'volt', 'volt', 'volt', 'volt','volt','volt','volt']
     ylim_sen = [(0, 1000), (0, 1000), (0, 1000), (0, 1000),(0, 1000),(0, 1000),(0, 1000),(0, 1000),
@@ -60,35 +61,27 @@ def main():
     graph_pwm = dp.Plotter(tTot=2, sampF=sampFreq, figNum=4,
                            yLabelList=ylabel_pwm, yLimList=ylim_pwm, titleList=title_pwm)
     # start = time.time()
-    gotOne = True
+    
     while True:
         data = conn.recv(DATALEN+VALNUM+PWMNUM)
-        senData = []
-        valData = []
-        pwmData = []
+        
         try:
             if(int(data[0]) == 64):
-                for i in range(1, DATALEN-1, 2):  # remove @ and \n
-                    senData.append(int(data[i+1] << 8)+int(data[i]))
+                # senP = mp.Process(target=UpdateGraph,args=(graph_sen,data,SenHandle))
+                # valP = mp.Process(target=UpdateGraph,args=(graph_val,data,ValveHandle))
+                # pwmP = mp.Process(target=UpdateGraph,args=(graph_pwm,data,PWMHandle))
+                # senP.start()
+                # valP.start()
+                # pwmP.start()
 
-                for i in range(DATALEN, VALNUM+DATALEN, 1):
-                    valData.append(int(data[i]))
-                for i in range(DATALEN+VALNUM, DATALEN+VALNUM+PWMNUM, 1):
-                    pwmData.append(int(data[i]))
-
-                senData = np.array(senData)
-                valData = np.array(valData)
-                pwmData = np.array(pwmData)
-
-                # g_start = time.time()
-                if gotOne:
-                    graph_sen.UpdateFig(senData)
-                    graph_val.UpdateFig(valData)
-                    graph_pwm.UpdateFig(pwmData)      
-                    # g_end = time.time()
-                    gotOne=False
-                else:
-                    gotOne=True
+                # senP.join()
+                # valP.join()
+                # pwmP.join()
+                UpdateGraph(graph_sen,data,SenHandle)
+                UpdateGraph(graph_val,data,ValveHandle)
+                UpdateGraph(graph_pwm,data,PWMHandle)
+                    
+            
                 # print("graph time: ",g_end-g_start)
         except IndexError:
             print('socket ends')
@@ -96,7 +89,23 @@ def main():
         # end = time.time()
         # print("duration: ",end-start)
         # start = end 
-
+def SenHandle(data):
+    senData=[]
+    for i in range(1, DATALEN-1, 2):  # remove @ and \n
+        senData.append(int(data[i+1] << 8)+int(data[i]))
+    return np.array(senData)
+def ValveHandle(data):
+    valData=[]
+    for i in range(DATALEN, VALNUM+DATALEN, 1):
+        valData.append(int(data[i]))
+    return np.array(valData)
+def PWMHandle(data):
+    pwmData=[]
+    for i in range(DATALEN+VALNUM, DATALEN+VALNUM+PWMNUM, 1):
+        pwmData.append(int(data[i]))
+    return np.array(pwmData)
+def UpdateGraph(graph,data,dataHandle):
+    graph.UpdateFig(dataHandle(data))
 
 if __name__ == '__main__':
     main()
