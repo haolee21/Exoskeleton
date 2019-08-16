@@ -52,8 +52,9 @@ int main(void)
 
 	// We create directory here since the raspberry pi will sync its time with pc during connection
 	//create the folder for result saving
-	if(!boost::filesystem::exists("../data"))
-		boost::filesystem::create_directory("../data");
+	string homeFolder = "../data";
+	if(!boost::filesystem::exists(homeFolder))
+		boost::filesystem::create_directory(homeFolder);
 	string filePath;
 	{
 		boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();
@@ -67,7 +68,7 @@ int main(void)
 		month<<setw(2)<<setfill('0')<<to_string(timeLocal.date().month());
 		// filePath = "../data/"+to_string(timeLocal.time_of_day().hours())+to_string(timeLocal.time_of_day().minutes())+
 		// to_string(timeLocal.date().month())+to_string(timeLocal.date().day())+to_string(timeLocal.date().year());
-		filePath = "../data/"+to_string(timeLocal.date().year())+'-'+month.str()+date.str()+'-'+hour.str()+min.str();
+		filePath = homeFolder+'/'+to_string(timeLocal.date().year())+'-'+month.str()+date.str()+'-'+hour.str()+min.str();
 	}
 	boost::filesystem::create_directory(filePath);
 
