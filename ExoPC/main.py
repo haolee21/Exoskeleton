@@ -12,7 +12,7 @@ NUMSEN=16
 DATALEN = NUMSEN*2+2
 VALNUM = 6
 PWMNUM = 2
-sampFreq = 615/10
+sampFreq = 615/20
 def main():
     #sync time with pc
     ssh = paramiko.SSHClient()
@@ -45,20 +45,20 @@ def main():
                 (0, 1000), (0, 1000), (0, 1000), (0, 1000), (0, 1000),(0, 1000),(0, 1000),(0, 1000)]
     title_sen = ['LAnkPos', 'LKnePos', 'LHipPos', 'RAnkPos', 'RKnePos', 'RHipPos', 'title7', 'title8',
                  'TankPre','LKnePre','LAnkPre', 'title12', 'title13', 'title14', 'title15', 'title16',]
-    graph_sen = dp.Plotter(tTot=2, sampF=sampFreq, figNum=NUMSEN,
+    graph_sen = dp.Plotter(tTot=1, sampF=sampFreq, figNum=NUMSEN,
                            yLabelList=ylabel_sen, yLimList=ylim_sen, titleList=title_sen)
 
     ylabel_val = ['on', 'on', 'on', 'on', 'on', 'on']
     ylim_val = [(33, 101), (33, 101), (33, 101),
                 (33, 101), (33, 101), (33, 101)]
     title_val = ['LKneVal1', 'LKneVal2', 'LAnkVal1', 'LAnkVal2', 'LBalVal', 'LRelVal']
-    graph_val = dp.Plotter(tTot=2, sampF=sampFreq, figNum=VALNUM,
+    graph_val = dp.Plotter(tTot=1, sampF=sampFreq, figNum=VALNUM,
                            yLabelList=ylabel_val, yLimList=ylim_val, titleList=title_val)
 
     ylabel_pwm = ['Duty (%)', 'Duty (%)', 'Duty (%)', 'Duty (%)']
     ylim_pwm = [(0, 100), (0, 100), (0, 100), (0, 100)]
     title_pwm = ['KnePre', 'AnkPre', 'No use', 'No use']
-    graph_pwm = dp.Plotter(tTot=2, sampF=sampFreq, figNum=4,
+    graph_pwm = dp.Plotter(tTot=1, sampF=sampFreq, figNum=4,
                            yLabelList=ylabel_pwm, yLimList=ylim_pwm, titleList=title_pwm)
     # start = time.time()
     
@@ -67,6 +67,7 @@ def main():
         
         try:
             if(int(data[0]) == 64):
+                
                 # senP = mp.Process(target=UpdateGraph,args=(graph_sen,data,SenHandle))
                 # valP = mp.Process(target=UpdateGraph,args=(graph_val,data,ValveHandle))
                 # pwmP = mp.Process(target=UpdateGraph,args=(graph_pwm,data,PWMHandle))
@@ -77,10 +78,12 @@ def main():
                 # senP.join()
                 # valP.join()
                 # pwmP.join()
+                # start = time.time()
                 UpdateGraph(graph_sen,data,SenHandle)
                 UpdateGraph(graph_val,data,ValveHandle)
                 UpdateGraph(graph_pwm,data,PWMHandle)
-                    
+                # end = time.time()
+                # print(end-start)
             
                 # print("graph time: ",g_end-g_start)
         except IndexError:

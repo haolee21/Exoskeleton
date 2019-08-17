@@ -43,18 +43,21 @@ void Controller::ConMainLoop(unsigned int *_senData, char *senRaw)
     }
     if (this->display)
     {
-        if (this->preSend)
-        {
+        // if (this->preSend)
+        // {
+        if(this->preSend==this->dispPreScale){
             char sendData[RAWDATALEN + VALNUM + PWMNUM];
             std::copy(senRaw, senRaw + RAWDATALEN, sendData);
             std::copy(this->valveCond, this->valveCond + VALNUM, sendData + RAWDATALEN);
             std::copy(this->pwmDuty, this->pwmDuty + PWMNUM, sendData + RAWDATALEN + VALNUM);
             this->client->send(sendData, RAWDATALEN + VALNUM + PWMNUM);
-            this->preSend = false;
+            this->preSend = 0;
+
         }
         else
         {
-            this->preSend = true;
+            this->preSend++;
+        //     this->preSend = true;
         }
     }
 }

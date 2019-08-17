@@ -126,7 +126,8 @@ private:
     //displayer
     char *valveCond;
     bool display=false;
-    bool preSend; //scale the sending freq since matplotlib cannot handle it
+    int preSend=0; //scale the sending freq since matplotlib cannot handle it
+    const int dispPreScale = 4; //determine how frequent we send data back to pc
     // Valve control
     void ValveOn(std::shared_ptr<Valve> val);
     void ValveOff(std::shared_ptr<Valve> val);
