@@ -17,6 +17,7 @@
 #include "RecData.hpp"
 
 #define MAXRECLENGTH 10000
+typedef std::chrono::duration<int> sec_t;
 
 template<class T>
 class Recorder
@@ -79,10 +80,14 @@ Recorder<T>::~Recorder()
         curThread->join();
         this->threadQue.pop();
     }
+    
+    std::chrono::system_clock::time_point startTime= std::chrono::system_clock::now();
     std::thread saveTh = std::thread(&Recorder::OutputCSV,this);
     //this->OutputCSV();
     saveTh.join();
-
+    std::chrono::system_clock::time_point endTime= std::chrono::system_clock::now();
+    sec_t save_time(std::chrono::duration_cast<sec_t>(endTime - startTime));
+    std::cout<<this->recorderName<<" takes "<<save_time.count()<<std::endl;
     if(!this->dataTemps.empty())
         std::cout<<"Temperary files remaining\n";
     delete this->curData;
