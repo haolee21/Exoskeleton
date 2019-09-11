@@ -59,13 +59,14 @@ class Plotter(object):
                 self.lineList[idx2].set_ydata(self.totalData[idx2])
                 self.ax[row,col].draw_artist(self.ax[row,col].patch)
                 self.ax[row,col].draw_artist(self.lineList[idx2])
-                self.fig.canvas.update()
+                # self.fig.canvas.update()
                 #self.fig.canvas.flush_events()
                 
                 idx2 = idx2+1   
         # endTime = time.time()
         # print(endTime-curTIme)
         self.fig.canvas.update()
+        # self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
     

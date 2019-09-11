@@ -34,6 +34,9 @@ void Controller::ConMainLoop(unsigned int *_senData, char *senRaw)
         if(this->com->comArray[KNEMODSAMP]){
             taskQue.push(std::thread(&Controller::SampKneMod,this,com->comVal[KNEMODSAMP]));
         }
+        if(this->com->comArray[KNEPREREL]){
+            taskQue.push(std::thread(&Controller::KneRel,this));
+        }
     }
 
     while (!taskQue.empty())
@@ -343,6 +346,7 @@ int Controller::CalDuty(unsigned int curPre, unsigned int desPre,unsigned int ta
     }
     
 }
+
 void Controller::PreRel(){
     std::cout<<"Pressure Release\n";
     this->ValveOff(this->LKneVal1);
@@ -400,4 +404,23 @@ void Controller::SampKneMod(int testDuty){
     }
     
 
+}
+void Controller::KneRel(){
+    if(this->knePreRel.curRelCycle!=this->knePreRel.maxRelCycle){
+        if(this->knePreRel.curRelCycle==0){
+            this->ValveOff(this->LKneVal1);
+            this->ValveOff(this->LKneVal2);
+            this->ValveOff(this->LRelVal);
+            this->ValveOff(this->BalVal);
+        }
+        this->knePreRel.curRelCycle++;
+    }
+    else{
+        this->ValveOn(this->BalVal);
+        this->ValveOff(this->LKneVal1);
+        this->ValveOn(this->LKneVal2);
+        this->com->comArray[KNEPREREL]=false;
+        this->knePreRel.curRelCycle=0;
+
+    }
 }

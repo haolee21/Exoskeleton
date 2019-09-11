@@ -52,7 +52,8 @@ int main(void)
 
 	// We create directory here since the raspberry pi will sync its time with pc during connection
 	//create the folder for result saving
-	string homeFolder = "../data";
+	// string homeFolder = "../data";
+	string homeFolder = "/home/pi/Data";
 	if(!boost::filesystem::exists(homeFolder))
 		boost::filesystem::create_directory(homeFolder);
 	string filePath;
@@ -121,6 +122,9 @@ int main(void)
 				int num;
 				numVal>>num;
 				com.comVal[KNEMODSAMP]=num;
+			}
+			else if(command=="knerel"){
+				com.comArray[KNEPREREL] = true;
 			}
 			else if(command == "end")
 				break;

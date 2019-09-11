@@ -64,12 +64,13 @@
 #define SHUTPWM 2
 #define ENGRECL 3
 #define KNEMODSAMP 4
+#define KNEPREREL 5
 struct Com
 {
-	const int comLen =5;
-	bool comArray[5];
+	const int comLen =6;
+	bool comArray[6];
 	mutex comLock;
-    int comVal[5];//if any value need to be passed
+    int comVal[6];//if any value need to be passed
 };
 // index of senData
 #define TIME 0
@@ -203,6 +204,14 @@ private:
     };
     ConModSamp sampKneMod;
     void SampKneMod(int testDuty);
+    struct KneePressureRelease{
+        const int maxRelCycle=50;
+        int curRelCycle=0;
+
+    };
+    KneePressureRelease knePreRel;
+    void KneRel(); //release the pressure of knee joint
+    //
 
 public:
     // Valve* ValveList[VALNUM];
