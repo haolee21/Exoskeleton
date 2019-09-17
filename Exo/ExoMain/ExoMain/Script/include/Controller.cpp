@@ -152,8 +152,13 @@ void Controller::TestPWM()
     }
 }
 void Controller::ShutDownPWM(){
-    this->SetDuty(this->KnePreVal, 0);
-    this->SetDuty(this->AnkPreVal, 0);
+
+    std::shared_ptr<PWMGen> *begPWM=this->PWMList;
+    do{
+        this->SetDuty(*begPWM,0);
+        (*begPWM)->Start();
+    }while(++begPWM!=std::end(this->PWMList));
+    
 
 }
 void Controller::ValveOn(std::shared_ptr<Valve> val)
@@ -186,36 +191,42 @@ Controller::Controller(std::string filePath, Com *_com, bool _display,std::chron
 
     this->com = _com;
 
-    this->LKneVal1.reset(new Valve("LKneVal1", filePath, OP9, 0));
-    this->LKneVal2.reset(new Valve("LKneVal2", filePath, OP4, 1));
-    this->LAnkVal1.reset(new Valve("LAnkVal1", filePath, OP6, 2));
-    this->LAnkVal2.reset(new Valve("LAnkVal2", filePath, OP7, 3));
-    this->BalVal.reset(new Valve("BalVal", filePath, OP10, 4));
-    this->LRelVal.reset(new Valve("LRelVal", filePath, OP8, 5));
+    this->LKneVal.reset(new Valve("LKneVal", filePath, OP5, 0));
+    this->RKneVal.reset(new Valve("RKneVal", filePath, OP8, 1));
+    this->LAnkVal.reset(new Valve("LAnkVal", filePath, OP6, 2));
+    this->RAnkVal.reset(new Valve("RAnkVal", filePath, OP9, 3));
+    this->LBalVal.reset(new Valve("LBalVal", filePath, OP7, 4));
+    this->RBalVal.reset(new Valve("RBalVal", filePath, OP10, 5));
+
+
+    this->RelVal.reset(new Valve("RelVal", filePath, OP16, 6));
 
     // this->KnePreVal = new PWMGen("KnePreVal",filePath,OP1,30000L);
     // this->AnkPreVal = new PWMGen("AnkPreVal",filePath,OP2,30000L);
-    this->KnePreVal.reset(new PWMGen("KnePreVal", filePath, OP1, 40000L, 0,_origin));
-    this->AnkPreVal.reset(new PWMGen("AnkPreVal", filePath, OP2, 40000L, 1,_origin));
-    this->PWMList[0]=this->KnePreVal;
-    this->PWMList[1]=this->AnkPreVal;
+    this->LKnePreVal.reset(new PWMGen("LKnePreVal", filePath, OP1, 40000L, 0,_origin));
+    this->LAnkPreVal.reset(new PWMGen("LAnkPreVal", filePath, OP2, 40000L, 1,_origin));
+    this->RKnePreVal.reset(new PWMGen("RKnePreVal", filePath, OP3, 40000L, 2,_origin));
+    this->RAnkPreVal.reset(new PWMGen("RAnkPreVal", filePath, OP4, 40000L, 3,_origin));
 
-    this->ValveList[0] = this->LKneVal1;
-    this->ValveList[1] = this->LKneVal2;
-    this->ValveList[2] = this->LAnkVal1;
-    this->ValveList[3] = this->LAnkVal2;
-    this->ValveList[4] = this->BalVal;
-    this->ValveList[5] = this->LRelVal;
+    this->PWMList[0]=this->LKnePreVal;
+    this->PWMList[1]=this->LAnkPreVal;
+    this->PWMList[2]=this->RKnePreVal;
+    this->PWMList[3]=this->RAnkPreVal;
+
+    this->ValveList[0] = this->LKneVal;
+    this->ValveList[1] = this->RKneVal;
+    this->ValveList[2] = this->LAnkVal;
+    this->ValveList[3] = this->RAnkVal;
+    this->ValveList[4] = this->LBalVal;
+    this->ValveList[5] = this->RBalVal;
+    this->ValveList[6] = this->RelVal;
 
     std::shared_ptr<PWMGen> *begPWM=this->PWMList;
     do{
         this->SetDuty(*begPWM,0);
+        (*begPWM)->Start();
     }while(++begPWM!=std::end(this->PWMList));
-    this->SetDuty(this->KnePreVal, 0);
-    this->SetDuty(this->AnkPreVal, 0);
 
-    this->knePreValTh = this->KnePreVal->Start();
-    this->ankPreValTh = this->AnkPreVal->Start();
 
     std::shared_ptr<Valve> *begVal = this->ValveList;
     do
@@ -235,11 +246,12 @@ void Controller::SetDuty(std::shared_ptr<PWMGen> pwmVal, int duty)
 Controller::~Controller()
 {
     this->PreRel();
-    this->KnePreVal->Stop();
-    this->AnkPreVal->Stop();
-
-    this->knePreValTh->join();
-    this->ankPreValTh->join();
+    std::shared_ptr<PWMGen> *begPWM=this->PWMList;
+    do{
+        
+        (*begPWM)->Stop();
+    }while(++begPWM!=std::end(this->PWMList));
+    
     delete this->valveCond;
     delete this->pwmDuty;
     //delete this->senData;
@@ -280,18 +292,19 @@ void Controller::FSM_loop()
 }
 int Controller::Phase1Con()
 {
-    if(this->senData[LKNEPRE]<this->sup_LKnePre){
-        this->ValveOn(this->BalVal);
-        this->ValveOff(this->LKneVal1);
-        this->ValveOn(this->LKneVal2);
-        this->SetDuty(this->KnePreVal,this->CalDuty(this->senData[LKNEPRE],this->sup_LKnePre,this->senData[TANKPRE]));
+    // if(this->senData[LKNEPRE]<this->sup_LKnePre){
+    //     this->ValveOn(this->BalVal);
+    //     this->ValveOff(this->LKneVal1);
+    //     this->ValveOn(this->LKneVal2);
+    //     this->SetDuty(this->KnePreVal,this->CalDuty(this->senData[LKNEPRE],this->sup_LKnePre,this->senData[TANKPRE]));
         
-        return 1;
-    }
-    else{
-        this->KnePreVal->SetDuty(0,this->senData[TIME]);
-        return 2;
-    }
+    //     return 1;
+    // }
+    // else{
+    //     this->KnePreVal->SetDuty(0,this->senData[TIME]);
+    //     return 2;
+    // }
+    return 1;
 }
 int Controller::Phase2Con()
 {
@@ -349,78 +362,83 @@ int Controller::CalDuty(unsigned int curPre, unsigned int desPre,unsigned int ta
 
 void Controller::PreRel(){
     std::cout<<"Pressure Release\n";
-    this->ValveOff(this->LKneVal1);
-    this->ValveOff(this->LKneVal2);
+    this->ValveOff(this->LKneVal);
+    this->ValveOff(this->RKneVal);
+    this->SetDuty(this->LKnePreVal,100);
+    this->SetDuty(this->RKnePreVal,100);
 
-    this->ValveOff(this->LRelVal);
-    this->ValveOff(this->BalVal);
+    this->ValveOff(this->LAnkVal);
+    this->ValveOff(this->RAnkVal);
 
-    this->ValveOff(this->LAnkVal1);
-    this->ValveOff(this->LAnkVal2);
-    this->SetDuty(this->KnePreVal,100);
-    this->SetDuty(this->AnkPreVal,100);
+    this->SetDuty(this->LAnkPreVal,100);
+    this->SetDuty(this->RAnkPreVal,100);
+
     sleep(RELTIME);
 
-    this->SetDuty(this->KnePreVal,0);
-    this->SetDuty(this->AnkPreVal,0);
-    this->KnePreVal->SetDuty(0,senData[TIME]+RELTIME*1000000);
-    this->AnkPreVal->SetDuty(0,senData[TIME]+RELTIME*1000000);
+    this->SetDuty(this->LKnePreVal,0);
+    this->SetDuty(this->LAnkPreVal,0);
+    this->SetDuty(this->RKnePreVal,0);
+    this->SetDuty(this->RAnkPreVal,0);
+    this->LKnePreVal->SetDuty(0,senData[TIME]+RELTIME*1000000);
+    this->LAnkPreVal->SetDuty(0,senData[TIME]+RELTIME*1000000);
+    this->RKnePreVal->SetDuty(0,senData[TIME]+RELTIME*1000000);
+    this->RAnkPreVal->SetDuty(0,senData[TIME]+RELTIME*1000000);
 }
 void Controller::SampKneMod(int testDuty){
-    if(this->sampKneMod.outLoopCount==0){
-        if(this->sampKneMod.cycleCount==0){
-            this->ValveOn(this->BalVal);
-            this->ValveOff(this->LKneVal1);
-            this->ValveOn(this->LKneVal2);
+    // if(this->sampKneMod.outLoopCount==0){
+    //     if(this->sampKneMod.cycleCount==0){
+    //         this->ValveOn(this->BalVal);
+    //         this->ValveOff(this->LKneVal1);
+    //         this->ValveOn(this->LKneVal2);
 
-            this->SetDuty(this->KnePreVal,testDuty);
-            this->sampKneMod.cycleCount++;
-        }
-        else{
-            if(this->sampKneMod.cycleCount==this->sampKneMod.maxCycle){
-                this->sampKneMod.cycleCount=0;
+    //         this->SetDuty(this->KnePreVal,testDuty);
+    //         this->sampKneMod.cycleCount++;
+    //     }
+    //     else{
+    //         if(this->sampKneMod.cycleCount==this->sampKneMod.maxCycle){
+    //             this->sampKneMod.cycleCount=0;
                 
-                // this->ValveOff(this->BalVal);
-                // this->ValveOff(this->LKneVal1);
-                // this->ValveOff(this->LKneVal2);
+    //             // this->ValveOff(this->BalVal);
+    //             // this->ValveOff(this->LKneVal1);
+    //             // this->ValveOff(this->LKneVal2);
 
-                this->SetDuty(this->KnePreVal,0);
-                this->sampKneMod.outLoopCount++;
-            }
-            else
-                this->sampKneMod.cycleCount++;
-        }
-    }
-    else
-    {
-        if(this->sampKneMod.outLoopCount==this->sampKneMod.maxOuterLoop){
-            this->sampKneMod.outLoopCount=0;
-            // this->com->comArray[KNEMODSAMP]=false;
-        }
-        else{
+    //             this->SetDuty(this->KnePreVal,0);
+    //             this->sampKneMod.outLoopCount++;
+    //         }
+    //         else
+    //             this->sampKneMod.cycleCount++;
+    //     }
+    // }
+    // else
+    // {
+    //     if(this->sampKneMod.outLoopCount==this->sampKneMod.maxOuterLoop){
+    //         this->sampKneMod.outLoopCount=0;
+    //         // this->com->comArray[KNEMODSAMP]=false;
+    //     }
+    //     else{
             
-            this->sampKneMod.outLoopCount++;
-        }
-    }
+    //         this->sampKneMod.outLoopCount++;
+    //     }
+    // }
     
 
 }
 void Controller::KneRel(){
-    if(this->knePreRel.curRelCycle!=this->knePreRel.maxRelCycle){
-        if(this->knePreRel.curRelCycle==0){
-            this->ValveOff(this->LKneVal1);
-            this->ValveOff(this->LKneVal2);
-            this->ValveOff(this->LRelVal);
-            this->ValveOff(this->BalVal);
-        }
-        this->knePreRel.curRelCycle++;
-    }
-    else{
-        this->ValveOn(this->BalVal);
-        this->ValveOff(this->LKneVal1);
-        this->ValveOn(this->LKneVal2);
-        this->com->comArray[KNEPREREL]=false;
-        this->knePreRel.curRelCycle=0;
+    // if(this->knePreRel.curRelCycle!=this->knePreRel.maxRelCycle){
+    //     if(this->knePreRel.curRelCycle==0){
+    //         this->ValveOff(this->LKneVal1);
+    //         this->ValveOff(this->LKneVal2);
+    //         this->ValveOff(this->LRelVal);
+    //         this->ValveOff(this->BalVal);
+    //     }
+    //     this->knePreRel.curRelCycle++;
+    // }
+    // else{
+    //     this->ValveOn(this->BalVal);
+    //     this->ValveOff(this->LKneVal1);
+    //     this->ValveOn(this->LKneVal2);
+    //     this->com->comArray[KNEPREREL]=false;
+    //     this->knePreRel.curRelCycle=0;
 
-    }
+    // }
 }

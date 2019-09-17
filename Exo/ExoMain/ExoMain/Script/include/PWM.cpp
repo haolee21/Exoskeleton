@@ -59,14 +59,14 @@ void PWMGen::SetDuty(int onDuty,int curTime) {
 void PWMGen::CalTime(int duty){
 	this->onTime=this->sampT*duty/100;
 }
-std::thread *PWMGen::Start() {
+void PWMGen::Start() {
 	this->on = true;
-	std::thread *mainThread = new std::thread(&PWMGen::Mainloop, this);
-	return mainThread;
+	this->pwmTh.reset(new std::thread(&PWMGen::Mainloop, this));
 
 }
 void PWMGen::Stop(){
 	this->on = false;
+	this->pwmTh->join();
 }
 void PWMGen::Mainloop() {
 	//for accurate timer

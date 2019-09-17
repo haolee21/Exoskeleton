@@ -89,19 +89,22 @@ struct Com
 
 
 
-#define VALNUM 6 //this cannot work with test reacting
-#define PWMNUM 2
+#define VALNUM 7 //this cannot work with test reacting
+#define PWMNUM 4
+
 class Controller
 {
 private:
     int testSendCount; //test sending data, need to be removed
 
-    std::shared_ptr<Valve> LKneVal1;
-    std::shared_ptr<Valve> LKneVal2;
-    std::shared_ptr<Valve> LAnkVal1;
-    std::shared_ptr<Valve> LAnkVal2;
-    std::shared_ptr<Valve> BalVal;
-    std::shared_ptr<Valve> LRelVal;
+    std::shared_ptr<Valve> LKneVal;
+    std::shared_ptr<Valve> RKneVal;
+    std::shared_ptr<Valve> LAnkVal;
+    std::shared_ptr<Valve> RAnkVal;
+    
+    std::shared_ptr<Valve> LBalVal;
+    std::shared_ptr<Valve> RBalVal;
+    std::shared_ptr<Valve> RelVal;
 
     
     //connect to pc
@@ -110,14 +113,16 @@ private:
 
 
 
-    //std::shared_ptr<unsigned int> senData;
+    //shared_ptr<unsigned int> senData;
     unsigned int *senData;
 
-    std::shared_ptr<PWMGen> KnePreVal;
-    std::shared_ptr<PWMGen> AnkPreVal;
+    std::shared_ptr<PWMGen> LKnePreVal;
+    std::shared_ptr<PWMGen> RKnePreVal;
+    
+    std::shared_ptr<PWMGen> LAnkPreVal;
+    std::shared_ptr<PWMGen> RAnkPreVal;
     std::shared_ptr<PWMGen> PWMList[PWMNUM];
-    std::thread *knePreValTh;
-    std::thread *ankPreValTh;
+
 
    
 

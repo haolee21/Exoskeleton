@@ -21,18 +21,20 @@ public:
 	PWMGen(std::string valveName,std::string filePath, int pinId,int _sampTMicro,int pwmIdx,std::chrono::system_clock::time_point origin);
 	~PWMGen();
 	void SetDuty(int onDuty,int curTime);
-	std::thread *Start();
+	void Start();
 	std::mutex* DutyLock;
 	void Stop();
 	int GetIdx();
 	Duty duty;
+
+
 private:
 	std::chrono::system_clock::time_point origin;
 	int pinId;
 	int pwmIdx;
 	bool on = false;
 	void Mainloop();
-
+	std::shared_ptr<std::thread> pwmTh;
 	void CalTime(int duty);
 	
 	//calculate on time
