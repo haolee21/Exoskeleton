@@ -234,8 +234,8 @@ Controller::Controller(std::string filePath, Com *_com, bool _display,std::chron
         this->ValveOff(*begVal);
     } while (++begVal != std::end(this->ValveList));
 
-    this->trParam.testOut.reset(new Valve("TestMea", filePath, 8, 6)); //this uses gpio2
-    this->ValveOff(this->trParam.testOut);
+    // this->trParam.testOut.reset(new Valve("TestMea", filePath, 8, 6)); //this uses gpio2
+    // this->ValveOff(this->trParam.testOut);
 }
 void Controller::SetDuty(std::shared_ptr<PWMGen> pwmVal, int duty)
 {

@@ -13,8 +13,9 @@
 #include <string>
 #include "Displayer.hpp"
 #include <iomanip>
-#include <Eigen/Dense>
 
+
+#include "Pin.hpp"
 void DelaySys(int waitTime) {
 	struct timespec ts2 = { 0 };
 	ts2.tv_sec = 0;
@@ -73,8 +74,6 @@ int main(void)
 	}
 	boost::filesystem::create_directory(filePath);
 
-
-	wiringPiSetupSys(); //setup the system ports, timer, etc. 
 
 	//define command array
 	Com com;

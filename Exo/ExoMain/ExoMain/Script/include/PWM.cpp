@@ -41,7 +41,7 @@ PWMGen::PWMGen(std::string valveName, std::string filePath,int pinId,int _sampT,
 
 	this->DutyLock = new std::mutex;
 	this->pinId = pinId;
-	wiringPiSetup(); 
+	//wiringPiSetup(); 
 	pinMode(this->pinId, OUTPUT);
 }
 void PWMGen::SetDuty(int onDuty,int curTime) {
