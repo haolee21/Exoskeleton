@@ -15,7 +15,7 @@
 #include <iomanip>
 
 
-#include "Pin.hpp"
+
 void DelaySys(int waitTime) {
 	struct timespec ts2 = { 0 };
 	ts2.tv_sec = 0;
@@ -54,7 +54,7 @@ int main(void)
 	// We create directory here since the raspberry pi will sync its time with pc during connection
 	//create the folder for result saving
 	// string homeFolder = "../data";
-	string homeFolder = "/home/pi/Data";
+	string homeFolder = "/home/pi/Exo/ExpData";
 	if(!boost::filesystem::exists(homeFolder))
 		boost::filesystem::create_directory(homeFolder);
 	string filePath;

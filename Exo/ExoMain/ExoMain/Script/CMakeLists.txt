@@ -14,7 +14,6 @@ include_directories(
 )
 add_library(
     lib STATIC
-    include/GPIOPin.hpp
     include/Recorder.hpp 
     include/RecData.hpp
     include/PWM.h
@@ -28,7 +27,7 @@ set_target_properties(lib PROPERTIES LINKER_LANGUAGE CXX)
 link_directories(${Boost_LIBRARY_DIR})
 
 enable_testing()
-add_executable(exo_o src/main.cpp include/Controller.cpp include/PWM.cpp include/Sensor.cpp include/Valve.cpp include/Displayer.cpp include/Pin.cpp)
+add_executable(exo_o src/main.cpp include/Controller.cpp include/PWM.cpp include/Sensor.cpp include/Valve.cpp include/Displayer.cpp)
 
 target_link_libraries(exo_o PRIVATE ${Boost_LIBRARIES})
 
