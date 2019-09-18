@@ -366,7 +366,7 @@ void Controller::PreRel(){
     this->ValveOff(this->RKneVal);
     this->SetDuty(this->LKnePreVal,100);
     this->SetDuty(this->RKnePreVal,100);
-
+    this->ValveOn(this->RelVal);
     this->ValveOff(this->LAnkVal);
     this->ValveOff(this->RAnkVal);
 
@@ -379,11 +379,12 @@ void Controller::PreRel(){
     this->SetDuty(this->LAnkPreVal,0);
     this->SetDuty(this->RKnePreVal,0);
     this->SetDuty(this->RAnkPreVal,0);
+    this->ValveOff(this->RelVal);
     this->LKnePreVal->SetDuty(0,senData[TIME]+RELTIME*1000000);
     this->LAnkPreVal->SetDuty(0,senData[TIME]+RELTIME*1000000);
     this->RKnePreVal->SetDuty(0,senData[TIME]+RELTIME*1000000);
     this->RAnkPreVal->SetDuty(0,senData[TIME]+RELTIME*1000000);
-}
+}   
 void Controller::SampKneMod(int testDuty){
     // if(this->sampKneMod.outLoopCount==0){
     //     if(this->sampKneMod.cycleCount==0){
