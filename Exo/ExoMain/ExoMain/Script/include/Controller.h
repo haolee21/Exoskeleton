@@ -61,18 +61,20 @@
 
 
 // index of command
+#define NUMCOM 7
 #define TESTVAL 0
 #define TESTPWM 1
 #define SHUTPWM 2
 #define ENGRECL 3
 #define KNEMODSAMP 4
 #define KNEPREREL 5
+#define TESTALLLEAK 6
 struct Com
 {
-	const int comLen =6;
-	bool comArray[6];
+	const int comLen =NUMCOM;
+	bool comArray[NUMCOM];
 	mutex comLock;
-    int comVal[6];//if any value need to be passed
+    int comVal[NUMCOM];//if any value need to be passed
 };
 // index of senData
 #define TIME 0
@@ -219,6 +221,17 @@ private:
     KneePressureRelease knePreRel;
     void KneRel(); //release the pressure of knee joint
     //
+
+
+    // Testing if there is any leakage in the loop
+    struct TestLeakPara{
+        int curPath;
+        int curCount=0;
+        const int maxCount = 1000;
+    };
+    TestLeakPara testLeak;
+    int TestLeak(int curPath);
+    void TestAllLeak();
 
 public:
     // Valve* ValveList[VALNUM];

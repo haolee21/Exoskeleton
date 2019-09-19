@@ -125,6 +125,9 @@ int main(void)
 			else if(command=="knerel"){
 				com.comArray[KNEPREREL] = true;
 			}
+			else if(command == "testallleak"){
+				com.comArray[TESTALLLEAK] = true;
+			}
 			else if(command == "end")
 				break;
 			else
