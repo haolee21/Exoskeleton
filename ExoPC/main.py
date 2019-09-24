@@ -43,8 +43,8 @@ def main():
                   'volt', 'volt', 'volt', 'volt', 'volt','volt','volt','volt']
     ylim_sen = [(0, 1000), (0, 1000), (0, 1000), (0, 1000),(0, 1000),(0, 1000),(0, 1000),(0, 1000),
                 (0, 600), (0, 600), (0, 600), (0, 600), (0, 600),(0, 600),(0, 600),(0, 600)]
-    title_sen = ['LAnkPos', 'LKnePos', 'LHipPos', 'RAnkPos', 'RKnePos', 'RHipPos', 'title7', 'title8',
-                 'TankPre','LKnePre','LAnkPre', 'title12', 'title13', 'title14', 'title15', 'title16',]
+    title_sen = ['LHipPos', 'LKnePos', 'LAnkPos', 'RHipPos', 'RKnePos', 'RAnkPos', 'title7', 'title8',
+                 'TankPre','LKnePre','LAnkPre', 'RKnePre', 'RAnkPre', 'title14', 'title15', 'title16',]
     graph_sen = dp.Plotter(tTot=1, sampF=sampFreq, figNum=NUMSEN,
                            yLabelList=ylabel_sen, yLimList=ylim_sen, titleList=title_sen)
 

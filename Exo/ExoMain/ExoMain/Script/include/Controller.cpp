@@ -13,9 +13,7 @@ void Controller::ConMainLoop(unsigned int *_senData, char *senRaw)
 {
     queue<thread> taskQue;
     // this->senData = senData;
-    this->senData=_senData;
-    std::vector<unsigned int> curSen(_senData + 1, _senData + NUMSEN + 1);
-
+    this->senData=_senData; //multithread will copy the array, thus we can just set the pointer to our data
     // assign task to controller
     //taskQue.push(std::thread(&Controller::TestReactingTime,this));
     {
@@ -39,6 +37,15 @@ void Controller::ConMainLoop(unsigned int *_senData, char *senRaw)
         }
         if(this->com->comArray[TESTALLLEAK]){
             taskQue.push(std::thread(&Controller::TestAllLeak,this));
+            this->com->comArray[TESTALLLEAK] = false;
+        }
+        if(this->com->comArray[FREEWALK]){
+            taskQue.push(std::thread(&Controller::FreeWalk,this));
+            this->com->comArray[FREEWALK] =false;
+        }
+        if(this->com->comArray[TESTLEAK]){
+            taskQue.push(std::thread(&Controller::TestLeak,this,com->comVal[TESTLEAK]));
+            this->com->comArray[TESTLEAK] = false;
         }
     }
 
@@ -446,7 +453,7 @@ void Controller::KneRel(){
 
     // }
 }
-int Controller::TestLeak(int curPath){
+void Controller::TestLeak(int curPath){
     switch (curPath)
     {
         case 0: //test LKneeSup
@@ -489,39 +496,60 @@ int Controller::TestLeak(int curPath){
         case 6: //test LAnkleFree and LKneeSup (looks weird but that is how the loop is connected)
             break;
     }
-    return ++curPath;
+    
 
 }
+void Controller::TestAllLeakOn(){
+    std::cout<<"Leak test started\n";
+    this->ValveOff(this->LKneVal);
+    this->ValveOff(this->RKneVal);
+    this->SetDuty(this->LKnePreVal,100);
+    this->SetDuty(this->RKnePreVal,100);
+    this->ValveOff(this->LBalVal);
+    this->ValveOff(this->RBalVal);
+    this->ValveOff(this->LAnkVal);
+    this->ValveOff(this->RAnkVal);
+    this->SetDuty(this->LAnkPreVal,100);
+    this->SetDuty(this->RAnkPreVal,100);
+}
+void Controller::TestAllLeakOff(){
+    this->SetDuty(this->LKnePreVal,0);
+    this->SetDuty(this->RKnePreVal,0);
+    this->SetDuty(this->LAnkPreVal,0);
+    this->SetDuty(this->RAnkPreVal,0);
+    this->com->comArray[TESTALLLEAK] = false;
+    std::cout<<"leak test ends\n";
+}
 void Controller::TestAllLeak(){
-    if(this->testLeak.curCount==0){
-        std::cout<<"Leak test started\n";
-        this->ValveOff(this->LKneVal);
-        this->ValveOff(this->RKneVal);
-        this->SetDuty(this->LKnePreVal,100);
-        this->SetDuty(this->RKnePreVal,100);
-        this->ValveOff(this->LBalVal);
-        this->ValveOff(this->RBalVal);
-        this->ValveOff(this->LAnkVal);
-        this->ValveOff(this->RAnkVal);
-        this->SetDuty(this->LAnkPreVal,100);
-        this->SetDuty(this->RAnkPreVal,100);
-        this->testLeak.curCount++;
+    if(this->testLeak.all_on){
+        this->TestAllLeakOff();
+        this->testLeak.all_on = false;
+    }
+    else
+    {
+        this->TestAllLeakOn();
+        this->testLeak.all_on = true;
+    }
+    
+}
+void Controller::FreeWalk_on(){
+    //call TestAllLeak with RelVal open
+
+    this->TestAllLeakOn();
+    this->ValveOn(this->RelVal);
+    
+}
+void Controller::FreeWalk_off(){
+    this->TestAllLeakOff();
+    this->ValveOff(this->RelVal);
+}
+void Controller::FreeWalk(){
+    if(!this->freeWalk_on){
+        this->FreeWalk_on();
+        this->freeWalk_on = true;
     }
     else{
-        if(this->testLeak.curCount==this->testLeak.maxCount){
-            this->SetDuty(this->LKnePreVal,0);
-            this->SetDuty(this->RKnePreVal,0);
-            this->SetDuty(this->LAnkPreVal,0);
-            this->SetDuty(this->RAnkPreVal,0);
-            this->com->comArray[TESTALLLEAK] = false;
-            std::cout<<"leak test ends\n";
-        }
-        else
-        {
-            this->testLeak.curCount++;
-        }
-        
+        this->FreeWalk_off();
+        this->freeWalk_on = false;
     }
-
-
 }

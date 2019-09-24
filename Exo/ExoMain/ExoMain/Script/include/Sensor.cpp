@@ -113,8 +113,9 @@ void Sensor::senUpdate()
 		this->readSerialPort(this->serialDevId);
 		if(conLoopCount++ ==4){
 			conLoopCount = 0;
-			if(conStart) 
+			if(conStart){ 
 				(*conTh).join();
+			}
 			else
 				conStart = true;
 			conTh.reset(new std::thread(&Controller::ConMainLoop,&con,this->senData,this->senDataRaw));

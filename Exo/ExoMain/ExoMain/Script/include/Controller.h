@@ -61,7 +61,7 @@
 
 
 // index of command
-#define NUMCOM 7
+#define NUMCOM 9
 #define TESTVAL 0
 #define TESTPWM 1
 #define SHUTPWM 2
@@ -69,6 +69,8 @@
 #define KNEMODSAMP 4
 #define KNEPREREL 5
 #define TESTALLLEAK 6
+#define FREEWALK 7
+#define TESTLEAK 8
 struct Com
 {
 	const int comLen =NUMCOM;
@@ -153,7 +155,7 @@ private:
     {
         std::chrono::system_clock::time_point sendTime;
         bool dataNotSent = true;
-        std::shared_ptr<Valve> testOut;
+        std::shared_ptr<Valve> testOut; 
         // Valve *testOut; 
     };
     TestReactParam trParam; 
@@ -228,11 +230,22 @@ private:
         int curPath;
         int curCount=0;
         const int maxCount = 1000;
+        bool all_on = false;
+        
     };
     TestLeakPara testLeak;
-    int TestLeak(int curPath);
+    void TestLeak(int curPath);
     void TestAllLeak();
+    void TestAllLeakOn();
+    void TestAllLeakOff();
 
+    //Free walk
+    bool freeWalk_on = false;
+    void FreeWalk();
+    void FreeWalk_on();
+    void FreeWalk_off();
+
+    //Biped 
 public:
     // Valve* ValveList[VALNUM];
     std::shared_ptr<Valve> ValveList[VALNUM];

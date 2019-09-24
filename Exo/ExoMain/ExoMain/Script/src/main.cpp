@@ -53,8 +53,9 @@ int main(void)
 
 	// We create directory here since the raspberry pi will sync its time with pc during connection
 	//create the folder for result saving
-	// string homeFolder = "../data";
-	string homeFolder = "/home/pi/Exo/ExpData";
+	//string homeFolder = "../data";
+	//string homeFolder = "/home/pi/Exo/ExpData";
+	string homeFolder = "/media/pi/Data/ExpData";
 	if(!boost::filesystem::exists(homeFolder))
 		boost::filesystem::create_directory(homeFolder);
 	string filePath;
@@ -127,6 +128,33 @@ int main(void)
 			}
 			else if(command == "testallleak"){
 				com.comArray[TESTALLLEAK] = true;
+			}
+			else if(command=="freewalk"){
+				com.comArray[FREEWALK]=true;
+			}
+			else if(command=="testleak1"){
+				com.comArray[TESTLEAK] = true;
+				com.comVal[TESTLEAK]=1;
+			}
+			else if(command=="testleak2"){
+				com.comArray[TESTLEAK] = true;
+				com.comVal[TESTLEAK]=2;
+			}
+			else if(command=="testleak3"){
+				com.comArray[TESTLEAK]=true;
+				com.comVal[TESTLEAK]=3;
+			}
+			else if(command=="testleak4"){
+				com.comArray[TESTLEAK]=true;
+				com.comVal[TESTLEAK]=4;
+			}
+			else if(command=="testleak5"){
+				com.comArray[TESTLEAK]=true;
+				com.comVal[TESTLEAK]=5;
+			}
+			else if(command=="testleak6"){
+				com.comArray[TESTLEAK]=true;
+				com.comVal[TESTLEAK]=6;
 			}
 			else if(command == "end")
 				break;
