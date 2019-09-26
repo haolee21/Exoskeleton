@@ -132,6 +132,8 @@ int main(void)
 			else if(command=="freewalk"){
 				com.comArray[FREEWALK]=true;
 			}
+
+			
 			else if(command=="testleak1"){
 				com.comArray[TESTLEAK] = true;
 				com.comVal[TESTLEAK]=1;
@@ -158,6 +160,12 @@ int main(void)
 			}
 			else if(command == "end")
 				break;
+			else if(command =="testlank"){
+				com.comArray[TESTLANK]=true;
+			}
+			else if(command == "testrank"){
+				com.comArray[TESTRANK]=true;
+			}
 			else
 				cout<<"not such command\n";	
 		}

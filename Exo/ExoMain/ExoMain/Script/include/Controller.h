@@ -61,7 +61,7 @@
 
 
 // index of command
-#define NUMCOM 9
+#define NUMCOM 11
 #define TESTVAL 0
 #define TESTPWM 1
 #define SHUTPWM 2
@@ -71,6 +71,8 @@
 #define TESTALLLEAK 6
 #define FREEWALK 7
 #define TESTLEAK 8
+#define TESTLANK 9
+#define TESTRANK 10
 struct Com
 {
 	const int comLen =NUMCOM;
@@ -89,6 +91,8 @@ struct Com
 #define TANKPRE 9
 #define LKNEPRE 10
 #define LANKPRE 11
+#define RKNEPRE 12
+#define RANKPRE 13
 
 //Some setting constant
 #define RELTIME 10 //time that the valve will open to release pressure
@@ -97,6 +101,29 @@ struct Com
 
 #define VALNUM 7 //this cannot work with test reacting
 #define PWMNUM 4
+
+// This is the finite state machine that used in the controller
+// The states are
+#define R_Swing 0
+#define R_SwingMid 1
+#define R_HStrike 2
+#define L_ToeOff 3
+#define L_Swing 4
+#define L_SwingMid 5
+#define L_HStrike 6
+#define R_ToeOff 7
+class FSMachine
+{
+private:
+    /* data */
+public:
+    FSMachine(/* args */);
+    ~FSMachine();
+    char CalState(unsigned int *curMea, char curState);
+};
+
+
+
 
 class Controller
 {
@@ -245,7 +272,30 @@ private:
     void FreeWalk_on();
     void FreeWalk_off();
 
-    //Biped 
+    //Biped walking energy recycle
+    FSMachine FSM ;
+    char curState;
+    struct PreRecPID{
+        unsigned int kneRecPre = 300;
+        unsigned int ankRecPre = 200;
+
+    };
+    void BipedEngRec();
+    void PreRec(std::shared_ptr<PWMGen> knePreVal,std::shared_ptr<PWMGen> ankPreVal,unsigned int knePre, unsigned int ankPre,unsigned int tankPre);
+    void CheckSupPre(std::shared_ptr<PWMGen> preVal,unsigned int supPre);
+    struct SupPrePID{ //PID controller for generating supporting pressure, it is variable since it may need to be adjusted real-time
+        double kp = 10;
+        double ki = 0.01;
+        double kd = 0.001;
+
+    };
+    SupPrePID supPreCon;
+
+    //Test ankle actuation
+    bool TestRAnkFlag = false;
+    bool TestLAnkFlag = false;
+    void TestRAnk();
+    void TestLAnk();
 public:
     // Valve* ValveList[VALNUM];
     std::shared_ptr<Valve> ValveList[VALNUM];
@@ -256,6 +306,7 @@ public:
     
     void ConMainLoop(unsigned int *curSen,char* senRaw);
 };
+
 
 
 

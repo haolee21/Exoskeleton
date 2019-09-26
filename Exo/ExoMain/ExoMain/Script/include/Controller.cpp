@@ -47,6 +47,14 @@ void Controller::ConMainLoop(unsigned int *_senData, char *senRaw)
             taskQue.push(std::thread(&Controller::TestLeak,this,com->comVal[TESTLEAK]));
             this->com->comArray[TESTLEAK] = false;
         }
+        if(this->com->comArray[TESTLANK]){
+            taskQue.push(std::thread(&Controller::TestLAnk,this));
+            this->com->comArray[TESTLANK]=false;
+        }
+        if(this->com->comArray[TESTRANK]){
+            taskQue.push(std::thread(&Controller::TestRAnk,this));
+            this->com->comArray[TESTRANK]=false;
+        }
     }
 
     while (!taskQue.empty())
@@ -246,6 +254,8 @@ Controller::Controller(std::string filePath, Com *_com, bool _display,std::chron
 
     // this->trParam.testOut.reset(new Valve("TestMea", filePath, 8, 6)); //this uses gpio2
     // this->ValveOff(this->trParam.testOut);
+    this->curState = 0;
+    this->FSM = FSMachine();
 }
 void Controller::SetDuty(std::shared_ptr<PWMGen> pwmVal, int duty)
 {
@@ -457,6 +467,7 @@ void Controller::TestLeak(int curPath){
     switch (curPath)
     {
         case 0: //test LKneeSup
+            std::cout<<"test LKneeSup\n";
             this->ValveOn(this->LKneVal);
             this->ValveOn(this->LAnkVal);
             this->SetDuty(this->LKnePreVal,100);
@@ -466,6 +477,7 @@ void Controller::TestLeak(int curPath){
             this->SetDuty(this->LKnePreVal,0);
             break;
         case 2: //test LKneeFree and LKneeSup
+            std::cout<<"test LKneeFree and LKneeSup\n";
             this->ValveOff(this->LKneVal);
             this->ValveOff(this->LAnkVal);
             this->SetDuty(this->LKnePreVal,100);
@@ -473,6 +485,7 @@ void Controller::TestLeak(int curPath){
             this->SetDuty(this->LKnePreVal,0);
             break;
         case 3: //test RKneeSup
+            std::cout<<"test RKneeSup\n";
             this->ValveOn(this->RKneVal);
             this->ValveOn(this->RAnkVal);
             this->SetDuty(this->RKnePreVal,100);
@@ -482,6 +495,7 @@ void Controller::TestLeak(int curPath){
             this->SetDuty(this->RKnePreVal,0);
             break;
         case 4://test RKneeFree and RKneeSup
+            std::cout<<"test RKneeFree and RKneeSup\n";
             this->ValveOff(this->RKneVal);
             this->ValveOff(this->RAnkVal);
             this->SetDuty(this->RKnePreVal,100);
@@ -489,6 +503,7 @@ void Controller::TestLeak(int curPath){
             this->SetDuty(this->RKnePreVal,0);
             break;
         case 5: //test LAnkleSup
+            std::cout<<"test LAnkleSup\n";
             this->SetDuty(this->LAnkPreVal,100);
             sleep(10);
             this->SetDuty(this->LAnkPreVal,0);
@@ -551,5 +566,129 @@ void Controller::FreeWalk(){
     else{
         this->FreeWalk_off();
         this->freeWalk_on = false;
+    }
+}
+
+FSMachine::FSMachine(/* args */)
+{
+}
+
+FSMachine::~FSMachine()
+{
+}
+char FSMachine::CalState(unsigned int *curMea,char curState){
+    char nextState;
+    if(curState ==R_Swing){
+        
+
+    }
+    else if(curState == R_SwingMid){
+
+    }
+    else if(curState==R_HStrike){
+
+    }
+    else if(curState == L_AnkPush){
+
+    }
+    else if(curState==L_ToeOff){
+
+    }
+    else if(curState==L_Swing){
+
+    }
+    else if(curState == L_SwingMid){
+
+    }
+    else if(curState==L_HStrike){
+
+    }
+    else if(curState == R_AnkPush){
+
+    }
+    else if(curState==R_ToeOff){
+        
+    }
+    return nextState;
+}
+void Controller::BipedEngRec(){
+    char curPhase = this->FSM.CalState(this->senData,this->curState);
+    switch (curPhase){
+        case R_Swing:
+            this->ValveOff(this->RBalVal);
+            this->ValveOff(this->RKneVal);
+            this->SetDuty(this->RKnePreVal,0);
+            this->ValveOn(this->RAnkVal);
+            this->SetDuty(this->RAnkPreVal,0);
+            break;
+        case R_SwingMid:
+            this->ValveOn(this->RBalVal);
+            this->CheckSupPre(this->RKnePreVal,100); //100 is just some random value
+            this->CheckSupPre(this->RAnkPreVal,100);
+            break;
+        case R_HStrike:
+            this->ValveOn(this->RKneVal);
+            this->ValveOn(this->RAnkVal);
+            this->PreRec(this->RKnePreVal,this->RAnkPreVal,this->senData[RKNEPRE],this->senData[RANKPRE],this->senData[TANKPRE]);
+            break;
+        case L_AnkPush:
+            break;
+        case L_ToeOff:
+            this->ValveOff(this->RKneVal);
+            this->SetDuty(this->RKnePreVal,0);
+            break;
+        case L_Swing:
+            this->ValveOff(this->LBalVal);
+            break;
+        case L_SwingMid:
+            this->ValveOn(this->LBalVal);
+            this->CheckSupPre(this->LKnePreVal,100);
+            this->CheckSupPre(this->LAnkPreVal,100);
+            break;
+        case L_HStrike:
+            break;
+        case R_AnkPush:
+            break;
+        case R_ToeOff:
+            break;
+    }
+}
+void Controller::PreRec(std::shared_ptr<PWMGen> knePreVal,std::shared_ptr<PWMGen> ankPreVal,unsigned int knePre, unsigned int ankPre,unsigned int tankPre){
+
+}
+void Controller::CheckSupPre(std::shared_ptr<PWMGen> preVal,unsigned int supPre){
+
+
+}
+
+void Controller::TestRAnk(){
+    if(this->TestRAnkFlag){
+        this->SetDuty(this->RAnkPreVal,0);
+        this->TestRAnkFlag = false;
+        this->ValveOff(this->RBalVal);
+        this->ValveOn(this->RKneVal);
+    }
+    else{
+        this->ValveOff(this->RKneVal);
+        this->ValveOn(this->RBalVal);
+        this->TestRAnkFlag = true;
+        this->SetDuty(this->RAnkPreVal,100);
+
+    }
+}
+void Controller::TestLAnk(){
+    if(this->TestLAnkFlag){
+        std::cout<<"turn off LAnk\n";
+        this->TestLAnkFlag = false;
+        this->SetDuty(this->LAnkPreVal,0);
+        this->ValveOff(this->LBalVal);
+        this->ValveOff(this->LKneVal);
+    }
+    else{
+        std::cout<<"turn on LAnk\n";
+        this->ValveOn(this->LKneVal);
+        this->ValveOn(this->LBalVal);
+        this->TestLAnkFlag = true;
+        this->SetDuty(this->LAnkPreVal,100);
     }
 }

@@ -10,7 +10,7 @@ import multiprocessing as mp
 
 NUMSEN=16
 DATALEN = NUMSEN*2+2
-VALNUM = 6
+VALNUM = 7
 PWMNUM = 2
 sampFreq = 615/20
 def main():
@@ -48,10 +48,10 @@ def main():
     graph_sen = dp.Plotter(tTot=1, sampF=sampFreq, figNum=NUMSEN,
                            yLabelList=ylabel_sen, yLimList=ylim_sen, titleList=title_sen)
 
-    ylabel_val = ['on', 'on', 'on', 'on', 'on', 'on']
+    ylabel_val = ['on', 'on', 'on', 'on', 'on', 'on','on']
     ylim_val = [(33, 101), (33, 101), (33, 101),
-                (33, 101), (33, 101), (33, 101)]
-    title_val = ['LKneVal1', 'LKneVal2', 'LAnkVal1', 'LAnkVal2', 'LBalVal', 'LRelVal']
+                (33, 101), (33, 101), (33, 101),(33,101)]
+    title_val = ['LKneVal','RKneVal','LAnkVal2', 'RAnkVal', 'LBalVal', 'RBalVal', 'LRelVal']
     graph_val = dp.Plotter(tTot=1, sampF=sampFreq, figNum=VALNUM,
                            yLabelList=ylabel_val, yLimList=ylim_val, titleList=title_val)
 
@@ -66,7 +66,7 @@ def main():
         data = conn.recv(DATALEN+VALNUM+PWMNUM)
         
         try:
-            if(int(data[0]) == 64):
+            if(int(data[0]) == 64): #ascii 64 is @, check the start symbol
                 
                 # senP = mp.Process(target=UpdateGraph,args=(graph_sen,data,SenHandle))
                 # valP = mp.Process(target=UpdateGraph,args=(graph_val,data,ValveHandle))
