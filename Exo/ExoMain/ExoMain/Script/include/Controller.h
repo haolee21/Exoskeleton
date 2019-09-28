@@ -9,6 +9,7 @@
 #include <PWM.h>
 #include <thread>
 #include <memory>
+#include <iomanip>
 #include "Displayer.hpp"
 //Define the pin number of the controller
 // Attention, the pin number is different for c++ and python library
@@ -61,7 +62,7 @@
 
 
 // index of command
-#define NUMCOM 11
+#define NUMCOM 12
 #define TESTVAL 0
 #define TESTPWM 1
 #define SHUTPWM 2
@@ -73,6 +74,7 @@
 #define TESTLEAK 8
 #define TESTLANK 9
 #define TESTRANK 10
+#define SHOWSEN 11 //Cout the current sensor measurements, 
 struct Com
 {
 	const int comLen =NUMCOM;
@@ -81,6 +83,7 @@ struct Com
     int comVal[NUMCOM];//if any value need to be passed
 };
 // index of senData
+#define NUMSEN 16
 #define TIME 0
 #define LANKPOS 1
 #define LKNEPOS 2
@@ -107,11 +110,13 @@ struct Com
 #define R_Swing 0
 #define R_SwingMid 1
 #define R_HStrike 2
-#define L_ToeOff 3
-#define L_Swing 4
-#define L_SwingMid 5
-#define L_HStrike 6
-#define R_ToeOff 7
+#define L_AnkPush 3
+#define L_ToeOff 4
+#define L_Swing 5
+#define L_SwingMid 6
+#define L_HStrike 7
+#define R_AnkPush 8
+#define R_ToeOff 9
 class FSMachine
 {
 private:
@@ -130,7 +135,7 @@ class Controller
 private:
     int testSendCount; //test sending data, need to be removed
 
-    std::shared_ptr<Valve> LKneVal;
+    std::shared_ptr<Valve> LKneVal; 
     std::shared_ptr<Valve> RKneVal;
     std::shared_ptr<Valve> LAnkVal;
     std::shared_ptr<Valve> RAnkVal;
@@ -147,7 +152,8 @@ private:
 
 
     //shared_ptr<unsigned int> senData;
-    unsigned int *senData;
+    unsigned int senData[NUMSEN+1];
+    unsigned int preSen[NUMSEN+1]; 
 
     std::shared_ptr<PWMGen> LKnePreVal;
     std::shared_ptr<PWMGen> RKnePreVal;
@@ -296,6 +302,10 @@ private:
     bool TestLAnkFlag = false;
     void TestRAnk();
     void TestLAnk();
+
+
+    //Print out the current measurements
+    void ShowSen();
 public:
     // Valve* ValveList[VALNUM];
     std::shared_ptr<Valve> ValveList[VALNUM];

@@ -4,18 +4,21 @@
 #include <thread>
 #include <queue>
 
-const int NUMSEN = 9;
+
 #define RAWDATALEN 34 //this has to be the same as defined in Sensor.h
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
 void Controller::ConMainLoop(unsigned int *_senData, char *senRaw)
 {
+    
     queue<thread> taskQue;
     // this->senData = senData;
-    this->senData=_senData; //multithread will copy the array, thus we can just set the pointer to our data
-    // assign task to controller
-    //taskQue.push(std::thread(&Controller::TestReactingTime,this));
+    
+    std::memcpy(this->senData,_senData,std::size_t((NUMSEN+1)*sizeof(unsigned int)));
+    
+    
+    
     {
         std::lock_guard<std::mutex> lock(this->com->comLock);
         if (this->com->comArray[TESTVAL])
@@ -55,6 +58,10 @@ void Controller::ConMainLoop(unsigned int *_senData, char *senRaw)
             taskQue.push(std::thread(&Controller::TestRAnk,this));
             this->com->comArray[TESTRANK]=false;
         }
+        if(this->com->comArray[SHOWSEN]){
+            taskQue.push(std::thread(&Controller::ShowSen,this));
+            this->com->comArray[SHOWSEN]=false;
+        }
     }
 
     while (!taskQue.empty())
@@ -81,6 +88,8 @@ void Controller::ConMainLoop(unsigned int *_senData, char *senRaw)
         //     this->preSend = true;
         }
     }
+    std::memcpy(this->preSen,this->senData,std::size_t((NUMSEN+1)*sizeof(unsigned int)));
+    
 }
 
 void Controller::TestValve()
@@ -193,8 +202,8 @@ void Controller::ValveOff(std::shared_ptr<Valve> val)
 Controller::Controller(std::string filePath, Com *_com, bool _display,std::chrono::system_clock::time_point _origin)
 {
 
-    this->senData=new unsigned int(0);
-
+    this->senData[0]=0;
+    this->preSen[0] =0; 
     this->testSendCount = 0;
     this->preSend = true;
     this->display = _display;
@@ -691,4 +700,12 @@ void Controller::TestLAnk(){
         this->TestLAnkFlag = true;
         this->SetDuty(this->LAnkPreVal,100);
     }
+}
+void Controller::ShowSen(){
+    std::cout<<"\nCurrent Sen: "<<std::setw(8)<<this->senData[0];
+    for(int i=1;i<NUMSEN+1;i++){
+        std::cout<<","<<std::setw(4)<<this->senData[i];
+    }
+    std::cout<<std::endl;
+
 }

@@ -118,8 +118,11 @@ void Sensor::senUpdate()
 			}
 			else
 				conStart = true;
+
+			//copy the sensed data to a pointer then pass it to Controller
+
+			
 			conTh.reset(new std::thread(&Controller::ConMainLoop,&con,this->senData,this->senDataRaw));
-		
 			//std::cout<<"data len= "<<sizeof(con.GetValCond());
 			//disp.send(&((char)con.GetValCond()),sizeof(con.GetValCond()))
 			

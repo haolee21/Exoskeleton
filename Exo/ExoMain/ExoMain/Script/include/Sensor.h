@@ -43,10 +43,10 @@
 #include <memory>
 //data recording
 #include "Recorder.hpp"
-const int NUMSEN = 16; //need to sync with controller's
+//need to sync with controller's
 const int DATALEN =NUMSEN*2+2;
 const int SIZEOFBUFFER= DATALEN*1000;
-
+#define RAWDATALEN 34 //this has to be the same as defined in Sensor.h
 
 using namespace std;
 

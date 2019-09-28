@@ -1,3 +1,5 @@
+
+
 #include<iostream>
 #include<cstdio>
 #include<thread>
@@ -165,6 +167,9 @@ int main(void)
 			}
 			else if(command == "testrank"){
 				com.comArray[TESTRANK]=true;
+			}
+			else if(command =="r"){
+				com.comArray[SHOWSEN]=true;
 			}
 			else
 				cout<<"not such command\n";	
