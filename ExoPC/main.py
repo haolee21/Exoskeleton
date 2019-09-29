@@ -11,7 +11,7 @@ import multiprocessing as mp
 NUMSEN=16
 DATALEN = NUMSEN*2+2
 VALNUM = 7
-PWMNUM = 2
+PWMNUM = 4
 sampFreq = 615/20
 def main():
     #sync time with pc
@@ -51,13 +51,13 @@ def main():
     ylabel_val = ['on', 'on', 'on', 'on', 'on', 'on','on']
     ylim_val = [(33, 101), (33, 101), (33, 101),
                 (33, 101), (33, 101), (33, 101),(33,101)]
-    title_val = ['LKneVal','RKneVal','LAnkVal2', 'RAnkVal', 'LBalVal', 'RBalVal', 'LRelVal']
+    title_val = ['LKneVal','RKneVal','LAnkVal', 'RAnkVal', 'LBalVal', 'RBalVal', 'LRelVal']
     graph_val = dp.Plotter(tTot=1, sampF=sampFreq, figNum=VALNUM,
                            yLabelList=ylabel_val, yLimList=ylim_val, titleList=title_val)
 
     ylabel_pwm = ['Duty (%)', 'Duty (%)', 'Duty (%)', 'Duty (%)']
     ylim_pwm = [(0, 100), (0, 100), (0, 100), (0, 100)]
-    title_pwm = ['KnePre', 'AnkPre', 'No use', 'No use']
+    title_pwm = ['LKnePre', 'LAnkPre', 'RKnePre', 'RAnkPre']
     graph_pwm = dp.Plotter(tTot=1, sampF=sampFreq, figNum=4,
                            yLabelList=ylabel_pwm, yLimList=ylim_pwm, titleList=title_pwm)
     # start = time.time()
