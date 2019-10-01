@@ -62,7 +62,7 @@
 
 
 // index of command
-#define NUMCOM 12
+#define NUMCOM 13
 #define TESTVAL 0
 #define TESTPWM 1
 #define SHUTPWM 2
@@ -75,6 +75,7 @@
 #define TESTLANK 9
 #define TESTRANK 10
 #define SHOWSEN 11 //Cout the current sensor measurements, 
+#define BIPEDREC 12
 struct Com
 {
 	const int comLen =NUMCOM;

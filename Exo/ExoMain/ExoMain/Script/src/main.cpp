@@ -171,6 +171,16 @@ int main(void)
 			else if(command =="r"){
 				com.comArray[SHOWSEN]=true;
 			}
+			else if(command == "bipedrec"){
+				com.comArray[BIPEDREC] = !com.comArray[BIPEDREC];
+				if(com.comArray[BIPEDREC]==true)
+					std::cout<<"Biped energy recycle on\n";
+				else
+				{
+					std::cout<<"Biped energy recycle off\n";
+				}
+				
+			}
 			else
 				cout<<"not such command\n";	
 		}
