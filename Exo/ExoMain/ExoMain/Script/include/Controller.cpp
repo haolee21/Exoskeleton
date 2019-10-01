@@ -588,6 +588,8 @@ FSMachine::FSMachine(/* args */)
 FSMachine::~FSMachine()
 {
 }
+
+#define RHIP_PREP_POS 450
 char FSMachine::CalState(unsigned int *curMea,char curState){
     //Each gait cycle is divided into 10 phases
     // Swing: Swing leg swing freely in air
@@ -598,10 +600,16 @@ char FSMachine::CalState(unsigned int *curMea,char curState){
 
     char nextState;
     if(curState ==R_Swing){
-        
-
+        if(curMea[RHIPPOS]<RHIP_PREP_POS){
+            nextState = R_SwingMid;
+        }
+        else
+        {
+            nextState = R_SwingMid;
+        }
     }
     else if(curState == R_SwingMid){
+        
 
     }
     else if(curState==R_HStrike){

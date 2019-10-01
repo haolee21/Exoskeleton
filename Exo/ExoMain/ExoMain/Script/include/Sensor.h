@@ -1,7 +1,7 @@
 #ifndef SENSOR_H
 #define SENSOR_H
 #include "Controller.h"
-
+#include "common.hpp"
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -61,7 +61,10 @@ public:
 	
 	void Start(std::chrono::system_clock::time_point startTime);
 	void Stop();
-	unsigned int senData[NUMSEN+1]; //data get from ADC
+	
+	unsigned int oriData[NUMSEN]; //original data
+	unsigned int senData[NUMSEN+1]; //data get from ADC after filter
+
 	char senDataRaw[DATALEN];
 	shared_ptr<thread> th_SenUpdate;
 	// thread *th_SenUpdate;
@@ -94,6 +97,35 @@ private:
 	void readSerialPort(int serialPort);
 	void serialPortClose(int serial_port);
 	
+	//Lowpass butterworth filter, this can be implented to arduino if we replace arduino mega with better MCU chips
+	//The sampling frequency is 625 Hz
+	// cut-off freq is 20 Hz
+	//y[n] = (b0*x[n]+b1*x[n-1]+b2*x[n-2]+b3*x[n-3]-a1*y[n-1]-a2*y[n-2]-a3*y[n-3])
+	struct ButterWorthFilter
+	{
+		std::shared_ptr<unsigned int[]> sen1;
+		std::shared_ptr<unsigned int[]> sen2;
+		std::shared_ptr<unsigned int[]> sen3;
+		//unsigned int sen2[NUMSEN];
+		//unsigned int sen3[NUMSEN];
+		std::shared_ptr<float[]> out1;
+		std::shared_ptr<float[]> out2;
+		std::shared_ptr<float[]> out3;
+		
+		const float b3 = 0.0008;
+		const float b2 = 0.0025;
+		const float b1 = 0.0025;
+		const float b0 = 0.0008;
+
+		const float a3 = -0.6684;
+		const float a2 = 2.2737;
+		const float a1 = -2.5985;
+		
+	};
+	ButterWorthFilter bFilter;
+	void ButterFilter(int *tempData);
+
+
 	
 	//functions that Ji used
 	

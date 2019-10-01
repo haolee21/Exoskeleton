@@ -59,6 +59,8 @@ void Sensor::Start(std::chrono::system_clock::time_point startTime)
 	memset(&this->senBuffer, '\0', SIZEOFBUFFER);
 	memset(&this->senData, 0, DATALEN + 1);
 	
+	//initialize the butterworth filter 
+	
 	
 	this->th_SenUpdate.reset(new thread(&Sensor::senUpdate, this));
 	
@@ -273,6 +275,8 @@ void Sensor::readSerialPort(int serialPort)
 						int idx=1;
 						std::copy(tempSenData,tempSenData+DATALEN,this->senDataRaw);
 						this->senData[0] = timeNow;
+						
+
 						for(int i=1;i<NUMSEN+1;i++)
 						{
 							this->senData[i]=(unsigned int)(tempSenData[idx]) + (unsigned int)(tempSenData[idx+1] << 8);
@@ -329,5 +333,15 @@ Sensor::~Sensor()
 {
 	this->saveData_th->join();
 	std::cout << "start to delete" << std::endl;
+
+}
+void Sensor::ButterFilter(int *tempData){
+	
+
+
+
+
+	
+	
 
 }

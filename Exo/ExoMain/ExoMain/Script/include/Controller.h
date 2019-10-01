@@ -1,5 +1,6 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
+#include "common.hpp"
 #include "Valve.h"
 #include <chrono>
 #include<time.h> //this timer
