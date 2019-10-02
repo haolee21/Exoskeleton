@@ -44,7 +44,7 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT,Com *_com,bool _
 		this->curBuf = this->senBuffer;
 		this->curHead = this->curBuf;
 		
-		this->senRec.reset(new Recorder<unsigned int>("sen",_filePath,"Time,LAnkPos,LKnePos,LHipPos,RAnkPos,RKnePos,RHipPos,sen7,sen8,TankPre,LKnePre,LAnkPre,sen12,sen13,sen14,sen15,sen16"));
+		this->senRec.reset(new Recorder<unsigned int>("sen",_filePath,"Time,LHipPos,LKnePos,LAnkPos,RHipPos,RKnePos,RAnkPos,sen7,sen8,TankPre,LKnePre,LAnkPre,RKnePre,RAnkPre,sen14,sen15,sen16"));
 		//Controller
 		this->com = _com;		
 	}
