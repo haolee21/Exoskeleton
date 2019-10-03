@@ -1,7 +1,8 @@
 #ifndef SENSOR_H
 #define SENSOR_H
 #include "Controller.h"
-
+#include "BWFilter.hpp"
+#include "common.hpp"
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -61,7 +62,10 @@ public:
 	
 	void Start(std::chrono::system_clock::time_point startTime);
 	void Stop();
-	unsigned int senData[NUMSEN+1]; //data get from ADC
+	
+	unsigned int oriData[NUMSEN]; //original data
+	unsigned int senData[NUMSEN+1]; //data get from ADC after filter
+
 	char senDataRaw[DATALEN];
 	shared_ptr<thread> th_SenUpdate;
 	// thread *th_SenUpdate;
@@ -94,6 +98,11 @@ private:
 	void readSerialPort(int serialPort);
 	void serialPortClose(int serial_port);
 	
+	//Lowpass butterworth filter, this can be implented to arduino if we replace arduino mega with better MCU chips
+	BWFilter bFilter;
+	bool filterInit_flag = false;
+
+
 	
 	//functions that Ji used
 	

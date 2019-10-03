@@ -62,6 +62,9 @@ void Controller::ConMainLoop(unsigned int *_senData, char *senRaw)
             taskQue.push(std::thread(&Controller::ShowSen,this));
             this->com->comArray[SHOWSEN]=false;
         }
+        if(this->com->comArray[BIPEDREC]){
+            taskQue.push(std::thread(&Controller::BipedEngRec,this));
+        }
     }
 
     while (!taskQue.empty())
@@ -585,13 +588,28 @@ FSMachine::FSMachine(/* args */)
 FSMachine::~FSMachine()
 {
 }
+
+#define RHIP_PREP_POS 450
 char FSMachine::CalState(unsigned int *curMea,char curState){
+    //Each gait cycle is divided into 10 phases
+    // Swing: Swing leg swing freely in air
+    // Swing mid: Knee and Ankle prepare for impact
+    // Heel strike: Energy recycle
+    // Ankle push: Ankle joint actuated, knee joint fixed
+    // Toe off: Knee joint free
+
     char nextState;
     if(curState ==R_Swing){
-        
-
+        if(curMea[RHIPPOS]<RHIP_PREP_POS){
+            nextState = R_SwingMid;
+        }
+        else
+        {
+            nextState = R_SwingMid;
+        }
     }
     else if(curState == R_SwingMid){
+        
 
     }
     else if(curState==R_HStrike){
@@ -618,7 +636,7 @@ char FSMachine::CalState(unsigned int *curMea,char curState){
     else if(curState==R_ToeOff){
         
     }
-    return nextState;
+    return R_Swing;
 }
 void Controller::BipedEngRec(){
     char curPhase = this->FSM.CalState(this->senData,this->curState);
