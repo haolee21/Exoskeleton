@@ -276,12 +276,20 @@ void Sensor::readSerialPort(int serialPort)
 						std::copy(tempSenData,tempSenData+DATALEN,this->senDataRaw);
 						this->senData[0] = timeNow;
 						
+						//call the butterworth filter to filt the data
 
-						for(int i=1;i<NUMSEN+1;i++)
-						{
-							this->senData[i]=(unsigned int)(tempSenData[idx]) + (unsigned int)(tempSenData[idx+1] << 8);
+						unsigned int newMea[NUMSEN];
+						for(int i=0;i<NUMSEN;i++){
+							newMea[i] = (unsigned int)(tempSenData[idx]) + (unsigned int)(tempSenData[idx+1] << 8);
 							idx+=2;
 						}
+
+						// for(int i=1;i<NUMSEN+1;i++)
+						// {
+						// 	this->senData[i]=(unsigned int)(tempSenData[idx]) + (unsigned int)(tempSenData[idx+1] << 8);
+						// 	idx+=2;
+						// }
+						this->bFilter.FilterData(newMea,this->senData);
 						
 					}
 					std::vector<unsigned int> recSenData;
@@ -333,15 +341,5 @@ Sensor::~Sensor()
 {
 	this->saveData_th->join();
 	std::cout << "start to delete" << std::endl;
-
-}
-void Sensor::ButterFilter(int *tempData){
-	
-
-
-
-
-	
-	
 
 }

@@ -85,7 +85,8 @@ struct Com
     int comVal[NUMCOM];//if any value need to be passed
 };
 // index of senData
-#define NUMSEN 16
+// #define NUMSEN 16
+
 #define TIME 0
 #define LHIPPOS 1
 #define LKNEPOS 2
