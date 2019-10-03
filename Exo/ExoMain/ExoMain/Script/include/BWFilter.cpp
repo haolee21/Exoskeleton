@@ -3,19 +3,9 @@
 
 BWFilter::BWFilter()
 {
-    // shared_ptr<unsigned int[NUMSEN]> *curHead_i = this->bufList;
-    // while(curHead_i != end(this->bufList)){
-    //     curHead_i->reset(new unsigned int[NUMSEN]);
-    //     memset(curHead_i->get(),0,NUMSEN*sizeof(unsigned int));
-    //     curHead_i++;
-    // }
-    // shared_ptr<float[NUMSEN]> *curHead_o = this->outBufList;
-    // while(curHead_o!=end(this->outBufList)){
-    //     curHead_o->reset(new float [NUMSEN]);
-    //     memset(curHead_o->get(),0,NUMSEN*sizeof(float));
-    //     curHead_o++;
-    // }
     
+
+
     this->buf1.reset(new unsigned int[NUMSEN]);
     memset(this->buf1.get(),0,NUMSEN*sizeof(unsigned int));
     this->buf2.reset(new unsigned int[NUMSEN]);
@@ -59,16 +49,11 @@ void BWFilter::FilterData(unsigned int *newMea,unsigned int *output){
 }
 bool BWFilter::InitBuffer(unsigned int *newMea){
     memcpy(this->buf1.get(),newMea,NUMSEN*sizeof(unsigned int));
-    cout<<"init value: ";
     for(int i=0;i<NUMSEN;i++){
         this->outBuf0[i] = (float)newMea[i];
         this->outBuf1[i] = (float)newMea[i];
         this->outBuf2[i] = (float)newMea[i];
         this->outBuf3[i] = (float)newMea[i];
-        cout<<newMea[i];
-        if(i!=NUMSEN-1)
-            cout<<",";
     }
-    cout<<'\n';
     return true;
 }
