@@ -4,7 +4,6 @@
 #include <memory>
 #include <iostream>
 using namespace std;
-
 #define FILTER_ORDER 3
 class BWFilter
 {
@@ -13,14 +12,14 @@ private:
     shared_ptr<unsigned int[NUMSEN]> buf2;
     shared_ptr<unsigned int[NUMSEN]> buf3;
 
-    shared_ptr<unsigned int[NUMSEN]> bufList[FILTER_ORDER] = {buf1,buf2,buf3};
+    shared_ptr<unsigned int[NUMSEN]> bufList[FILTER_ORDER];// = {buf1,buf2,buf3};
     
 
     shared_ptr<float[NUMSEN]> outBuf0;
     shared_ptr<float[NUMSEN]> outBuf1;
     shared_ptr<float[NUMSEN]> outBuf2;
     shared_ptr<float[NUMSEN]> outBuf3;
-    shared_ptr<float[NUMSEN]> outBufList[FILTER_ORDER+1] = {outBuf0,outBuf1,outBuf2,outBuf3};
+    shared_ptr<float[NUMSEN]> outBufList[FILTER_ORDER+1];// = {outBuf0,outBuf1,outBuf2,outBuf3};
     
     
     //Lowpass butterworth filter, this can be implented to arduino if we replace arduino mega with better MCU chips
