@@ -17,7 +17,7 @@
 #define MSEC (1000 * USEC)
 #define SEC (1000 * MSEC)
 
-
+typedef std::chrono::duration<unsigned long, std::micro> microsecs_t;
 //timer
 void PWMGen::tsnorm(struct timespec *ts)
 {
@@ -28,16 +28,20 @@ void PWMGen::tsnorm(struct timespec *ts)
     }
 }
 //
-PWMGen::PWMGen(std::string valveName, std::string filePath,int pinId,int _sampT,int _pwmIdx)
+PWMGen::PWMGen(std::string valveName, std::string filePath,int pinId,int _sampT,int _pwmIdx,std::chrono::system_clock::time_point _origin)
 {
+	this->origin = _origin;
 	this->pwmIdx = _pwmIdx;
 	this->sampT = _sampT;
 	// this->onTime =0;
 	// this->SetDuty(0,0);
-	this->pwmRec = new Recorder<int>(valveName,filePath,"time,"+valveName);
+	// this->pwmRec = new Recorder<int>(valveName,filePath,"time,"+valveName);
+	this->pwmRec.reset(new Recorder<int>(valveName,filePath,"time,"+valveName));
+	this->pwmOnOffRec.reset(new Recorder<int>(valveName+"OnOff",filePath,"time,"+valveName));
+
 	this->DutyLock = new std::mutex;
 	this->pinId = pinId;
-	wiringPiSetup(); 
+	//wiringPiSetup(); 
 	pinMode(this->pinId, OUTPUT);
 }
 void PWMGen::SetDuty(int onDuty,int curTime) {
@@ -55,14 +59,14 @@ void PWMGen::SetDuty(int onDuty,int curTime) {
 void PWMGen::CalTime(int duty){
 	this->onTime=this->sampT*duty/100;
 }
-std::thread *PWMGen::Start() {
+void PWMGen::Start() {
 	this->on = true;
-	std::thread *mainThread = new std::thread(&PWMGen::Mainloop, this);
-	return mainThread;
+	this->pwmTh.reset(new std::thread(&PWMGen::Mainloop, this));
 
 }
 void PWMGen::Stop(){
 	this->on = false;
+	this->pwmTh->join();
 }
 void PWMGen::Mainloop() {
 	//for accurate timer
@@ -84,10 +88,20 @@ void PWMGen::Mainloop() {
 			std::lock_guard<std::mutex> lock(*this->DutyLock);
 			curOnTime = this->onTime;
 		}
-		
+		std::chrono::system_clock::time_point curT= std::chrono::system_clock::now();
+		microsecs_t start_time(std::chrono::duration_cast<microsecs_t>(curT - this->origin));
+		std::vector<int> pwmDataOn;
+		pwmDataOn.push_back(curOnTime);
+		this->pwmOnOffRec->PushData(start_time.count(),pwmDataOn);
 		digitalWrite(this->pinId, HIGH);
 		delayMicroseconds(curOnTime);
 		digitalWrite(this->pinId, LOW);
+		
+		
+		
+		
+
+		
 		
 
 		// timer
@@ -106,6 +120,5 @@ PWMGen::~PWMGen()
 {
 	this->on = false;
 	digitalWrite(this->pinId, LOW);
-	delete this->pwmRec;
 	delete this->DutyLock;
 }

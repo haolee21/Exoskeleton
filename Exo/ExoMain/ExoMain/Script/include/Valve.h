@@ -15,7 +15,7 @@ class Valve
 private:
     string name;
     int valveId;
-    
+    //shared_ptr<Pin> pin;
     chrono::system_clock::time_point startTime;
     void writeTempFile();
     bool recCond[MAXRECLENGTHVAL];

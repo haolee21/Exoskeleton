@@ -8,11 +8,10 @@ using namespace boost::asio;
 using ip::tcp;
 
 
-
 class Displayer
 { 
 private:
-    boost::asio::io_service ios;
+    std::unique_ptr<boost::asio::io_service> ios;
     std::unique_ptr<tcp::socket> s;
     
 public:

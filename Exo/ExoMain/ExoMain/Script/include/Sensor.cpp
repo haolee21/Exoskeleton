@@ -43,8 +43,8 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT,Com *_com,bool _
 
 		this->curBuf = this->senBuffer;
 		this->curHead = this->curBuf;
-		this->senRec = new Recorder<int>("sen",_filePath,"time,sen1,sen2,sen3,sen4,sen5,sen6,sen7,sen8,sen9");
 		
+		this->senRec.reset(new Recorder<unsigned int>("sen",_filePath,"Time,LHipPos,LKnePos,LAnkPos,RHipPos,RKnePos,RAnkPos,sen7,sen8,TankPre,LKnePre,LAnkPre,RKnePre,RAnkPre,sen14,sen15,sen16"));
 		//Controller
 		this->com = _com;		
 	}
@@ -59,8 +59,10 @@ void Sensor::Start(std::chrono::system_clock::time_point startTime)
 	memset(&this->senBuffer, '\0', SIZEOFBUFFER);
 	memset(&this->senData, 0, DATALEN + 1);
 	
+	//initialize the butterworth filter 
 	
-	this->th_SenUpdate = new thread(&Sensor::senUpdate, this);
+	
+	this->th_SenUpdate.reset(new thread(&Sensor::senUpdate, this));
 	
 	std::cout << "initial receiving thread" << endl;
 	
@@ -96,7 +98,7 @@ void Sensor::senUpdate()
 	t.tv_nsec += 0 * MSEC;
     this->tsnorm(&t);
 	//
-	Controller con = Controller(this->filePath,this->com,this->display);
+	Controller con = Controller(this->filePath,this->com,this->display,this->origin);
 	
 
 	
@@ -113,12 +115,16 @@ void Sensor::senUpdate()
 		this->readSerialPort(this->serialDevId);
 		if(conLoopCount++ ==4){
 			conLoopCount = 0;
-			if(conStart) 
+			if(conStart){ 
 				(*conTh).join();
+			}
 			else
 				conStart = true;
+
+			//copy the sensed data to a pointer then pass it to Controller
+
+			
 			conTh.reset(new std::thread(&Controller::ConMainLoop,&con,this->senData,this->senDataRaw));
-		
 			//std::cout<<"data len= "<<sizeof(con.GetValCond());
 			//disp.send(&((char)con.GetValCond()),sizeof(con.GetValCond()))
 			
@@ -133,9 +139,12 @@ void Sensor::senUpdate()
 	}
 	(*conTh).join();
 	std::cout << "sensor ends" << endl;
-	
+	this->saveData_th.reset(new std::thread(&Sensor::SaveAllData,this));
+	// this->senRec.reset();
 }
-
+void Sensor::SaveAllData(){
+	this->senRec.reset();
+}
 
 
 
@@ -259,34 +268,39 @@ void Sensor::readSerialPort(int serialPort)
 					std::chrono::system_clock::time_point curTime= std::chrono::system_clock::now();
 					microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->origin));
 					int timeNow = sen_time.count(); 
+					if(timeNow<0){
+						std::cout<<"time need to reset\n";
+					}
 					{
-						int idx=1;
+
+
+
+						int idx=1; //not sure why, but maybe because the first byte is @? 
 						std::copy(tempSenData,tempSenData+DATALEN,this->senDataRaw);
-						this->senData[0] = timeNow;
-						for(int i=1;i<NUMSEN+1;i++)
-						{
-							this->senData[i]=(int)(tempSenData[idx]) + (int)(tempSenData[idx+1] << 8);
+
+						unsigned int newMea[NUMSEN];
+						for(int i=0;i<NUMSEN;i++){
+							newMea[i] = (unsigned int)(tempSenData[idx]) + (unsigned int)(tempSenData[idx+1] << 8);
 							idx+=2;
 						}
-						// this->senData[1] = (int)(tempSenData[1]) + (int)(tempSenData[2] << 8);
-						// this->senData[2] = (int)(tempSenData[3]) + (int)(tempSenData[4] << 8);
-						// this->senData[3] = (int)(tempSenData[5]) + (int)(tempSenData[6] << 8);
-						// this->senData[4] = (int)(tempSenData[7]) + (int)(tempSenData[8] << 8);
-						// this->senData[5] = (int)(tempSenData[9]) + (int)(tempSenData[10] << 8);
-						// this->senData[6] = (int)(tempSenData[11]) + (int)(tempSenData[12] << 8);
-						// this->senData[7] = (int)(tempSenData[13]) + (int)(tempSenData[14] << 8);
-						// this->senData[8] = (int)(tempSenData[15]) + (int)(tempSenData[16] << 8);
-						// this->senData[9] = (int)(tempSenData[17]) + (int)(tempSenData[18] << 8);
+						if(!this->filterInit_flag){
+							this->filterInit_flag=bFilter.InitBuffer(newMea);
+						}
+						else{
+							//call the butterworth filter to filt the data
+							this->bFilter.FilterData(newMea,this->senData);
+							this->senData[0] = timeNow;
+							std::vector<unsigned int> recSenData;
+							for(int i=1;i<NUMSEN+1;i++){
+								recSenData.push_back(senData[i]);
+							}
+							this->senRec->PushData((unsigned long)this->senData[0],recSenData);		
+
+						}
+
+						
+						
 					}
-					std::vector<int> recSenData;
-					for(int i=1;i<NUMSEN+1;i++){
-						recSenData.push_back(senData[i]);
-					}
-					this->senRec->PushData((unsigned long)this->senData[0],recSenData);
-					// std::cout<<"read ";
-					// for(int i=0;i<DATALEN;i++)
-					// 	std::cout<<tempSenData[i];
-					
 					
 					// for some reason, I cannot just let noHead = true after I find the data
 					// Also, we shouldn't search for the head again since we know the next byte is head
@@ -330,10 +344,7 @@ void Sensor::serialPortClose(int serial_port)
 
 Sensor::~Sensor()
 {
+	this->saveData_th->join();
 	std::cout << "start to delete" << std::endl;
-	
-
-	delete this->senRec;
-	delete this->th_SenUpdate;
 
 }

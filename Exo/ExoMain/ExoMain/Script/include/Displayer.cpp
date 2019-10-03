@@ -1,10 +1,10 @@
 #include "Displayer.hpp"
 Displayer::Displayer()
 {
-    // boost::asio::io_service ios;
-    // boost::asio::ip::tcp::socket sock(this->ios);
     
-    this->s.reset(new boost::asio::ip::tcp::socket(this->ios));
+    this->ios.reset(new boost::asio::io_service);
+    
+    this->s.reset(new boost::asio::ip::tcp::socket(*this->ios));
     tcp::endpoint endPoint(ip::address::from_string("192.168.1.142"),12345);
     std::cout<<"[client] Searching\n";
     s->connect(endPoint);

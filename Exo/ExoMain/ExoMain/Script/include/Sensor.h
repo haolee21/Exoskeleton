@@ -1,7 +1,8 @@
 #ifndef SENSOR_H
 #define SENSOR_H
 #include "Controller.h"
-
+#include "BWFilter.hpp"
+#include "common.hpp"
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -43,10 +44,10 @@
 #include <memory>
 //data recording
 #include "Recorder.hpp"
-const int NUMSEN = 16; //need to sync with controller's
+//need to sync with controller's
 const int DATALEN =NUMSEN*2+2;
 const int SIZEOFBUFFER= DATALEN*1000;
-
+#define RAWDATALEN 34 //this has to be the same as defined in Sensor.h
 
 using namespace std;
 
@@ -61,9 +62,13 @@ public:
 	
 	void Start(std::chrono::system_clock::time_point startTime);
 	void Stop();
-	int senData[NUMSEN+1]; //data get from ADC
+	
+	unsigned int oriData[NUMSEN]; //original data
+	unsigned int senData[NUMSEN+1]; //data get from ADC after filter
+
 	char senDataRaw[DATALEN];
-	thread *th_SenUpdate;
+	shared_ptr<thread> th_SenUpdate;
+	// thread *th_SenUpdate;
 
 	
 private:
@@ -93,6 +98,11 @@ private:
 	void readSerialPort(int serialPort);
 	void serialPortClose(int serial_port);
 	
+	//Lowpass butterworth filter, this can be implented to arduino if we replace arduino mega with better MCU chips
+	BWFilter bFilter;
+	bool filterInit_flag = false;
+
+
 	
 	//functions that Ji used
 	
@@ -107,8 +117,10 @@ private:
 	//for data recording
 
 	std::string filePath;
-	Recorder<int> *senRec;
-	//unique_ptr<Recorder<int>> rec2; //smart pointer test, failed, don't know why since it works in simpler cases
+	std::shared_ptr<std::thread> saveData_th;
+	void SaveAllData();
+	// Recorder<unsigned int> *senRec;
+	shared_ptr<Recorder<unsigned int>> senRec; //smart pointer test, failed, don't know why since it works in simpler cases
 	
 	
 };

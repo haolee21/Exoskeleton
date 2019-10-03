@@ -8,6 +8,7 @@ void Valve::On(int curTime){
     
   
     digitalWrite(this->valveId,HIGH);
+    //this->pin->On();
     vector<bool> curRes;
     curRes.push_back(true);
     this->valveRec->PushData((unsigned long)curTime,curRes);
@@ -15,7 +16,7 @@ void Valve::On(int curTime){
 }
 void Valve::Off(int curTime){
     
-  
+    //this->pin->Off();
     digitalWrite(this->valveId,LOW);
     vector<bool> curRes;
     curRes.push_back(false);
@@ -29,8 +30,10 @@ Valve::Valve(string name,string path, int valveId,int _valIdx)
     this->valIdx = _valIdx;
     this->name = name;
     this->valveId = valveId;
+    //this->pin.reset(new Pin(valveId));
     pinMode(valveId, OUTPUT);
     this->valveRec=new Recorder<bool>(this->name,path,"time,"+this->name);
+    
 }
 
 Valve::~Valve()

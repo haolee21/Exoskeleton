@@ -1,3 +1,5 @@
+*.pyc
+
 /*
 !.gitignore
 
@@ -27,4 +29,6 @@
 /Exo/ExoMain/ExoMain/*
 !/Exo/ExoMain/ExoMain/Script
 
-!/ExoPC
+!/ExoPC/
+/ExpPC/*
+!/ExoPC/*.py

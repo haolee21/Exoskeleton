@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import time
+# reference: https://bastibe.de/2013-05-30-speeding-up-matplotlib.html
 class Plotter(object):
     def __init__(self,tTot,sampF,figNum,yLabelList,yLimList,titleList):
         self.ncols = int(np.floor(np.sqrt(figNum)))
@@ -46,15 +48,25 @@ class Plotter(object):
         if(len(_data)<self.ncols*self.nrows):
             _data = np.append(_data,np.zeros(self.ncols*self.nrows-(len(_data))))
         idx2 = 0
+        # curTIme = time.time()
         for row in range(self.nrows):
             for col in range(self.ncols):
+                
                 self.totalData[idx2] = self.totalData[idx2][1:]
                 self.totalData[idx2] = np.append(self.totalData[idx2],_data[idx2])
+                
+                
                 self.lineList[idx2].set_ydata(self.totalData[idx2])
                 self.ax[row,col].draw_artist(self.ax[row,col].patch)
                 self.ax[row,col].draw_artist(self.lineList[idx2])
-                idx2 = idx2+1
+                # self.fig.canvas.update()
+                #self.fig.canvas.flush_events()
+                
+                idx2 = idx2+1   
+        # endTime = time.time()
+        # print(endTime-curTIme)
         self.fig.canvas.update()
+        # self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
     

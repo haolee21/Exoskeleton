@@ -9,6 +9,9 @@
 #include <thread>
 #include <vector>
 #include <cstdio>
+#include <sstream>
+#include <iterator>
+
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/serialization/serialization.hpp>
@@ -16,7 +19,8 @@
 
 #include "RecData.hpp"
 
-#define MAXRECLENGTH 5000
+#define MAXRECLENGTH 10000
+typedef std::chrono::duration<int> sec_t;
 
 template<class T>
 class Recorder
@@ -79,10 +83,14 @@ Recorder<T>::~Recorder()
         curThread->join();
         this->threadQue.pop();
     }
+    
+    std::chrono::system_clock::time_point startTime= std::chrono::system_clock::now();
     std::thread saveTh = std::thread(&Recorder::OutputCSV,this);
-    // this->OutputCSV();
+    //this->OutputCSV();
     saveTh.join();
-
+    std::chrono::system_clock::time_point endTime= std::chrono::system_clock::now();
+    sec_t save_time(std::chrono::duration_cast<sec_t>(endTime - startTime));
+    std::cout<<this->recorderName<<" takes "<<save_time.count()<<std::endl;
     if(!this->dataTemps.empty())
         std::cout<<"Temperary files remaining\n";
     delete this->curData;
@@ -120,14 +128,14 @@ void Recorder<T>::writeTemp(RecData<T> *tempData)
 template<class T>
 void Recorder<T>::OutputCSV()
 {
-    
     // create senData.csv
     {
         std::ofstream writeCsv;
+        std::ostringstream vts;
         writeCsv.open(this->filePath+"/"+this->recorderName+".csv");
         {
-            
-            writeCsv<<this->Label<<'\n';
+            vts<<this->Label<<'\n';
+            //writeCsv<<this->Label<<'\n';
             while(!this->dataTemps.empty()){
                 
                 RecData<T> tempData = RecData<T>();
@@ -138,30 +146,31 @@ void Recorder<T>::OutputCSV()
                 ar & tempData;
                 std::vector<std::vector<T>> data = tempData.getData();
                 std::vector<unsigned long> time = tempData.getTime();
+                
+                
+
                 for(unsigned int i=0;i<MAXRECLENGTH;i++){
-                    writeCsv<<std::to_string(time[i]);
-                    for(unsigned int ii=0;ii<data[0].size();ii++){
-                        
-                        writeCsv<<','<<data[i][ii];
-                    }
-                    writeCsv<<'\n';
+                    vts<<std::to_string(time[i])<<",";
+                    std::vector<T> curRow = data[i];
+                    std::copy(curRow.begin(),curRow.end()-1,std::ostream_iterator<T>(vts,","));
+                    vts<<curRow.back()<<'\n';
                 }
+                
                 std::remove(&fileName[0]);
             }
             
             // save data has not long enough to be in temp
-            
+            std::vector<std::vector<T>> leftData = this->curData->getData();
+            std::vector<unsigned long> leftTime = this->curData->getTime();
             for(int i =0;i<this->tempCount;i++){
-                    
-                std::vector<std::vector<T>> leftData = this->curData->getData();
-                std::vector<unsigned long> leftTime = this->curData->getTime();
-                writeCsv<<std::to_string(leftTime[i]);
-                for(unsigned int ii=0;ii<leftData[0].size();ii++){
-                    writeCsv<<','<<leftData[i][ii];
-                }
-                writeCsv<<'\n';
+                std::vector<T> curRow = leftData[i];
+                vts<<std::to_string(leftTime[i])<<",";
+
+                std::copy(curRow.begin(),curRow.end()-1,std::ostream_iterator<T>(vts,","));
+                vts<<curRow.back()<<'\n';
             }
         }
+        writeCsv<<vts.str();
         writeCsv.close();
         
     }
