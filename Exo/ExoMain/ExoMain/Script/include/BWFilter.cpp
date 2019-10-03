@@ -57,3 +57,18 @@ void BWFilter::FilterData(unsigned int *newMea,unsigned int *output){
     memcpy(this->buf1.get(),newMea,NUMSEN*sizeof(unsigned int));
     
 }
+bool BWFilter::InitBuffer(unsigned int *newMea){
+    memcpy(this->buf1.get(),newMea,NUMSEN*sizeof(unsigned int));
+    cout<<"init value: ";
+    for(int i=0;i<NUMSEN;i++){
+        this->outBuf0[i] = (float)newMea[i];
+        this->outBuf1[i] = (float)newMea[i];
+        this->outBuf2[i] = (float)newMea[i];
+        this->outBuf3[i] = (float)newMea[i];
+        cout<<newMea[i];
+        if(i!=NUMSEN-1)
+            cout<<",";
+    }
+    cout<<'\n';
+    return true;
+}

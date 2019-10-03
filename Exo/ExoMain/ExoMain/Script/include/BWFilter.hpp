@@ -2,6 +2,7 @@
 #define BWFILTER_HPP
 #include "common.hpp"
 #include <memory>
+#include <iostream>
 using namespace std;
 
 #define FILTER_ORDER 3
@@ -38,6 +39,8 @@ public:
     BWFilter(/* args */);
     ~BWFilter();
     void FilterData(unsigned int *newMea,unsigned int *output);
+    bool InitBuffer(unsigned int *newMea);
+
 };
 
 

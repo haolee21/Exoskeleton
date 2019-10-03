@@ -272,31 +272,36 @@ void Sensor::readSerialPort(int serialPort)
 						std::cout<<"time need to reset\n";
 					}
 					{
-						int idx=1;
+
+
+
+						int idx=1; //not sure why, but maybe because the first byte is @? 
 						std::copy(tempSenData,tempSenData+DATALEN,this->senDataRaw);
-						this->senData[0] = timeNow;
-						
-						//call the butterworth filter to filt the data
 
 						unsigned int newMea[NUMSEN];
 						for(int i=0;i<NUMSEN;i++){
 							newMea[i] = (unsigned int)(tempSenData[idx]) + (unsigned int)(tempSenData[idx+1] << 8);
 							idx+=2;
 						}
+						if(!this->filterInit_flag){
+							this->filterInit_flag=bFilter.InitBuffer(newMea);
+						}
+						else{
+							//call the butterworth filter to filt the data
+							this->bFilter.FilterData(newMea,this->senData);
+							this->senData[0] = timeNow;
+							std::vector<unsigned int> recSenData;
+							for(int i=1;i<NUMSEN+1;i++){
+								recSenData.push_back(senData[i]);
+							}
+							this->senRec->PushData((unsigned long)this->senData[0],recSenData);		
 
-						// for(int i=1;i<NUMSEN+1;i++)
-						// {
-						// 	this->senData[i]=(unsigned int)(tempSenData[idx]) + (unsigned int)(tempSenData[idx+1] << 8);
-						// 	idx+=2;
-						// }
-						this->bFilter.FilterData(newMea,this->senData);
+						}
+
+						
 						
 					}
-					std::vector<unsigned int> recSenData;
-					for(int i=1;i<NUMSEN+1;i++){
-						recSenData.push_back(senData[i]);
-					}
-					this->senRec->PushData((unsigned long)this->senData[0],recSenData);		
+					
 					// for some reason, I cannot just let noHead = true after I find the data
 					// Also, we shouldn't search for the head again since we know the next byte is head
 					if(*(this->curHead)!='@'){
