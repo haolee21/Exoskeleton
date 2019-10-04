@@ -113,7 +113,7 @@ void Sensor::senUpdate()
 		//
 
 		this->readSerialPort(this->serialDevId);
-		if(conLoopCount++ ==4){
+		if(conLoopCount++ ==2){
 			conLoopCount = 0;
 			if(conStart){ 
 				(*conTh).join();

@@ -181,6 +181,9 @@ int main(void)
 				}
 				
 			}
+			else if(command == "testsync"){
+				com.comArray[TESTSYNC] = true;
+			}
 			else
 				cout<<"not such command\n";	
 		}
