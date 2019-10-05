@@ -78,8 +78,7 @@ void Controller::ConMainLoop(unsigned int *_senData, char *senRaw)
     }
     if (this->display)
     {
-        // if (this->preSend)
-        // {
+        
         if(this->preSend==this->dispPreScale){
             char sendData[RAWDATALEN + VALNUM + PWMNUM];
             std::copy(senRaw, senRaw + RAWDATALEN, sendData);
@@ -153,7 +152,7 @@ void Controller::TestReactingTime()
     }
     else
     {
-        if (this->senData[SYNCREAD] > 100)
+        if (this->senData[SYNCREAD] > 300)
         {
             std::chrono::system_clock::time_point curTime = std::chrono::system_clock::now();
             microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->trParam.sendTime));

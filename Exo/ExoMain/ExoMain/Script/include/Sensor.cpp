@@ -102,7 +102,7 @@ void Sensor::senUpdate()
 	
 
 	
-	int conLoopCount = 1;
+	
 	std::unique_ptr<std::thread> conTh;
 	bool conStart = false;
 
@@ -113,22 +113,14 @@ void Sensor::senUpdate()
 		//
 
 		this->readSerialPort(this->serialDevId);
-		if(conLoopCount++ ==2){
-			conLoopCount = 0;
-			if(conStart){ 
-				(*conTh).join();
-			}
-			else
-				conStart = true;
-
-			//copy the sensed data to a pointer then pass it to Controller
-
-			
-			conTh.reset(new std::thread(&Controller::ConMainLoop,&con,this->senData,this->senDataRaw));
-			//std::cout<<"data len= "<<sizeof(con.GetValCond());
-			//disp.send(&((char)con.GetValCond()),sizeof(con.GetValCond()))
-			
+		if(conStart){ 
+			(*conTh).join();
 		}
+		else
+			conStart = true;
+		conTh.reset(new std::thread(&Controller::ConMainLoop,&con,this->senData,this->senDataRaw));
+		
+		
 		
 		// timer
 		// calculate next shot
@@ -278,25 +270,38 @@ void Sensor::readSerialPort(int serialPort)
 						int idx=1; //not sure why, but maybe because the first byte is @? 
 						std::copy(tempSenData,tempSenData+DATALEN,this->senDataRaw);
 
-						unsigned int newMea[NUMSEN];
 						for(int i=0;i<NUMSEN;i++){
-							newMea[i] = (unsigned int)(tempSenData[idx]) + (unsigned int)(tempSenData[idx+1] << 8);
+							this->senData[i+1] = (unsigned int)(tempSenData[idx]) + (unsigned int)(tempSenData[idx+1] << 8);
 							idx+=2;
 						}
-						if(!this->filterInit_flag){
-							this->filterInit_flag=bFilter.InitBuffer(newMea);
+						this->senData[0] = timeNow;
+						std::vector<unsigned int> recSenData;
+						for(int i=1;i<NUMSEN+1;i++){
+							recSenData.push_back(senData[i]);
 						}
-						else{
-							//call the butterworth filter to filt the data
-							this->bFilter.FilterData(newMea,this->senData);
-							this->senData[0] = timeNow;
-							std::vector<unsigned int> recSenData;
-							for(int i=1;i<NUMSEN+1;i++){
-								recSenData.push_back(senData[i]);
-							}
-							this->senRec->PushData((unsigned long)this->senData[0],recSenData);		
+						this->senRec->PushData((unsigned long)this->senData[0],recSenData);
 
-						}
+
+						// //if I want to use filter
+						// unsigned int newMea[NUMSEN];
+						// for(int i=0;i<NUMSEN;i++){
+						// 	newMea[i] = (unsigned int)(tempSenData[idx]) + (unsigned int)(tempSenData[idx+1] << 8);
+						// 	idx+=2;
+						// }
+						// if(!this->filterInit_flag){
+						// 	this->filterInit_flag=bFilter.InitBuffer(newMea);
+						// }
+						// else{
+						// 	//call the butterworth filter to filt the data
+						// 	this->bFilter.FilterData(newMea,this->senData);
+						// 	this->senData[0] = timeNow;
+						// 	std::vector<unsigned int> recSenData;
+						// 	for(int i=1;i<NUMSEN+1;i++){
+						// 		recSenData.push_back(senData[i]);
+						// 	}
+						// 	this->senRec->PushData((unsigned long)this->senData[0],recSenData);		
+
+						// }
 
 						
 						
