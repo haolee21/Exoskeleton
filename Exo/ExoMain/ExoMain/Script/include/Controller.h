@@ -60,10 +60,10 @@
 #define OP14  0
 #define OP15  2
 #define OP16  3
-
+#define SYNCOUT 7
 
 // index of command
-#define NUMCOM 13
+#define NUMCOM 14
 #define TESTVAL 0
 #define TESTPWM 1
 #define SHUTPWM 2
@@ -77,6 +77,7 @@
 #define TESTRANK 10
 #define SHOWSEN 11 //Cout the current sensor measurements, 
 #define BIPEDREC 12
+#define TESTSYNC 13
 struct Com
 {
 	const int comLen =NUMCOM;
@@ -92,9 +93,10 @@ struct Com
 #define LKNEPOS 2
 #define LANKPOS 3
 #define RHIPPOS 4
-#define RKNEPOS 8
+#define RKNEPOS 5
 #define RANKPOS 6
 
+#define SYNCREAD 7
 
 #define TANKPRE 9
 #define LKNEPRE 10
@@ -177,7 +179,7 @@ private:
     char *valveCond;
     bool display=false;
     int preSend=0; //scale the sending freq since matplotlib cannot handle it
-    const int dispPreScale = 4; //determine how frequent we send data back to pc
+    const int dispPreScale = 49; //determine how frequent we send data back to pc
     // Valve control
     void ValveOn(std::shared_ptr<Valve> val);
     void ValveOff(std::shared_ptr<Valve> val);
@@ -194,7 +196,7 @@ private:
         std::chrono::system_clock::time_point sendTime;
         bool dataNotSent = true;
         std::shared_ptr<Valve> testOut; 
-        // Valve *testOut; 
+        
     };
     TestReactParam trParam; 
     void TestReactingTime();

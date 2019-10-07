@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(TestProject)
-set(CMAKE_CXX_FLAGS "-std=c++17 -Wall -pthread -lwiringPi -g") #you can set with add_definitions("-Wall -std=c+11, etc")
+set(CMAKE_CXX_FLAGS "-std=c++17 -Wall -pthread -lwiringPi -o3") #you can set with add_definitions("-Wall -std=c+11, etc")
 set(Boost_INCLUDE_DIR /home/pi/Lib/boost_1_71_0)
 set(Boost_LIBRARY_DIR /home/pi/Lib/boost_1_71_0/stage/lib)
 set(Eigen_INCLUDE_DIR /home/pi/Lib/eigen-eigen-323c052e1731)
@@ -14,6 +14,7 @@ include_directories(
 )
 add_library(
     lib STATIC
+    include/common.hpp
     include/Recorder.hpp 
     include/RecData.hpp
     include/PWM.h

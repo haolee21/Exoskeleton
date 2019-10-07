@@ -1,5 +1,5 @@
 
-
+#include "common.hpp"
 #include<iostream>
 #include<cstdio>
 #include<thread>
@@ -88,7 +88,7 @@ int main(void)
 	}
 	
 	char portName[] = "/dev/ttyACM0";
-	Sensor sensor = Sensor(filePath,portName, 1600L,&com,display);
+	Sensor sensor = Sensor(filePath,portName, SAMPTIME,&com,display);
 	std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
 	sensor.Start(startTime);
 	
@@ -180,6 +180,9 @@ int main(void)
 					std::cout<<"Biped energy recycle off\n";
 				}
 				
+			}
+			else if(command == "testsync"){
+				com.comArray[TESTSYNC] = true;
 			}
 			else
 				cout<<"not such command\n";	

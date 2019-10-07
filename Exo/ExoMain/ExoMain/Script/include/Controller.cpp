@@ -65,6 +65,10 @@ void Controller::ConMainLoop(unsigned int *_senData, char *senRaw)
         if(this->com->comArray[BIPEDREC]){
             taskQue.push(std::thread(&Controller::BipedEngRec,this));
         }
+        if(this->com->comArray[TESTSYNC]){
+            taskQue.push(std::thread(&Controller::TestReactingTime,this));
+
+        }
     }
 
     while (!taskQue.empty())
@@ -74,8 +78,7 @@ void Controller::ConMainLoop(unsigned int *_senData, char *senRaw)
     }
     if (this->display)
     {
-        // if (this->preSend)
-        // {
+        
         if(this->preSend==this->dispPreScale){
             char sendData[RAWDATALEN + VALNUM + PWMNUM];
             std::copy(senRaw, senRaw + RAWDATALEN, sendData);
@@ -143,20 +146,21 @@ void Controller::TestReactingTime()
 {
     if (this->trParam.dataNotSent)
     {
+        this->trParam.testOut->On(0); //we do not use this->ValveOn since we don't need this in valve condition
         this->trParam.dataNotSent = false;
-        this->trParam.testOut->On(this->senData[0]);
         this->trParam.sendTime = std::chrono::system_clock::now();
     }
     else
     {
-        if (this->senData[9] > 300)
+        if (this->senData[SYNCREAD] > 300)
         {
             std::chrono::system_clock::time_point curTime = std::chrono::system_clock::now();
             microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->trParam.sendTime));
-            ;
+            
             std::cout << " reaction time = " << sen_time.count() << "us\n";
-            this->trParam.testOut->Off(this->senData[0]);
+            this->trParam.testOut->Off(1);
             this->trParam.dataNotSent = true;
+            this->com->comArray[TESTSYNC] = false;
         }
     }
 }
@@ -227,10 +231,11 @@ Controller::Controller(std::string filePath, Com *_com, bool _display,std::chron
     this->RAnkVal.reset(new Valve("RAnkVal", filePath, OP9, 3));
     this->LBalVal.reset(new Valve("LBalVal", filePath, OP7, 4));
     this->RBalVal.reset(new Valve("RBalVal", filePath, OP10, 5));
-
+    
 
     this->RelVal.reset(new Valve("RelVal", filePath, OP16, 6));
 
+    this->trParam.testOut.reset(new Valve("SyncOut",filePath,SYNCOUT,7)); //this is not a valve, the valve index is meaningless, we do not count it in VALNUM
     // this->KnePreVal = new PWMGen("KnePreVal",filePath,OP1,30000L);
     // this->AnkPreVal = new PWMGen("AnkPreVal",filePath,OP2,30000L);
     this->LKnePreVal.reset(new PWMGen("LKnePreVal", filePath, OP1, 40000L, 0,_origin));
