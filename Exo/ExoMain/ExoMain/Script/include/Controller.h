@@ -113,17 +113,32 @@ struct Com
 #define PWMNUM 4
 
 // This is the finite state machine that used in the controller
-// The states are
-#define R_Swing 0
-#define R_SwingMid 1
-#define R_HStrike 2
-#define L_AnkPush 3
-#define L_ToeOff 4
-#define L_Swing 5
-#define L_SwingMid 6
-#define L_HStrike 7
-#define R_AnkPush 8
-#define R_ToeOff 9
+// There are 8 phases in each gait
+
+/*
+    Left                                  Right 
+1   Loading Response (Heel Strike)        Initial Swing 
+2   Mid Stance                            Mid Swing
+3   Terminal Stance     
+4   Pre swing        (Ankle Push)         Terminal Swing
+5   Initial Swing                         Loading Response (Heel Strike)
+6   Mid Swing                             Mid Stance
+7                                         Terminal Stance
+8   Terminal Swing                        Pre swing (Ankle Push)
+
+Individual Phase's control will be defined in Controller
+FSM only tells what is the current state
+
+*/
+#define Phase1 0
+#define Phase2 1
+#define Phase3 2
+#define Phase4 3
+#define Phase5 4
+#define Phase6 5
+#define Phase7 6
+#define Phase8 7
+
 class FSMachine
 {
 private:
@@ -237,14 +252,7 @@ private:
     LeftEngRecycle LEngRec;
     int CalDuty(unsigned int curPre, unsigned int desPre,unsigned int tankPre);
     void FSM_loop();
-    int Phase1Con();
-    int Phase2Con();
-    int Phase3Con();
-    int Phase4Con();
-    int Phase5Con();
-    int Phase6Con();
-    int Phase7Con();
-    int Phase8Con();
+
     
     //sample Model data 
     struct ConModSamp{
@@ -293,6 +301,17 @@ private:
         unsigned int ankRecPre = 200;
 
     };
+    void Init_swing(char side);
+    void Mid_swing(char side);
+    void Term_swing(char side);
+    void Load_resp(char side);
+    void Mid_stance(char side);
+    void Term_stance(char side);
+    void Pre_swing(char side);
+
+
+
+
     void BipedEngRec();
     void PreRec(std::shared_ptr<PWMGen> knePreVal,std::shared_ptr<PWMGen> ankPreVal,unsigned int knePre, unsigned int ankPre,unsigned int tankPre);
     void CheckSupPre(std::shared_ptr<PWMGen> preVal,unsigned int supPre);
@@ -302,7 +321,14 @@ private:
         double kd = 0.001;
 
     };
+    struct AnkActPID{
+        double kp = 10;
+        double ki = 0.01;
+        double kd = 0.001;
+    };
     SupPrePID supPreCon;
+    void AnkPushOff(std::shared_ptr<PWMGen> ankPreVal,unsigned int actPre);
+
 
     //Test ankle actuation
     bool TestRAnkFlag = false;

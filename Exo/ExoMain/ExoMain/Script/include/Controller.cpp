@@ -294,89 +294,8 @@ Controller::~Controller()
     //delete this->senData;
 }
 
-void Controller::FSM_loop()
-{
-    
-    switch (this->LEngRec.curPhase)
-    {
-    case 1:
-        this->LEngRec.curPhase = this->Phase1Con();
-        break;
-    case 2:
-        this->LEngRec.curPhase = this->Phase2Con();
-        break;
-    case 3:
-        this->LEngRec.curPhase = this->Phase3Con();
-        break;
-    case 4:
-        this->LEngRec.curPhase = this->Phase4Con();
-        break;
-    case 5:
-        this->LEngRec.curPhase = this->Phase5Con();
-        break;
-    case 6:
-        this->LEngRec.curPhase = this->Phase6Con();
-        break;
-    case 7:
-        this->LEngRec.curPhase = this->Phase7Con();
-        break;
-    case 8:
-        this->LEngRec.curPhase = this->Phase8Con();
-        break;
-    default:
-        break;
-    }
-}
-int Controller::Phase1Con()
-{
-    // if(this->senData[LKNEPRE]<this->sup_LKnePre){
-    //     this->ValveOn(this->BalVal);
-    //     this->ValveOff(this->LKneVal1);
-    //     this->ValveOn(this->LKneVal2);
-    //     this->SetDuty(this->KnePreVal,this->CalDuty(this->senData[LKNEPRE],this->sup_LKnePre,this->senData[TANKPRE]));
-        
-    //     return 1;
-    // }
-    // else{
-    //     this->KnePreVal->SetDuty(0,this->senData[TIME]);
-    //     return 2;
-    // }
-    return 1;
-}
-int Controller::Phase2Con()
-{
-    
-    return 2;
-}
-int Controller::Phase3Con()
-{
-    
-    return 3;
-}
-int Controller::Phase4Con()
-{
-    
-    return 4;
-}
-int Controller::Phase5Con()
-{
-    
-    return 5;
-}
-int Controller::Phase6Con()
-{
-    
-    return 6;
-}
-int Controller::Phase7Con()
-{
-    
-    return 7;
-}
-int Controller::Phase8Con()
-{
-    return 8;
-}
+
+
 int Controller::CalDuty(unsigned int curPre, unsigned int desPre,unsigned int tankPre){
     if(curPre>desPre)
         return 0;
@@ -595,94 +514,148 @@ FSMachine::~FSMachine()
 }
 
 #define RHIP_PREP_POS 450
+#define KNE_SUP_PRE 200
+#define ANK_ACT_PRE 300
+
 char FSMachine::CalState(unsigned int *curMea,char curState){
-    //Each gait cycle is divided into 10 phases
-    // Swing: Swing leg swing freely in air
-    // Swing mid: Knee and Ankle prepare for impact
-    // Heel strike: Energy recycle
-    // Ankle push: Ankle joint actuated, knee joint fixed
-    // Toe off: Knee joint free
+    
+    
 
     char nextState;
-    if(curState ==R_Swing){
-        if(curMea[RHIPPOS]<RHIP_PREP_POS){
-            nextState = R_SwingMid;
+    if(curState ==Phase1){
+        if(){
+            nextState = Phase1;
         }
         else
         {
-            nextState = R_SwingMid;
+            nextState = Phase2;
         }
     }
-    else if(curState == R_SwingMid){
+    else if(curState == Phase2){
         
 
     }
-    else if(curState==R_HStrike){
+    else if(curState==Phase3){
 
     }
-    else if(curState == L_AnkPush){
+    else if(curState == Phase4){
 
     }
-    else if(curState==L_ToeOff){
+    else if(curState==Phase5){
 
     }
-    else if(curState==L_Swing){
+    else if(curState==Phase6){
 
     }
-    else if(curState == L_SwingMid){
+    else if(curState == Phase7){
 
     }
-    else if(curState==L_HStrike){
+    else if(curState==Phase8){
 
     }
-    else if(curState == R_AnkPush){
-
-    }
-    else if(curState==R_ToeOff){
-        
-    }
-    return R_Swing;
+  
+    return nextState;
 }
+void Controller::Init_swing(char side){
+    if(side == 'r'){
+        this->ValveOff(this->RKneVal);
+        this->SetDuty(this->RKnePreVal,0);
+        this->ValveOn(this->RBalVal);
+    }
+    else{
+        this->ValveOff(this->LKneVal);
+        this->SetDuty(this->LKnePreVal,0);
+        this->ValveOn(this->LBalVal);
+    }
+}
+void Controller::Mid_swing(char side){
+    if(side =='r'){
+        this->ValveOff(this->RBalVal);
+        this->ValveOff(this->RKneVal);
+    }
+    else{
+        this->ValveOff(this->LBalVal);
+        this->ValveOff(this->LKneVal);
+
+    }
+}
+void Controller::Term_swing(char side){
+    if(side == 'r'){
+        this->ValveOff(this->RKneVal);
+        this->CheckSupPre(this->RKnePreVal,KNE_SUP_PRE);
+
+    }
+    else{
+        this->ValveOff(this->LKneVal);
+        this->CheckSupPre(this->LKnePreVal,KNE_SUP_PRE);
+    }
+}
+void Controller::Load_resp(char side){
+    if(side=='r'){
+        this->ValveOff(this->RKneVal);
+        this->PreRec(this->RKnePreVal,this->RAnkPreVal,this->senData[RKNEPRE],this->senData[RANKPRE],this->senData[TANKPRE]);
+    }
+    else{
+        this->ValveOff(this->LKneVal);
+        this->PreRec(this->LKnePreVal,this->LAnkPreVal,this->senData[LKNEPRE],this->senData[LANKPRE],this->senData[TANKPRE]);
+    }
+}
+void Controller::Mid_stance(char side){
+    // do nothing 
+
+
+}
+void Controller::Term_stance(char side){
+    // do nothing
+
+}
+void Controller::Pre_swing(char side){
+    // do nothing
+    if(side=='r'){
+        this->ValveOn(this->RBalVal);
+        this->AnkPushOff(this->RAnkPreVal,ANK_ACT_PRE);
+    }
+    else{
+        this->ValveOn(this->LBalVal);
+        this->AnkPushOff(this->LAnkPreVal,ANK_ACT_PRE);
+
+    }
+}
+
 void Controller::BipedEngRec(){
     char curPhase = this->FSM.CalState(this->senData,this->curState);
     switch (curPhase){
-        case R_Swing:
-            this->ValveOff(this->RBalVal);
-            this->ValveOff(this->RKneVal);
-            this->SetDuty(this->RKnePreVal,0);
-            this->ValveOn(this->RAnkVal);
-            this->SetDuty(this->RAnkPreVal,0);
+        case Phase1:
+            this->Load_resp('l');
+            this->Init_swing('r');
             break;
-        case R_SwingMid:
-            this->ValveOn(this->RBalVal);
-            this->CheckSupPre(this->RKnePreVal,100); //100 is just some random value
-            this->CheckSupPre(this->RAnkPreVal,100);
+        case Phase2:
+            this->Mid_stance('l');
+            this->Mid_swing('r');
             break;
-        case R_HStrike:
-            this->ValveOn(this->RKneVal);
-            this->ValveOn(this->RAnkVal);
-            this->PreRec(this->RKnePreVal,this->RAnkPreVal,this->senData[RKNEPRE],this->senData[RANKPRE],this->senData[TANKPRE]);
+        case Phase3:
+            this->Term_stance('l');
             break;
-        case L_AnkPush:
+        case Phase4:
+            this->Pre_swing('l');
+            this->Term_swing('r');
             break;
-        case L_ToeOff:
-            this->ValveOff(this->RKneVal);
-            this->SetDuty(this->RKnePreVal,0);
+        case Phase5:
+            this->Init_swing('l');
+            this->Load_resp('r');
             break;
-        case L_Swing:
-            this->ValveOff(this->LBalVal);
+        case Phase6:
+            this->Mid_swing('l');
+            this->Mid_stance('r');
             break;
-        case L_SwingMid:
-            this->ValveOn(this->LBalVal);
-            this->CheckSupPre(this->LKnePreVal,100);
-            this->CheckSupPre(this->LAnkPreVal,100);
+        case Phase7:
+            this->Term_stance('r');
             break;
-        case L_HStrike:
+        case Phase8:
+            this->Term_swing('l');
+            this->Pre_swing('r');
             break;
-        case R_AnkPush:
-            break;
-        case R_ToeOff:
-            break;
+        
     }
 }
 void Controller::PreRec(std::shared_ptr<PWMGen> knePreVal,std::shared_ptr<PWMGen> ankPreVal,unsigned int knePre, unsigned int ankPre,unsigned int tankPre){
@@ -692,7 +665,9 @@ void Controller::CheckSupPre(std::shared_ptr<PWMGen> preVal,unsigned int supPre)
 
 
 }
+void Controller::AnkPushOff(std::shared_ptr<PWMGen> ankPreVal,unsigned int actPre){
 
+}
 void Controller::TestRAnk(){
     if(this->TestRAnkFlag){
         this->SetDuty(this->RAnkPreVal,0);
