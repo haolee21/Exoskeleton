@@ -9,13 +9,13 @@
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
-void Controller::ConMainLoop(unsigned int *_senData, char *senRaw)
+void Controller::ConMainLoop(int *_senData, char *senRaw)
 {
     
     queue<thread> taskQue;
     // this->senData = senData;
     
-    std::memcpy(this->senData,_senData,std::size_t((NUMSEN+1)*sizeof(unsigned int)));
+    std::memcpy(this->senData,_senData,std::size_t((NUMSEN+1)*sizeof(int)));
     
     
     
@@ -29,9 +29,7 @@ void Controller::ConMainLoop(unsigned int *_senData, char *senRaw)
             taskQue.push(std::thread(&Controller::ShutDownPWM,this));
             this->com->comArray[SHUTPWM]=false;
         }
-        if (this->com->comArray[ENGRECL]){
-            taskQue.push(std::thread(&Controller::FSM_loop,this));
-        }
+        
         if(this->com->comArray[KNEMODSAMP]){
             taskQue.push(std::thread(&Controller::SampKneMod,this,com->comVal[KNEMODSAMP]));
         }
@@ -94,7 +92,7 @@ void Controller::ConMainLoop(unsigned int *_senData, char *senRaw)
         //     this->preSend = true;
         }
     }
-    std::memcpy(this->preSen,this->senData,std::size_t((NUMSEN+1)*sizeof(unsigned int)));
+    std::memcpy(this->preSen,this->senData,std::size_t((NUMSEN+1)*sizeof(int)));
     
 }
 
@@ -296,7 +294,7 @@ Controller::~Controller()
 
 
 
-int Controller::CalDuty(unsigned int curPre, unsigned int desPre,unsigned int tankPre){
+int Controller::CalDuty(int curPre, int desPre,int tankPre){
     if(curPre>desPre)
         return 0;
     else{
@@ -517,13 +515,13 @@ FSMachine::~FSMachine()
 #define KNE_SUP_PRE 200
 #define ANK_ACT_PRE 300
 
-char FSMachine::CalState(unsigned int *curMea,char curState){
+char FSMachine::CalState(int *curMea,char curState){
     
     
 
     char nextState;
     if(curState ==Phase1){
-        if(){
+        if(true){
             nextState = Phase1;
         }
         else
@@ -667,7 +665,7 @@ void Controller::BipedEngRec(){
         
     }
 }
-void Controller::KnePreRec(std::shared_ptr<PWMGen> knePreVal,unsigned int knePre,unsigned int tankPre){
+void Controller::KnePreRec(std::shared_ptr<PWMGen> knePreVal,int knePre,int tankPre){
     if(knePre-tankPre>10){
 
     }
@@ -676,7 +674,7 @@ void Controller::KnePreRec(std::shared_ptr<PWMGen> knePreVal,unsigned int knePre
     }
 
 }
-void Controller::AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,unsigned int ankPre,unsigned int tankPre,std::shared_ptr<Valve> balVal){
+void Controller::AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tankPre,std::shared_ptr<Valve> balVal){
     //When recycle ankle pressure, if the pressure is too high, we direct the ankle pressure to the knee joint
     if(ankPre-tankPre>10){
 
@@ -688,11 +686,11 @@ void Controller::AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,unsigned int ankPre
     }
 
 }
-void Controller::CheckSupPre(std::shared_ptr<PWMGen> preVal,unsigned int supPre){
+void Controller::CheckSupPre(std::shared_ptr<PWMGen> preVal,int supPre){
 
 
 }
-void Controller::AnkPushOff(std::shared_ptr<PWMGen> ankPreVal,unsigned int actPre){
+void Controller::AnkPushOff(std::shared_ptr<PWMGen> ankPreVal,int actPre){
 
 }
 void Controller::TestRAnk(){

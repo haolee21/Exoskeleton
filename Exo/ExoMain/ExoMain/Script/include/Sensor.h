@@ -63,8 +63,8 @@ public:
 	void Start(std::chrono::system_clock::time_point startTime);
 	void Stop();
 	
-	unsigned int oriData[NUMSEN]; //original data
-	unsigned int senData[NUMSEN+1]; //data get from ADC after filter
+	int oriData[NUMSEN]; //original data
+	int senData[NUMSEN+1]; //data get from ADC after filter
 
 	char senDataRaw[DATALEN];
 	shared_ptr<thread> th_SenUpdate;
@@ -119,8 +119,8 @@ private:
 	std::string filePath;
 	std::shared_ptr<std::thread> saveData_th;
 	void SaveAllData();
-	// Recorder<unsigned int> *senRec;
-	shared_ptr<Recorder<unsigned int>> senRec; //smart pointer test, failed, don't know why since it works in simpler cases
+	
+	shared_ptr<Recorder<int>> senRec; //smart pointer test, failed, don't know why since it works in simpler cases
 	
 	
 };

@@ -63,21 +63,21 @@
 #define SYNCOUT 7
 
 // index of command
-#define NUMCOM 14
+#define NUMCOM 13
 #define TESTVAL 0
 #define TESTPWM 1
 #define SHUTPWM 2
-#define ENGRECL 3
-#define KNEMODSAMP 4
-#define KNEPREREL 5
-#define TESTALLLEAK 6
-#define FREEWALK 7
-#define TESTLEAK 8
-#define TESTLANK 9
-#define TESTRANK 10
-#define SHOWSEN 11 //Cout the current sensor measurements, 
-#define BIPEDREC 12
-#define TESTSYNC 13
+
+#define KNEMODSAMP 3
+#define KNEPREREL 4
+#define TESTALLLEAK 5
+#define FREEWALK 6
+#define TESTLEAK 7
+#define TESTLANK 8
+#define TESTRANK 9
+#define SHOWSEN 10 //Cout the current sensor measurements, 
+#define BIPEDREC 11
+#define TESTSYNC 12
 struct Com
 {
 	const int comLen =NUMCOM;
@@ -146,7 +146,7 @@ private:
 public:
     FSMachine(/* args */);
     ~FSMachine();
-    char CalState(unsigned int *curMea, char curState);
+    char CalState(int *curMea, char curState);
 };
 
 
@@ -173,9 +173,9 @@ private:
 
 
 
-    //shared_ptr<unsigned int> senData;
-    unsigned int senData[NUMSEN+1];
-    unsigned int preSen[NUMSEN+1]; 
+    //shared_ptr<int> senData;
+    int senData[NUMSEN+1];
+    int preSen[NUMSEN+1]; 
 
     std::shared_ptr<PWMGen> LKnePreVal;
     std::shared_ptr<PWMGen> RKnePreVal;
@@ -243,15 +243,15 @@ private:
     void ShutDownPWM();
 
     // initialize cylinder for supporting body weight
-    unsigned int sup_LKnePre=250;
+    int sup_LKnePre=250;
     // left leg energy recycle
     struct LeftEngRecycle
     {
         int curPhase=1;
     };
     LeftEngRecycle LEngRec;
-    int CalDuty(unsigned int curPre, unsigned int desPre,unsigned int tankPre);
-    void FSM_loop();
+    int CalDuty(int curPre, int desPre,int tankPre);
+    
 
     
     //sample Model data 
@@ -297,8 +297,8 @@ private:
     FSMachine FSM ;
     char curState;
     struct PreRecPID{
-        unsigned int kneRecPre = 300;
-        unsigned int ankRecPre = 200;
+        int kneRecPre = 300;
+        int ankRecPre = 200;
 
     };
     void Init_swing(char side);
@@ -313,22 +313,24 @@ private:
 
 
     void BipedEngRec();
-    void KnePreRec(std::shared_ptr<PWMGen> knePreVal,unsigned int knePre, unsigned int tankPre);
-    void AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,unsigned int ankPre,unsigned int tankPre,std::shared_ptr<Valve> balVal);
-    void CheckSupPre(std::shared_ptr<PWMGen> preVal,unsigned int supPre);
+    void KnePreRec(std::shared_ptr<PWMGen> knePreVal,int knePre, int tankPre);
+    void AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tankPre,std::shared_ptr<Valve> balVal);
+    void CheckSupPre(std::shared_ptr<PWMGen> preVal,int supPre);
     struct SupPrePID{ //PID controller for generating supporting pressure, it is variable since it may need to be adjusted real-time
         double kp = 10;
         double ki = 0.01;
         double kd = 0.001;
 
     };
+    void SupPrePIDCon();
     struct AnkActPID{
         double kp = 10;
         double ki = 0.01;
         double kd = 0.001;
     };
+    void AnkActPIDCon();
     SupPrePID supPreCon;
-    void AnkPushOff(std::shared_ptr<PWMGen> ankPreVal,unsigned int actPre);
+    void AnkPushOff(std::shared_ptr<PWMGen> ankPreVal,int actPre);
 
 
     //Test ankle actuation
@@ -348,7 +350,7 @@ public:
     ~Controller();
     void PreRel();
     
-    void ConMainLoop(unsigned int *curSen,char* senRaw);
+    void ConMainLoop(int *curSen,char* senRaw);
 };
 
 

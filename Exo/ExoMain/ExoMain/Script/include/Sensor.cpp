@@ -44,7 +44,7 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT,Com *_com,bool _
 		this->curBuf = this->senBuffer;
 		this->curHead = this->curBuf;
 		
-		this->senRec.reset(new Recorder<unsigned int>("sen",_filePath,"Time,LHipPos,LKnePos,LAnkPos,RHipPos,RKnePos,RAnkPos,sen7,sen8,TankPre,LKnePre,LAnkPre,RKnePre,RAnkPre,sen14,sen15,sen16"));
+		this->senRec.reset(new Recorder<int>("sen",_filePath,"Time,LHipPos,LKnePos,LAnkPos,RHipPos,RKnePos,RAnkPos,sen7,sen8,TankPre,LKnePre,LAnkPre,RKnePre,RAnkPre,sen14,sen15,sen16"));
 		//Controller
 		this->com = _com;		
 	}
@@ -271,11 +271,11 @@ void Sensor::readSerialPort(int serialPort)
 						std::copy(tempSenData,tempSenData+DATALEN,this->senDataRaw);
 
 						for(int i=0;i<NUMSEN;i++){
-							this->senData[i+1] = (unsigned int)(tempSenData[idx]) + (unsigned int)(tempSenData[idx+1] << 8);
+							this->senData[i+1] = (int)(tempSenData[idx]) + (int)(tempSenData[idx+1] << 8);
 							idx+=2;
 						}
 						this->senData[0] = timeNow;
-						std::vector<unsigned int> recSenData;
+						std::vector<int> recSenData;
 						for(int i=1;i<NUMSEN+1;i++){
 							recSenData.push_back(senData[i]);
 						}
@@ -283,9 +283,9 @@ void Sensor::readSerialPort(int serialPort)
 
 
 						// //if I want to use filter
-						// unsigned int newMea[NUMSEN];
+						// int newMea[NUMSEN];
 						// for(int i=0;i<NUMSEN;i++){
-						// 	newMea[i] = (unsigned int)(tempSenData[idx]) + (unsigned int)(tempSenData[idx+1] << 8);
+						// 	newMea[i] = (int)(tempSenData[idx]) + (int)(tempSenData[idx+1] << 8);
 						// 	idx+=2;
 						// }
 						// if(!this->filterInit_flag){
@@ -295,7 +295,7 @@ void Sensor::readSerialPort(int serialPort)
 						// 	//call the butterworth filter to filt the data
 						// 	this->bFilter.FilterData(newMea,this->senData);
 						// 	this->senData[0] = timeNow;
-						// 	std::vector<unsigned int> recSenData;
+						// 	std::vector<int> recSenData;
 						// 	for(int i=1;i<NUMSEN+1;i++){
 						// 		recSenData.push_back(senData[i]);
 						// 	}

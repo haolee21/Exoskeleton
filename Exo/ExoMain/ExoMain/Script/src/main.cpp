@@ -113,11 +113,8 @@ int main(void)
 			}
 			else if(command=="testval")
 				com.comArray[TESTVAL] = !com.comArray[TESTVAL];
-			else if(command=="recl"){
-				com.comArray[ENGRECL] = !com.comArray[ENGRECL];
-				cout<<"recl sensed\n";
-				cout<<com.comArray[ENGRECL]<<endl;
-			}
+			
+			
 			else if(command.substr(0,4)=="samp"){
 				com.comArray[KNEMODSAMP] = !com.comArray[KNEMODSAMP];
 				stringstream numVal(command.substr(4,5));
