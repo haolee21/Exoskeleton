@@ -313,7 +313,8 @@ private:
 
 
     void BipedEngRec();
-    void PreRec(std::shared_ptr<PWMGen> knePreVal,std::shared_ptr<PWMGen> ankPreVal,unsigned int knePre, unsigned int ankPre,unsigned int tankPre);
+    void KnePreRec(std::shared_ptr<PWMGen> knePreVal,unsigned int knePre, unsigned int tankPre);
+    void AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,unsigned int ankPre,unsigned int tankPre,std::shared_ptr<Valve> balVal);
     void CheckSupPre(std::shared_ptr<PWMGen> preVal,unsigned int supPre);
     struct SupPrePID{ //PID controller for generating supporting pressure, it is variable since it may need to be adjusted real-time
         double kp = 10;

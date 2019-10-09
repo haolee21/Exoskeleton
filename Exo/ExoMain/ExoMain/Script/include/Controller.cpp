@@ -593,11 +593,15 @@ void Controller::Term_swing(char side){
 void Controller::Load_resp(char side){
     if(side=='r'){
         this->ValveOff(this->RKneVal);
-        this->PreRec(this->RKnePreVal,this->RAnkPreVal,this->senData[RKNEPRE],this->senData[RANKPRE],this->senData[TANKPRE]);
+        this->KnePreRec(this->RKnePreVal,this->senData[RKNEPRE],this->senData[TANKPRE]);
+        this->AnkPreRec(this->RAnkPreVal,this->senData[RANKPRE],this->senData[TANKPRE],this->RBalVal);
+        
     }
     else{
         this->ValveOff(this->LKneVal);
-        this->PreRec(this->LKnePreVal,this->LAnkPreVal,this->senData[LKNEPRE],this->senData[LANKPRE],this->senData[TANKPRE]);
+        this->KnePreRec(this->LKnePreVal,this->senData[LKNEPRE],this->senData[TANKPRE]);
+        this->AnkPreRec(this->LAnkPreVal,this->senData[LANKPRE],this->senData[TANKPRE],this->LBalVal);
+        
     }
 }
 void Controller::Mid_stance(char side){
@@ -606,7 +610,12 @@ void Controller::Mid_stance(char side){
 
 }
 void Controller::Term_stance(char side){
-    // do nothing
+    if(side=='r'){
+        this->AnkPreRec(this->RAnkPreVal,this->senData[RANKPRE],this->senData[TANKPRE],this->RBalVal);
+    }
+    else{
+        this->AnkPreRec(this->LAnkPreVal,this->senData[LANKPRE],this->senData[TANKPRE],this->LBalVal);
+    }
 
 }
 void Controller::Pre_swing(char side){
@@ -658,7 +667,25 @@ void Controller::BipedEngRec(){
         
     }
 }
-void Controller::PreRec(std::shared_ptr<PWMGen> knePreVal,std::shared_ptr<PWMGen> ankPreVal,unsigned int knePre, unsigned int ankPre,unsigned int tankPre){
+void Controller::KnePreRec(std::shared_ptr<PWMGen> knePreVal,unsigned int knePre,unsigned int tankPre){
+    if(knePre-tankPre>10){
+
+    }
+    else{
+        
+    }
+
+}
+void Controller::AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,unsigned int ankPre,unsigned int tankPre,std::shared_ptr<Valve> balVal){
+    //When recycle ankle pressure, if the pressure is too high, we direct the ankle pressure to the knee joint
+    if(ankPre-tankPre>10){
+
+    }
+    else{
+        
+        this->ValveOff(balVal);
+
+    }
 
 }
 void Controller::CheckSupPre(std::shared_ptr<PWMGen> preVal,unsigned int supPre){
