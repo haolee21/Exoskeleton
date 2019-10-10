@@ -4,32 +4,36 @@ set(CMAKE_CXX_FLAGS "-std=c++17 -Wall -pthread -lwiringPi -o3") #you can set wit
 set(Boost_INCLUDE_DIR /home/pi/Lib/boost_1_71_0)
 set(Boost_LIBRARY_DIR /home/pi/Lib/boost_1_71_0/stage/lib)
 set(Eigen_INCLUDE_DIR /home/pi/Lib/eigen-eigen-323c052e1731)
+set(Include_DIR include)
 find_package(Boost COMPONENTS serialization date_time filesystem REQUIRED)
 
 include_directories(
-    include
+    ${Include_DIR}
     src
     ${Boost_INCLUDE_DIR}
     ${Eigen_INCLUDE_DIR}
 )
 add_library(
     lib STATIC
-    include/common.hpp
-    include/Recorder.hpp 
-    include/RecData.hpp
-    include/PWM.h
-    include/Valve.h
-    include/Controller.h
-    include/BWFilter.hpp
-    include/Sensor.h
-    include/Displayer.hpp
+    ${Include_DIR}/common.hpp
+    ${Include_DIR}/Recorder.hpp 
+    ${Include_DIR}/RecData.hpp
+    ${Include_DIR}/PWM.h
+    ${Include_DIR}/Valve.h
+    ${Include_DIR}/PIDCon.h
+    ${Include_DIR}/FSMachine.hpp
+    ${Include_DIR}/Controller.h
+    ${Include_DIR}/BWFilter.hpp
+    ${Include_DIR}/Sensor.h
+    ${Include_DIR}/Displayer.hpp
+
 
 )
 set_target_properties(lib PROPERTIES LINKER_LANGUAGE CXX)
 link_directories(${Boost_LIBRARY_DIR})
 
 enable_testing()
-add_executable(exo_o src/main.cpp include/BWFilter.cpp include/Controller.cpp include/PWM.cpp include/Sensor.cpp include/Valve.cpp include/Displayer.cpp)
+add_executable(exo_o src/main.cpp ${Include_DIR}/BWFilter.cpp ${Include_DIR}/Controller.cpp ${Include_DIR}/PWM.cpp ${Include_DIR}/Sensor.cpp ${Include_DIR}/Valve.cpp ${Include_DIR}/Displayer.cpp ${Include_DIR}/PIDCon.cpp ${Include_DIR}/FSMachine.cpp)
 
 target_link_libraries(exo_o PRIVATE ${Boost_LIBRARIES})
 

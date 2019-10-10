@@ -181,6 +181,22 @@ int main(void)
 			else if(command == "testsync"){
 				com.comArray[TESTSYNC] = true;
 			}
+			else if(command == "pidtestlk"){
+				com.comArray[PIDACTTEST] = true;
+				com.comVal[PIDACTTEST] =0;
+			}
+			else if(command =="pidtestla"){
+				com.comArray[PIDACTTEST]=true;
+				com.comVal[PIDACTTEST]=1;
+			}
+			else if(command =="pidtestrk" ){
+				com.comArray[PIDACTTEST]=true;
+				com.comVal[PIDACTTEST]=2;
+			}
+			else if(command =="pidtestra"){
+				com.comArray[PIDACTTEST]=true;
+				com.comVal[PIDACTTEST]=3;
+			}
 			else
 				cout<<"not such command\n";	
 		}

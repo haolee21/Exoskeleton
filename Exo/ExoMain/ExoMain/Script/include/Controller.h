@@ -1,7 +1,9 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 #include "common.hpp"
+#include "FSMachine.hpp"
 #include "Valve.h"
+#include "PIDCon.h"
 #include <chrono>
 #include<time.h> //this timer
 #include<mutex>
@@ -63,7 +65,7 @@
 #define SYNCOUT 7
 
 // index of command
-#define NUMCOM 13
+#define NUMCOM 15
 #define TESTVAL 0
 #define TESTPWM 1
 #define SHUTPWM 2
@@ -78,6 +80,8 @@
 #define SHOWSEN 10 //Cout the current sensor measurements, 
 #define BIPEDREC 11
 #define TESTSYNC 12
+#define PIDACTTEST 13
+#define PIDRECTEST 14
 struct Com
 {
 	const int comLen =NUMCOM;
@@ -112,42 +116,7 @@ struct Com
 #define VALNUM 7 //this cannot work with test reacting
 #define PWMNUM 4
 
-// This is the finite state machine that used in the controller
-// There are 8 phases in each gait
 
-/*
-    Left                                  Right 
-1   Loading Response (Heel Strike)        Initial Swing 
-2   Mid Stance                            Mid Swing
-3   Terminal Stance     
-4   Pre swing        (Ankle Push)         Terminal Swing
-5   Initial Swing                         Loading Response (Heel Strike)
-6   Mid Swing                             Mid Stance
-7                                         Terminal Stance
-8   Terminal Swing                        Pre swing (Ankle Push)
-
-Individual Phase's control will be defined in Controller
-FSM only tells what is the current state
-
-*/
-#define Phase1 0
-#define Phase2 1
-#define Phase3 2
-#define Phase4 3
-#define Phase5 4
-#define Phase6 5
-#define Phase7 6
-#define Phase8 7
-
-class FSMachine
-{
-private:
-    /* data */
-public:
-    FSMachine(/* args */);
-    ~FSMachine();
-    char CalState(int *curMea, char curState);
-};
 
 
 
@@ -293,14 +262,35 @@ private:
     void FreeWalk_on();
     void FreeWalk_off();
 
+
+    //PID controller test
+    //=========================================================================================================================
+    void PIDActTest(int desPre,int joint);
+    void PIDRecTest(int desPre,int joint);
+
+
+
+
+
+
+    //=========================================================================================================================
+    //PID Controllers
+    std::shared_ptr<PIDCon> kneRecPID;
+    std::shared_ptr<PIDCon> ankRecPID;
+    std::shared_ptr<PIDCon> kneSupPID; // we need to re-assign a PID controller everytime we went into that stage
+                                          // the controller are created when phase_pre => phase_next if it is going to be used in next phase
+                                          // we only need one since we will need to prepare for impact on one leg only
+    std::shared_ptr<PIDCon> ankActPID;
+
+
+
+    //=========================================================================================================================
     //Biped walking energy recycle
     FSMachine FSM ;
     char curState;
-    struct PreRecPID{
-        int kneRecPre = 300;
-        int ankRecPre = 200;
-
-    };
+    int ankActPre = 300;
+    int kneSupPre = 200;
+    
     void Init_swing(char side);
     void Mid_swing(char side);
     void Term_swing(char side);
@@ -313,25 +303,21 @@ private:
 
 
     void BipedEngRec();
+    
     void KnePreRec(std::shared_ptr<PWMGen> knePreVal,int knePre, int tankPre);
+    float KnePreRecInput(int knePre,int tankPre);
     void AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tankPre,std::shared_ptr<Valve> balVal);
-    void CheckSupPre(std::shared_ptr<PWMGen> preVal,int supPre);
-    struct SupPrePID{ //PID controller for generating supporting pressure, it is variable since it may need to be adjusted real-time
-        double kp = 10;
-        double ki = 0.01;
-        double kd = 0.001;
+    float AnkPreRecInput(int ankPre,int tankPre);
+    bool CheckSupPre(std::shared_ptr<PWMGen> preVal,int knePre,int tankPre);
 
-    };
-    void SupPrePIDCon();
-    struct AnkActPID{
-        double kp = 10;
-        double ki = 0.01;
-        double kd = 0.001;
-    };
-    void AnkActPIDCon();
-    SupPrePID supPreCon;
-    void AnkPushOff(std::shared_ptr<PWMGen> ankPreVal,int actPre);
+    
+    float SupPreInput(int knePre,int tankPre);
+    
+    float AnkActInput(int ankPre,int tankPre);
+    void AnkPushOff(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tankPre);
 
+
+    //============================================================================================================================================
 
     //Test ankle actuation
     bool TestRAnkFlag = false;
