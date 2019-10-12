@@ -265,7 +265,7 @@ private:
 
     //PID controller test
     //=========================================================================================================================
-    void PIDActTest(int desPre,int joint);
+    void PIDActTest(int joint);
     void PIDRecTest(int desPre,int joint);
 
 
@@ -289,7 +289,7 @@ private:
     FSMachine FSM ;
     char curState;
     int ankActPre = 300;
-    int kneSupPre = 200;
+    int kneSupPre = 320;
     
     void Init_swing(char side);
     void Mid_swing(char side);

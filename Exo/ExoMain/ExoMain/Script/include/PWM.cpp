@@ -96,6 +96,8 @@ void PWMGen::Mainloop() {
 		digitalWrite(this->pinId, HIGH);
 		delayMicroseconds(curOnTime);
 		digitalWrite(this->pinId, LOW);
+
+
 		
 		
 		

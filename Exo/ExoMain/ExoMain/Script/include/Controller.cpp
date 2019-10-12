@@ -190,7 +190,7 @@ void Controller::ConMainLoop(int *_senData, char *senRaw)
 
         }
         if(this->com->comArray[PIDACTTEST]){
-            taskQue.push(std::thread(&Controller::PIDActTest,this,300,this->com->comVal[PIDACTTEST]));
+            taskQue.push(std::thread(&Controller::PIDActTest,this,this->com->comVal[PIDACTTEST]));
         }
     }
 
@@ -518,29 +518,29 @@ void Controller::FreeWalk(){
 // 2: right knee
 // 3: right ankle
 //===================================================================================================================
-void Controller::PIDActTest(int desPre,int joint){
+void Controller::PIDActTest(int joint){
     //although it is called act test, for knee support, it is also an action
     if(joint==0){
-        this->kneSupPre = desPre;
+        this->ValveOn(this->LBalVal);
         if(this->CheckSupPre(this->LKnePreVal,this->senData[LKNEPRE],this->senData[TANKPRE])){
             this->com->comArray[PIDACTTEST] = false;
         }
     }     
     else if (joint ==1){
-        this->kneSupPre = desPre;
+        this->ValveOn(this->LBalVal);
         if(this->CheckSupPre(this->LAnkPreVal,this->senData[LANKPRE],this->senData[TANKPRE])){
             this->com->comArray[PIDACTTEST] = false;
         }
         
     }
     else if(joint ==2){
-        this->kneSupPre = desPre;
+        this->ValveOn(this->RBalVal);
         if(this->CheckSupPre(this->RKnePreVal,this->senData[RKNEPRE],this->senData[TANKPRE])){
             this->com->comArray[PIDACTTEST] = false;
         }
     }
     else if(joint ==3){
-        this->kneSupPre = desPre;
+        this->ValveOn(this->RBalVal);
         if(this->CheckSupPre(this->RAnkPreVal,this->senData[RANKPRE],this->senData[TANKPRE])){
             this->com->comArray[PIDACTTEST] = false;
         }
@@ -573,10 +573,11 @@ void Controller::PIDRecTest(int desPre,int joint){
 // Data pre-process for the PID controller (feedback linearization?)
 //===========================================================================================
 float Controller::SupPreInput(int knePre,int tankPre){
-    return (float)(this->kneSupPre-knePre)/tankPre;
+
+    return (float)(this->kneSupPre-knePre)/(tankPre-knePre);
 }
 float Controller::AnkActInput(int ankPre,int tankPre){
-    return (float)(this->ankActPre-ankPre)/tankPre;
+    return (float)(this->ankActPre-ankPre)/(tankPre-ankPre);
 }
 float Controller::AnkPreRecInput(int ankPre,int tankPre){
     return (float)ankPre/tankPre;
@@ -732,7 +733,7 @@ void Controller::AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tank
     //When recycle ankle pressure, if the pressure is too high, we direct the ankle pressure to the knee joint
     if(ankPre-tankPre>10){
         if(!this->ankRecPID){
-            this->ankRecPID.reset(new PIDCon(10,0.01,0.001,this->AnkPreRecInput(ankPre,tankPre)));
+            this->ankRecPID.reset(new PIDCon(500,0.1,0.001,this->AnkPreRecInput(ankPre,tankPre)));
         }
         this->ValveOn(balVal);
         this->SetDuty(ankPreVal,this->ankRecPID->GetDuty(this->AnkPreRecInput(ankPre,tankPre),this->senData[TIME]));
@@ -745,9 +746,9 @@ void Controller::AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tank
 }
 
 bool Controller::CheckSupPre(std::shared_ptr<PWMGen> preVal,int knePre,int tankPre){
-    if(knePre-this->kneSupPre<0){
+    if(knePre-this->kneSupPre<10){
         if(!this->kneSupPID){
-            this->kneSupPID.reset(new PIDCon(100,0.01,0.01,this->SupPreInput(knePre,tankPre)));
+            this->kneSupPID.reset(new PIDCon(800,0.1,0.01,this->SupPreInput(knePre,tankPre)));
         }
         else{
             this->SetDuty(preVal,this->kneSupPID->GetDuty(this->SupPreInput(knePre,tankPre),this->senData[TIME]));
@@ -766,7 +767,7 @@ bool Controller::CheckSupPre(std::shared_ptr<PWMGen> preVal,int knePre,int tankP
 void Controller::AnkPushOff(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tankPre){
     if(this->ankActPre-ankPre<10){
         if(!this->ankActPID){
-        this->ankActPID.reset(new PIDCon(10,0.01,0.001,this->AnkActInput(ankPre,tankPre)));
+        this->ankActPID.reset(new PIDCon(800,0.01,0.001,this->AnkActInput(ankPre,tankPre)));
         }
         else{
             this->SetDuty(ankPreVal,this->ankActPID->GetDuty(this->AnkActInput(ankPre,tankPre),this->senData[TIME]));
