@@ -1,8 +1,5 @@
 #include "Controller.h"
-#include <iostream>
-#include <wiringPi.h>
-#include <thread>
-#include <queue>
+
 
 
 #define RAWDATALEN 34 //this has to be the same as defined in Sensor.h

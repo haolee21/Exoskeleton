@@ -29,6 +29,10 @@
 !/Exo/ExoMain/ExoMain/
 /Exo/ExoMain/ExoMain/*
 !/Exo/ExoMain/ExoMain/Script
+/Exo/ExoMain/ExoMain/Script/*
+!/Exo/ExoMain/ExoMain/Script/*.txt
+!/Exo/ExoMain/ExoMain/Script/include/*
+!/Exo/ExoMain/ExoMain/Script/src/*
 
 !/ExoPC/
 /ExpPC/*

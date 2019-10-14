@@ -14,6 +14,11 @@
 #include <memory>
 #include <iomanip>
 #include "Displayer.hpp"
+#include <iostream>
+#include <queue>
+// new modification: After having issues with wiringPi, I no longer use this library (not compatiable with cross-compiler for no reason)
+// Now all the pin number is BCM, same as python
+
 //Define the pin number of the controller
 // Attention, the pin number is different for c++ and python library
 // Source: https://www.digikey.com/en/maker/blogs/2019/how-to-use-gpio-on-the-raspberry-pi-with-c
@@ -46,23 +51,41 @@
 //  +-----+-----+---------+------+---+---Pi 3---+---+------+---------+-----+-----+
 
 // I use common name: OP# to sync them
-#define OP1  15
-#define OP2  16
-#define OP3   1
-#define OP4   4
-#define OP5   5
-#define OP6   6
-#define OP7  10
-#define OP8  26
-#define OP9  27
-#define OP10 28
-#define OP11 29
-#define OP12  8
-#define OP13  9
-#define OP14  0
-#define OP15  2
-#define OP16  3
-#define SYNCOUT 7
+// #define OP1  15  14 
+// #define OP2  16  15
+// #define OP3   1  18
+// #define OP4   4  23
+// #define OP5   5  24
+// #define OP6   6  25
+// #define OP7  10  8
+// #define OP8  26  12
+// #define OP9  27  16
+// #define OP10 28  20
+// #define OP11 29  21
+// #define OP12  8  2
+// #define OP13  9  3
+// #define OP14  0  17
+// #define OP15  2  27
+// #define OP16  3  22
+// #define SYNCOUT 7 4
+
+#define OP1  14 
+#define OP2  15
+#define OP3  18
+#define OP4  23
+#define OP5  24
+#define OP6  25
+#define OP7  8
+#define OP8  12
+#define OP9  16
+#define OP10 20
+#define OP11 21
+#define OP12 2
+#define OP13 3
+#define OP14 17
+#define OP15 27
+#define OP16 22
+#define SYNCOUT 4
 
 // index of command
 #define NUMCOM 15

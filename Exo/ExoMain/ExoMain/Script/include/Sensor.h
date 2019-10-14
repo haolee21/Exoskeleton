@@ -28,9 +28,7 @@
 
 #include <thread>
 #include<iostream>
-#include <wiringSerial.h>
 
-#include <wiringPi.h>
 #include <chrono>
 #include<ctime> //this timer
 

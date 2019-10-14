@@ -1,23 +1,17 @@
 #include "Valve.h"
-#include <iostream>
-#include <string>
-#include <wiringPi.h>
-#include <chrono>
-#include<ctime> //this timer
+
 void Valve::On(int curTime){
     
-  
-    digitalWrite(this->valveId,HIGH);
-    //this->pin->On();
+    this->gpioPin->On();
     vector<bool> curRes;
     curRes.push_back(true);
     this->valveRec->PushData((unsigned long)curTime,curRes);
    
 }
 void Valve::Off(int curTime){
-    
+    this->gpioPin->Off();
     //this->pin->Off();
-    digitalWrite(this->valveId,LOW);
+
     vector<bool> curRes;
     curRes.push_back(false);
     this->valveRec->PushData((unsigned long)curTime,curRes);
@@ -26,12 +20,12 @@ void Valve::Off(int curTime){
 
 Valve::Valve(string name,string path, int valveId,int _valIdx)
 {
-    wiringPiSetup(); // This line is required everytime you setup an input output pin!!
+    
     this->valIdx = _valIdx;
     this->name = name;
-    this->valveId = valveId;
-    //this->pin.reset(new Pin(valveId));
-    pinMode(valveId, OUTPUT);
+    
+    this->gpioPin.reset(new Pin(valveId));
+    
     this->valveRec=new Recorder<bool>(this->name,path,"time,"+this->name);
     
 }

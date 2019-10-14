@@ -1,13 +1,14 @@
 #ifndef PWM_H
 #define PWM_H
 #include <mutex>
-#include<wiringPi.h>
+#include "Pin.h"
 #include<thread>
 #include<Recorder.hpp>
 #include <string>
 #include <chrono>
 #include<ctime> //this timer
 #include<memory>
+#include <unistd.h>
 union Duty
 {
     int num;
@@ -30,7 +31,7 @@ public:
 
 private:
 	std::chrono::system_clock::time_point origin;
-	int pinId;
+	std::shared_ptr<Pin> gpioPin;
 	int pwmIdx;
 	bool on = false;
 	void Mainloop();

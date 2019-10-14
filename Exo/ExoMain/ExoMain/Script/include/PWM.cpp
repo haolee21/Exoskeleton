@@ -40,9 +40,10 @@ PWMGen::PWMGen(std::string valveName, std::string filePath,int pinId,int _sampT,
 	this->pwmOnOffRec.reset(new Recorder<int>(valveName+"OnOff",filePath,"time,"+valveName));
 
 	this->DutyLock = new std::mutex;
-	this->pinId = pinId;
+	
+	this->gpioPin.reset(new Pin(pinId));
 	//wiringPiSetup(); 
-	pinMode(this->pinId, OUTPUT);
+	
 }
 void PWMGen::SetDuty(int onDuty,int curTime) {
 	this->duty.num=onDuty;
@@ -93,9 +94,11 @@ void PWMGen::Mainloop() {
 		std::vector<int> pwmDataOn;
 		pwmDataOn.push_back(curOnTime);
 		this->pwmOnOffRec->PushData(start_time.count(),pwmDataOn);
-		digitalWrite(this->pinId, HIGH);
-		delayMicroseconds(curOnTime);
-		digitalWrite(this->pinId, LOW);
+		this->gpioPin->On();
+		usleep(curOnTime);
+		
+		this->gpioPin->Off();
+		
 
 
 		
@@ -121,6 +124,7 @@ int PWMGen::GetIdx(){
 PWMGen::~PWMGen()
 {
 	this->on = false;
-	digitalWrite(this->pinId, LOW);
+	this->gpioPin->Off();
+	
 	delete this->DutyLock;
 }
