@@ -56,10 +56,15 @@ int main(void)
 	// We create directory here since the raspberry pi will sync its time with pc during connection
 	//create the folder for result saving
 	//string homeFolder = "../data";
-	//string homeFolder = "/home/pi/Exo/ExpData";
-	string homeFolder = "/media/pi/Data/ExpData";
+	//string homeFolder = "/home/pi/Data/ExpData";
+	string homeFolder = "/media/pi/ExpData";
 	if(!boost::filesystem::exists(homeFolder))
-		boost::filesystem::create_directory(homeFolder);
+		//boost::filesystem::create_directory(homeFolder);
+		homeFolder = "/home/pi/Data";
+		if(!boost::filesystem::exists(homeFolder))
+			boost::filesystem::create_directory(homeFolder);
+		//if there is no usb, directly save on sd card
+		
 	string filePath;
 	{
 		boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();

@@ -17,7 +17,7 @@ def main():
     #sync time with pc
     ssh = paramiko.SSHClient()
     ssh.load_system_host_keys()
-    ssh.connect('192.168.1.136',username='pi',password='bionics')
+    ssh.connect('192.168.1.134',username='pi',password='bionics')
     ssh.exec_command('sudo timedatectl set-time \''+ str(datetime.datetime.now())+'\'')
     ssh.close()
     print('sudo timedatectl set-time \''+ str(datetime.datetime.now())+'\'')
