@@ -9,6 +9,9 @@
 #include<ctime> //this timer
 #include<memory>
 #include <unistd.h>
+
+#include<pthread.h>
+
 union Duty
 {
     int num;

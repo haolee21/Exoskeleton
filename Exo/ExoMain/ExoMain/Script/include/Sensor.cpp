@@ -1,7 +1,7 @@
 #include "Sensor.h"
 #include <memory>
 
-#define MY_PRIORITY (49)             /* we use 49 as the PRREMPT_RT use 50 \
+#define SENSOR_PRIORITY (49)             /* we use 49 as the PRREMPT_RT use 50 \
                                         as the priority of kernel tasklets \
                                         and interrupt handler by default */
 #define POOLSIZE (200 * 1024 * 1024) // 200MB
@@ -90,10 +90,25 @@ void Sensor::senUpdate()
 {
 	//for accurate timer
 	struct timespec t;
-    //struct sched_param param;
+    struct sched_param param;
     long int interval = this->sampT*USEC;
-    // long int cnt = 0;
-    // long int cnt1 = 0;
+    initialize_memory_allocation();
+	param.sched_priority = SENSOR_PRIORITY;
+
+	if (sched_setscheduler(0, SCHED_FIFO, &param) == -1){
+		perror("sched_setscheduler failed");
+        exit(-1);
+    }
+	if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1){
+        perror("mlockall failed");
+        exit(-2);
+    }
+
+    /* Pre-fault our stack */
+	stack_prefault();
+
+
+
 	clock_gettime(CLOCK_MONOTONIC, &t);
 	t.tv_nsec += 0 * MSEC;
     this->tsnorm(&t);

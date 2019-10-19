@@ -58,13 +58,14 @@ int main(void)
 	//string homeFolder = "../data";
 	//string homeFolder = "/home/pi/Data/ExpData";
 	string homeFolder = "/media/pi/ExpData";
-	if(!boost::filesystem::exists(homeFolder))
+	if(!boost::filesystem::exists(homeFolder)){
 		//boost::filesystem::create_directory(homeFolder);
 		homeFolder = "/home/pi/Data";
-		if(!boost::filesystem::exists(homeFolder))
+		if(!boost::filesystem::exists(homeFolder)){
 			boost::filesystem::create_directory(homeFolder);
+		}
 		//if there is no usb, directly save on sd card
-		
+	}
 	string filePath;
 	{
 		boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();

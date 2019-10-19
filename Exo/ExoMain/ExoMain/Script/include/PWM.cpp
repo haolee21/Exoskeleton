@@ -70,6 +70,12 @@ void PWMGen::Stop(){
 	this->pwmTh->join();
 }
 void PWMGen::Mainloop() {
+
+	pthread_attr_t attr;
+	pthread_t thread;
+
+	
+
 	//for accurate timer
 	struct timespec t;
     //struct sched_param param;

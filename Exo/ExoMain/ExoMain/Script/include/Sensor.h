@@ -40,6 +40,7 @@
 #include <unistd.h> // write(), read(), close()
 #include <mutex>
 #include <memory>
+#include<pthread.h>
 //data recording
 #include "Recorder.hpp"
 //need to sync with controller's
