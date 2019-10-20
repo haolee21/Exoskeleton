@@ -37,8 +37,9 @@
                                       faulting */
 
 
-
-
+int initialize_memory_allocation(void);
+void stack_prefault(void);
+static void exo_error(int at);
 // //===================================For Pin.h =======================================================================
 // #define PAGE_SIZE (4*1024)
 // #define BLOCK_SIZE (4*1024)

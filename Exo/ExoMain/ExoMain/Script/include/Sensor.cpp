@@ -1,7 +1,7 @@
 #include "Sensor.h"
 #include <memory>
 
-#define SENSOR_PRIORITY (49)             /* we use 49 as the PRREMPT_RT use 50 \
+#define SENSOR_PRIORITY (80)             /* we use 49 as the PRREMPT_RT use 50 \
                                         as the priority of kernel tasklets \
                                         and interrupt handler by default */
 #define POOLSIZE (200 * 1024 * 1024) // 200MB
@@ -62,37 +62,10 @@ void Sensor::Start(std::chrono::system_clock::time_point startTime)
 	//initialize the butterworth filter 
 	
 	
-	this->th_SenUpdate.reset(new thread(&Sensor::senUpdate, this));
-	
-	std::cout << "initial receiving thread" << endl;
-	
-}
-void Sensor::Stop()
-{
-	std::cout << "get into stop" << endl;
-	this->sw_senUpdate = false;
-	this->serialPortClose(this->serialDevId);
-	this->th_SenUpdate->join();
-	std::cout<<"sensor fully stops\n";
-	
-}
-//timer
-void Sensor::tsnorm(struct timespec *ts)
-{
-    while (ts->tv_nsec >= NSEC_PER_SEC)
-    {
-        ts->tv_nsec -= NSEC_PER_SEC;
-        ts->tv_sec++;
-    }
-}
-//
-void Sensor::senUpdate()
-{
-	//for accurate timer
-	struct timespec t;
-    struct sched_param param;
-    long int interval = this->sampT*USEC;
-    initialize_memory_allocation();
+	//this->th_SenUpdate.reset(new thread(&Sensor::senUpdate, this));
+
+	struct sched_param param;
+	initialize_memory_allocation();
 	param.sched_priority = SENSOR_PRIORITY;
 
 	if (sched_setscheduler(0, SCHED_FIFO, &param) == -1){
@@ -109,44 +82,82 @@ void Sensor::senUpdate()
 
 
 
-	clock_gettime(CLOCK_MONOTONIC, &t);
-	t.tv_nsec += 0 * MSEC;
-    this->tsnorm(&t);
-	//
-	Controller con = Controller(this->filePath,this->com,this->display,this->origin);
+	// if(pthread_attr_init(&this->attr))
+	// 	exo_error(1);
+	// if(pthread_attr_setstacksize(&this->attr,PTHREAD_STACK_MIN+MY_STACK_SIZE))
+	// 	exo_error(2);
+	pthread_attr_init(&this->attr);
+	pthread_attr_setstacksize(&this->attr,PTHREAD_STACK_MIN+MY_STACK_SIZE);
+	pthread_create(&this->th_SenUpdate,&this->attr, &Sensor::senUpdate,this);
+	std::cout << "initial receiving thread" << endl;
 	
-
+}
+void Sensor::Stop()
+{
+	std::cout << "get into stop" << endl;
+	this->sw_senUpdate = false;
+	this->serialPortClose(this->serialDevId);
+	//this->th_SenUpdate->join();
+	pthread_join(this->th_SenUpdate,nullptr);
+	std::cout<<"sensor fully stops\n";
 	
-	
+}
+//timer
+void Sensor::tsnorm(struct timespec *ts)
+{
+    while (ts->tv_nsec >= NSEC_PER_SEC)
+    {
+        ts->tv_nsec -= NSEC_PER_SEC;
+        ts->tv_sec++;
+    }
+}
+//
+void *Sensor::senUpdate(void *_sen)
+{
+	Sensor *sen = (Sensor*) _sen;
+	Controller con = Controller(sen->filePath,sen->com,sen->display,sen->origin);
 	std::unique_ptr<std::thread> conTh;
 	bool conStart = false;
 
-	while (this->sw_senUpdate)
+	//for accurate timer
+	
+    
+    long int interval = sen->sampT*USEC;
+    
+
+	struct timespec t;
+	
+	clock_gettime(CLOCK_MONOTONIC, &t);
+	t.tv_nsec += 0 * MSEC;
+   
+	//
+	
+	while (sen->sw_senUpdate)
 	{	
 		//timer
-		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+		
 		//
 
-		this->readSerialPort(this->serialDevId);
+		sen->readSerialPort(sen->serialDevId);
 		if(conStart){ 
 			(*conTh).join();
 		}
 		else
 			conStart = true;
-		conTh.reset(new std::thread(&Controller::ConMainLoop,&con,this->senData,this->senDataRaw));
+		conTh.reset(new std::thread(&Controller::ConMainLoop,&con,sen->senData,sen->senDataRaw));
 		
 		
 		
 		// timer
 		// calculate next shot
         t.tv_nsec += interval;
-        this->tsnorm(&t);
-
+        sen->tsnorm(&t);
+		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
 
 	}
 	(*conTh).join();
 	std::cout << "sensor ends" << endl;
-	this->saveData_th.reset(new std::thread(&Sensor::SaveAllData,this));
+	sen->saveData_th.reset(new std::thread(&Sensor::SaveAllData,sen));
 	// this->senRec.reset();
 }
 void Sensor::SaveAllData(){

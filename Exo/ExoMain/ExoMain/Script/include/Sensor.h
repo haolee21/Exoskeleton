@@ -1,8 +1,9 @@
 #ifndef SENSOR_H
 #define SENSOR_H
+#include "common.hpp"
 #include "Controller.h"
 #include "BWFilter.hpp"
-#include "common.hpp"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -52,6 +53,9 @@ using namespace std;
 
 const int recLength = 240000; //This is the pre-allocate memory for recording sensed data
 
+
+#define MY_STACK_SIZE       (100*1024)      /* 100 kB is enough for now. */
+
 class Sensor
 {
 public:
@@ -66,7 +70,11 @@ public:
 	int senData[NUMSEN+1]; //data get from ADC after filter
 
 	char senDataRaw[DATALEN];
-	shared_ptr<thread> th_SenUpdate;
+	//shared_ptr<thread> th_SenUpdate;
+	
+	pthread_t th_SenUpdate;
+	pthread_attr_t attr;
+
 	// thread *th_SenUpdate;
 
 	
@@ -75,7 +83,7 @@ private:
 	bool is_create = false;
 	int serialDevId;
 	bool sw_senUpdate;
-	void senUpdate();
+	static void* senUpdate(void* sen);
 	long sampT;
 	
 	//variables for receiving data

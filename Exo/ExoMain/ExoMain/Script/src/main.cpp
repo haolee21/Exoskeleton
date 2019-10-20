@@ -57,7 +57,7 @@ int main(void)
 	//create the folder for result saving
 	//string homeFolder = "../data";
 	//string homeFolder = "/home/pi/Data/ExpData";
-	string homeFolder = "/media/pi/ExpData";
+	string homeFolder = "/media/pi/ExoData";
 	if(!boost::filesystem::exists(homeFolder)){
 		//boost::filesystem::create_directory(homeFolder);
 		homeFolder = "/home/pi/Data";
@@ -215,6 +215,6 @@ int main(void)
 
 
 	DelaySys(5);
-	
+	cout<<"File save to: "<<filePath<<endl;
 	return 0;
 }
