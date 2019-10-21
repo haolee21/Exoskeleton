@@ -1,7 +1,7 @@
 #include "Sensor.h"
 #include <memory>
 
-#define SENSOR_PRIORITY (80)             /* we use 49 as the PRREMPT_RT use 50 \
+#define SENSOR_PRIORITY (1)             /* we use 49 as the PRREMPT_RT use 50 \
                                         as the priority of kernel tasklets \
                                         and interrupt handler by default */
 #define POOLSIZE (200 * 1024 * 1024) // 200MB
@@ -128,9 +128,9 @@ void *Sensor::senUpdate(void *_sen)
 	struct timespec t;
 	
 	clock_gettime(CLOCK_MONOTONIC, &t);
-	t.tv_nsec += 0 * MSEC;
+
    
-	//
+
 	
 	while (sen->sw_senUpdate)
 	{	
@@ -150,9 +150,11 @@ void *Sensor::senUpdate(void *_sen)
 		
 		// timer
 		// calculate next shot
+		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+		
         t.tv_nsec += interval;
         sen->tsnorm(&t);
-		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+		
 
 	}
 	(*conTh).join();
@@ -204,7 +206,7 @@ int Sensor::serialPortConnect(char *portName)
 	// tty.c_oflag &= ~OXTABS; // Prevent conversion of tabs to spaces (NOT PRESENT ON LINUX)
 	// tty.c_oflag &= ~ONOEOT; // Prevent removal of C-d chars (0x004) in output (NOT PRESENT ON LINUX)
 
-	tty.c_cc[VTIME] = 0.01; // Wait for up to 1s (10 deciseconds), returning as soon as any data is received.
+	tty.c_cc[VTIME] = 0.003; // Wait for up to 1s (10 deciseconds), returning as soon as any data is received.
 	tty.c_cc[VMIN] = 24;
 
 	// Set in/out baud rate to be 115200

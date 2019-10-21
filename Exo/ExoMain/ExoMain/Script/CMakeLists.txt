@@ -10,7 +10,7 @@ set(Boost_LIBRARY_DIR /home/lowlimb/rpi-kernel/boost_1_71_0/stage/lib)
 set(CMAKE_C_COMPILER arm-linux-gnueabihf-gcc)
 set(CMAKE_CXX_COMPILER arm-linux-gnueabihf-g++)
 
-
+set(Boost_USE_STATIC_LIBS ON)
 # set(XENO_CONFIG "/home/lowlimb/rpi-kernel/xenomai-3.0.7/target/usr/xenomai/bin/xeno-config")
 # set(XENO_CFLAG_PARAM  "--alchemy --cflags")
 # set(XENO_LDFLAG_PARAM  "--alchemy --ldflags")

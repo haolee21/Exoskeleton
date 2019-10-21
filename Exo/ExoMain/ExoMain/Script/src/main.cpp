@@ -57,10 +57,10 @@ int main(void)
 	//create the folder for result saving
 	//string homeFolder = "../data";
 	//string homeFolder = "/home/pi/Data/ExpData";
-	string homeFolder = "/media/pi/ExoData";
+	string homeFolder = "/media/pi/ExoData/";
 	if(!boost::filesystem::exists(homeFolder)){
 		//boost::filesystem::create_directory(homeFolder);
-		homeFolder = "/home/pi/Data";
+		homeFolder = "/home/pi/Data/";
 		if(!boost::filesystem::exists(homeFolder)){
 			boost::filesystem::create_directory(homeFolder);
 		}
@@ -68,18 +68,11 @@ int main(void)
 	}
 	string filePath;
 	{
-		boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();
-		stringstream hour;
-		hour<<setw(2)<<std::setfill('0')<<to_string(timeLocal.time_of_day().hours());
-		stringstream min;
-		min<<setw(2)<<std::setfill('0')<<to_string(timeLocal.time_of_day().minutes());
-		stringstream date;
-		date<<setw(2)<<setfill('0')<<to_string(timeLocal.date().day());
-		stringstream month;
-		month<<setw(2)<<setfill('0')<<to_string(timeLocal.date().month());
-		// filePath = "../data/"+to_string(timeLocal.time_of_day().hours())+to_string(timeLocal.time_of_day().minutes())+
-		// to_string(timeLocal.date().month())+to_string(timeLocal.date().day())+to_string(timeLocal.date().year());
-		filePath = homeFolder+'/'+to_string(timeLocal.date().year())+'-'+month.str()+date.str()+'-'+hour.str()+min.str();
+		time_t result = time(nullptr);
+    	tm* timePtr = localtime(&result);
+    	stringstream curDate;
+    	curDate<<timePtr->tm_year+1900<<'-'<<setw(2)<<setfill('0')<<timePtr->tm_mon+1<<setw(2)<<setfill('0')<<timePtr->tm_mday<<'-'<<setw(2)<<setfill('0')<<timePtr->tm_hour<<setw(2)<<setfill('0')<<timePtr->tm_min;
+    	filePath = homeFolder + curDate.str();
 	}
 	boost::filesystem::create_directory(filePath);
 
