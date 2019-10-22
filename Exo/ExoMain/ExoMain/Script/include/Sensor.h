@@ -45,8 +45,8 @@
 //data recording
 #include "Recorder.hpp"
 //need to sync with controller's
-const int DATALEN =NUMSEN*2+2;
-const int SIZEOFBUFFER= DATALEN*10;
+const int DATALEN =NUMSEN*2+1;
+const int SIZEOFBUFFER= DATALEN*3000;
 #define RAWDATALEN 34 //this has to be the same as defined in Sensor.h
 
 using namespace std;
@@ -66,7 +66,7 @@ public:
 	void Start(std::chrono::system_clock::time_point startTime);
 	void Stop();
 	
-	int oriData[NUMSEN]; //original data
+	//int oriData[NUMSEN]; //original data
 	int senData[NUMSEN+1]; //data get from ADC after filter
 
 	char senDataRaw[DATALEN];
@@ -87,14 +87,20 @@ private:
 	long sampT;
 	
 	//variables for receiving data
+	char serialBuf[DATALEN*10];
+	
+	std::unique_ptr<int> frontBuf_count;
+	std::unique_ptr<int> backBuf_count;
+	std::unique_ptr<char[]>frontBuf;
+	std::unique_ptr<char[]>backBuf;
+	char *frontBuf_ptr;
+	char *backBuf_ptr;
 
-	char senBuffer[SIZEOFBUFFER];
-	char tempSen[DATALEN];
-	char *curHead;
-	char *curBuf;
-	int curBufIndex;
-	bool noHead;
-	int dataCollect;
+	char *tempSen;
+	bool init;
+	
+	int dataNeedRead = DATALEN;
+	int preTime=0;
 
 
 

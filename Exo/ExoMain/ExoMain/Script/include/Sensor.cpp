@@ -1,7 +1,7 @@
 #include "Sensor.h"
 #include <memory>
 
-#define SENSOR_PRIORITY (1)             /* we use 49 as the PRREMPT_RT use 50 \
+#define SENSOR_PRIORITY (40)             /* we use 49 as the PRREMPT_RT use 50 \
                                         as the priority of kernel tasklets \
                                         and interrupt handler by default */
 #define POOLSIZE (200 * 1024 * 1024) // 200MB
@@ -31,18 +31,11 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT,Com *_com,bool _
 		std::cout << "Create Sensor" << endl;
 		this->serialDevId = this->serialPortConnect(portName);
 		this->sampT = sampT;
-		
-		//initialize data receiving buffer
-		this->curBufIndex = 0;
-		this->dataCollect = 0;
-		this->noHead = true;
-		this->curHead = this->curBuf;
 
 		if (this->serialDevId == -1)
 			std::cout << "Sensor init failed" << endl;
 
-		this->curBuf = this->senBuffer;
-		this->curHead = this->curBuf;
+		
 		
 		this->senRec.reset(new Recorder<int>("sen",_filePath,"Time,LHipPos,LKnePos,LAnkPos,RHipPos,RKnePos,RAnkPos,sen7,sen8,TankPre,LKnePre,LAnkPre,RKnePre,RAnkPre,sen14,sen15,sen16"));
 		//Controller
@@ -56,9 +49,23 @@ void Sensor::Start(std::chrono::system_clock::time_point startTime)
 {
 	this->origin = startTime;
 	this->sw_senUpdate = true;
-	memset(&this->senBuffer, '\0', SIZEOFBUFFER);
+	// memset(this->frontBuf.get(), '\0', SIZEOFBUFFER);
+	// memset(this->backBuf.get(),'\0',SIZEOFBUFFER);
 	memset(&this->senData, 0, DATALEN + 1);
+	memset(&this->serialBuf,'\0',DATALEN);
+	// initialize buffers
 	
+	this->frontBuf_count.reset(new int(0));
+	this->backBuf_count.reset(new int(0));
+	this->frontBuf.reset(new char[DATALEN]);
+	this->backBuf.reset(new char[DATALEN]);
+	this->frontBuf_ptr = this->frontBuf.get();
+	this->backBuf_ptr = this->backBuf.get();
+
+	this->init = false;
+
+
+
 	//initialize the butterworth filter 
 	
 	
@@ -135,7 +142,7 @@ void *Sensor::senUpdate(void *_sen)
 	while (sen->sw_senUpdate)
 	{	
 		//timer
-		
+		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
 		//
 
 		sen->readSerialPort(sen->serialDevId);
@@ -150,12 +157,13 @@ void *Sensor::senUpdate(void *_sen)
 		
 		// timer
 		// calculate next shot
-		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
-		
+		std::chrono::system_clock::time_point curTime= std::chrono::system_clock::now();
+		microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - sen->origin));
+		cout<<sen_time.count()<<std::endl;
         t.tv_nsec += interval;
         sen->tsnorm(&t);
-		
 
+		
 	}
 	(*conTh).join();
 	std::cout << "sensor ends" << endl;
@@ -206,7 +214,7 @@ int Sensor::serialPortConnect(char *portName)
 	// tty.c_oflag &= ~OXTABS; // Prevent conversion of tabs to spaces (NOT PRESENT ON LINUX)
 	// tty.c_oflag &= ~ONOEOT; // Prevent removal of C-d chars (0x004) in output (NOT PRESENT ON LINUX)
 
-	tty.c_cc[VTIME] = 0.003; // Wait for up to 1s (10 deciseconds), returning as soon as any data is received.
+	tty.c_cc[VTIME] = 0.01; // Wait for up to 1s (10 deciseconds), returning as soon as any data is received.
 	tty.c_cc[VMIN] = 24;
 
 	// Set in/out baud rate to be 115200
@@ -221,7 +229,7 @@ int Sensor::serialPortConnect(char *portName)
 
 	//Allocate buffer for read buffer
 
-	memset(&this->senBuffer, '\0', DATALEN);
+	
 	tcflush(serial_port, TCIFLUSH); 
 
 	return serial_port;
@@ -229,146 +237,91 @@ int Sensor::serialPortConnect(char *portName)
 
 void Sensor::readSerialPort(int serialPort)
 {
-	//Collect data from the serial port's buffer
-	//Basic operation: 
-	// 1. Check if we collect enough data (data collect > DATALEN)
-	// 2. Find the head of it
-	// 3. Check if *(head+DATALEN-1) == '\n', if false we skipped the number of bytes we received, and find the head again
-	// 4. Conver the data back to numbers
-
-	int n_bytes = read(serialPort, this->curBuf, DATALEN);
 	
-	if(n_bytes==DATALEN){
-		//std::cout<<"got data "<<this->curBufIndex<<std::endl;;
-		this->dataCollect+= n_bytes;
-		this->curBuf+=DATALEN; // we advanced to next buffer as long as we received DATALEN bytes
-		this->curBufIndex+=DATALEN;
+	bool notReceived=true; //we won't exit the function if not received a whole data
+	
+	
+	while(notReceived){
+		cout<<"inner loop\n";
+		/*
+		Operating Principle:
+	
+		*/
+		//std::cout<<"need to read: "<<this->dataNeedRead<<std::endl;
+		int n_bytes = read(serialPort, this->serialBuf, this->dataNeedRead);
 
-		//std::cout<<"data collect: "<<this->dataCollect<<std::endl;
-		if(this->curBufIndex>=(SIZEOFBUFFER-1)){ // goes back to the beginning of the buffer when we reaches the end
-			//std::cout<<"end of buffer "<<this->curBufIndex<<std::endl;
-			this->curBuf = this->senBuffer;
-			this->curBufIndex=0;
-			
-		}
 
-		// Find the beginning of the data '@'
-		if(this->noHead){
-			// this->curHead = this->curBuf-DATALEN; //if we have not found the head, we started from the newest data
-			
-			for(int i=0;i<n_bytes;i++){
-				this->dataCollect--;
-				if(*this->curHead=='@'){
-					this->noHead = false;
-					break;
-				}
-				else{
-					this->curHead++;
-				}
-			}
-		}
-		else{//if we already found the head
-			if((this->dataCollect)>=DATALEN){ //we only check the tail if we have enough data
-				char tempSenData[DATALEN]; //temperary transformed data, including the '@'
-				// we need to do this in seperate loop is because of curHead
-				// it is possible that the curHead is pointing at the end of the buffer, which need to be re-direct to the beginning of the pointer
-				// yet, this need to be handle independent from dataCollect or curBuf (it is about we read until which data, not which we collected)
+		this->dataNeedRead += DATALEN-n_bytes;
+		//std::cout<<"read "<<n_bytes<<std::endl;
+		
+		int curBufIdx = 0;
+
+		//find '\n'
+		
+		for(int i=0;i<n_bytes;i++){
+			if(this->serialBuf[i]=='\n'){
+				curBufIdx++;
 				
-				for(int i=0;i<DATALEN;i++){
-					tempSenData[i] = *(this->curHead); //take out the last data
-					if((this->curHead)==(this->senBuffer+SIZEOFBUFFER-1)){
-						this->curHead = this->senBuffer; //point it back to the beginning of the buffer if it is the last one
-					}	
-					else
-					{
-						this->curHead++;
-					}		
-				}
-				if(tempSenData[DATALEN-1]=='\n'){
-					std::chrono::system_clock::time_point curTime= std::chrono::system_clock::now();
-					microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->origin));
-					int timeNow = sen_time.count(); 
-					if(timeNow<0){
-						std::cout<<"time need to reset\n";
-					}
-					{
-
-
-
-						int idx=1; //not sure why, but maybe because the first byte is @? 
-						std::copy(tempSenData,tempSenData+DATALEN,this->senDataRaw);
-
-						for(int i=0;i<NUMSEN;i++){
-							this->senData[i+1] = (int)(tempSenData[idx]) + (int)(tempSenData[idx+1] << 8);
-							idx+=2;
-						}
-						this->senData[0] = timeNow;
-						std::vector<int> recSenData;
-						for(int i=1;i<NUMSEN+1;i++){
-							recSenData.push_back(senData[i]);
-						}
-						this->senRec->PushData((unsigned long)this->senData[0],recSenData);
-
-
-						// //if I want to use filter
-						// int newMea[NUMSEN];
-						// for(int i=0;i<NUMSEN;i++){
-						// 	newMea[i] = (int)(tempSenData[idx]) + (int)(tempSenData[idx+1] << 8);
-						// 	idx+=2;
-						// }
-						// if(!this->filterInit_flag){
-						// 	this->filterInit_flag=bFilter.InitBuffer(newMea);
-						// }
-						// else{
-						// 	//call the butterworth filter to filt the data
-						// 	this->bFilter.FilterData(newMea,this->senData);
-						// 	this->senData[0] = timeNow;
-						// 	std::vector<int> recSenData;
-						// 	for(int i=1;i<NUMSEN+1;i++){
-						// 		recSenData.push_back(senData[i]);
-						// 	}
-						// 	this->senRec->PushData((unsigned long)this->senData[0],recSenData);		
-
-						// }
-
-						
-						
-					}
-					
-					// for some reason, I cannot just let noHead = true after I find the data
-					// Also, we shouldn't search for the head again since we know the next byte is head
-					if(*(this->curHead)!='@'){
-						//std::cout<<"next is not head "<<*this->curHead<<std::endl;
-						this->noHead = true;
-						this->dataCollect = 0;
-					}
-					this->dataCollect -=DATALEN;
-				}
-				else{
-					// this is not possible to have enough data but no tail, directly redo everything
-					//std::cout<<"no tail\n\n\n";
-					this->curBuf = this->senBuffer;
-					this->dataCollect =0;
-					this->curBufIndex =0;
-					this->noHead = true;
-					this->curHead = this->curBuf;
-				}
-			
+				break;
 			}
+			else{
+				curBufIdx++;
 
+			}
 		}
+		
+		if(this->init){
+			
+			std::copy(this->serialBuf,this->serialBuf+curBufIdx,this->frontBuf_ptr);
+			std::copy(this->serialBuf+curBufIdx,this->serialBuf+DATALEN,this->backBuf_ptr);
+			*this->frontBuf_count+=curBufIdx;
+			*this->backBuf_count+=(DATALEN-curBufIdx);
+			this->backBuf_ptr +=(DATALEN-curBufIdx);
+		}
+		else{
+			std::copy(this->serialBuf+curBufIdx,this->serialBuf+DATALEN,this->frontBuf_ptr);
+			
+			this->frontBuf_ptr += curBufIdx;
+			*(this->frontBuf_count) +=curBufIdx;
+			this->init = true;
+		}
+		
+		if(*this->frontBuf_count == DATALEN){
+			this->tempSen = this->frontBuf.get();
+			
+			notReceived = false;
+			
+		}
+		
 
+
+		this->frontBuf.swap(this->backBuf);
+		this->frontBuf_ptr = this->backBuf_ptr;
+		this->frontBuf_count.swap(this->backBuf_count);
+		this->backBuf_count.reset(new int(0));
+		this->backBuf.reset(new char[DATALEN]);
+		this->backBuf_ptr = this->backBuf.get();
+
+		
 	}
-	else{// if we cannot get correct number of data, we should clear the buffer since there is no point
-		this->curBuf = this->senBuffer;
-		this->dataCollect =0;
-		this->curBufIndex =0;
-		this->noHead = true;
-		this->curHead = this->curBuf;
+	// confirm data is received, now converting!
+	std::chrono::system_clock::time_point curTime= std::chrono::system_clock::now();
+	microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->origin));
+	this->senData[0] = sen_time.count(); 
+	cout<<(this->senData[0]-this->preTime)<<endl;
+	this->preTime = this->senData[0];
+	int idx =1;
+	std::vector<int> recSenData;
 	
+	for(int i=0;i<NUMSEN;i++){
+		this->senData[i+1] = (int)(this->tempSen[idx]) + (int)(this->tempSen[idx+1] << 8);
+		idx+=2;
+		recSenData.push_back(senData[i]);
+		this->senRec->PushData((unsigned long)this->senData[0],recSenData);
 	}
+	
+	//std::copy(tempSen,tempSen+DATALEN,this->senDataRaw);
 
-	// this->recIndex++;
 }
 void Sensor::serialPortClose(int serial_port)
 {

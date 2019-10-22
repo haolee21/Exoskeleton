@@ -71,8 +71,7 @@ void PWMGen::Stop(){
 }
 void PWMGen::Mainloop() {
 
-	pthread_attr_t attr;
-	pthread_t thread;
+	
 
 	
 
@@ -88,7 +87,7 @@ void PWMGen::Mainloop() {
 
 	while (this->on) {
 		//timer
-		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+		// clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
 		//
 		int curOnTime;
 		{

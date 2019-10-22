@@ -253,6 +253,7 @@ void Controller::TestReactingTime()
 {
     if (this->trParam.dataNotSent)
     {
+        
         this->trParam.testOut->On(0); //we do not use this->ValveOn since we don't need this in valve condition
         this->trParam.dataNotSent = false;
         this->trParam.sendTime = std::chrono::system_clock::now();
