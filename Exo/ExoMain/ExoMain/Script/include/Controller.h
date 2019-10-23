@@ -162,7 +162,7 @@ private:
     //connect to pc
     std::shared_ptr<Displayer> client;  //shared_ptr doesn't work here since it cannot be automatically shutdown
     //Displayer *client;
-
+    void SendToDisp(const char *senRaw);
 
 
     //shared_ptr<int> senData;

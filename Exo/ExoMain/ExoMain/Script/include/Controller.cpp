@@ -190,16 +190,21 @@ void Controller::ConMainLoop(int *_senData, char *senRaw)
             taskQue.push(std::thread(&Controller::PIDActTest,this,this->com->comVal[PIDACTTEST]));
         }
     }
-
+    if (this->display)
+    {
+        taskQue.push(std::thread(&Controller::SendToDisp,this,senRaw));
+    }
     while (!taskQue.empty())
     {
         taskQue.front().join();
         taskQue.pop();
     }
-    if (this->display)
-    {
-        
-        if(this->preSend==this->dispPreScale){
+    
+    std::memcpy(this->preSen,this->senData,std::size_t((NUMSEN+1)*sizeof(int)));
+    
+}
+void Controller::SendToDisp(const char *senRaw){
+    if(this->preSend==this->dispPreScale){
             char sendData[DATALEN + VALNUM + PWMNUM];
             std::copy(senRaw, senRaw + DATALEN, sendData);
             std::copy(this->valveCond, this->valveCond + VALNUM, sendData + DATALEN);
@@ -207,17 +212,14 @@ void Controller::ConMainLoop(int *_senData, char *senRaw)
             this->client->send(sendData, DATALEN + VALNUM + PWMNUM);
             this->preSend = 0;
 
-        }
-        else
-        {
-            this->preSend++;
-        //     this->preSend = true;
-        }
     }
-    std::memcpy(this->preSen,this->senData,std::size_t((NUMSEN+1)*sizeof(int)));
-    
-}
+    else
+    {
+        this->preSend++;
+        //     this->preSend = true;
+    }
 
+}
 //Test Valve 
 //============================================================================================================
 void Controller::TestValve()

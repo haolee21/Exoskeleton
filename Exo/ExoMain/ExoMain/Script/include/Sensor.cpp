@@ -1,7 +1,7 @@
 #include "Sensor.h"
 #include <memory>
 
-#define SENSOR_PRIORITY (90)             /* we use 49 as the PRREMPT_RT use 50 \
+#define SENSOR_PRIORITY (99)             /* we use 49 as the PRREMPT_RT use 50 \
                                         as the priority of kernel tasklets \
                                         and interrupt handler by default */
 #define POOLSIZE (200 * 1024 * 1024) // 200MB
@@ -91,6 +91,7 @@ void Sensor::Start(std::chrono::system_clock::time_point startTime)
 	// 	exo_error(2);
 	pthread_attr_init(&this->attr);
 	pthread_attr_setstacksize(&this->attr,PTHREAD_STACK_MIN+MY_STACK_SIZE);
+	pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
 	pthread_create(&this->th_SenUpdate,&this->attr, &Sensor::senUpdate,this);
 	std::cout << "initial receiving thread" << endl;
 	
