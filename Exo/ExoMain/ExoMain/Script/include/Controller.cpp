@@ -2,7 +2,7 @@
 
 
 
-#define RAWDATALEN 34 //this has to be the same as defined in Sensor.h
+
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
@@ -200,11 +200,11 @@ void Controller::ConMainLoop(int *_senData, char *senRaw)
     {
         
         if(this->preSend==this->dispPreScale){
-            char sendData[RAWDATALEN + VALNUM + PWMNUM];
-            std::copy(senRaw, senRaw + RAWDATALEN, sendData);
-            std::copy(this->valveCond, this->valveCond + VALNUM, sendData + RAWDATALEN);
-            std::copy(this->pwmDuty, this->pwmDuty + PWMNUM, sendData + RAWDATALEN + VALNUM);
-            this->client->send(sendData, RAWDATALEN + VALNUM + PWMNUM);
+            char sendData[DATALEN + VALNUM + PWMNUM];
+            std::copy(senRaw, senRaw + DATALEN, sendData);
+            std::copy(this->valveCond, this->valveCond + VALNUM, sendData + DATALEN);
+            std::copy(this->pwmDuty, this->pwmDuty + PWMNUM, sendData + DATALEN + VALNUM);
+            this->client->send(sendData, DATALEN + VALNUM + PWMNUM);
             this->preSend = 0;
 
         }

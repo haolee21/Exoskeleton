@@ -3,6 +3,9 @@
 #define NUMSEN 16
 #define SAMPTIME 1000 //this is in micro second
 
+#define DATALEN (NUMSEN*2+1)
+#define SIZEOFBUFFER  (DATALEN*10)
+
 
 
 

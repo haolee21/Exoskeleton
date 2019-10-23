@@ -45,9 +45,6 @@
 //data recording
 #include "Recorder.hpp"
 //need to sync with controller's
-const int DATALEN =NUMSEN*2+2;
-const int SIZEOFBUFFER= DATALEN*10;
-#define RAWDATALEN 34 //this has to be the same as defined in Sensor.h
 
 using namespace std;
 
@@ -88,15 +85,31 @@ private:
 	
 	//variables for receiving data
 
-	char senBuffer[SIZEOFBUFFER];
-	char tempSen[DATALEN];
-	char *curHead;
-	char *curBuf;
-	int curBufIndex;
-	bool noHead;
-	int dataCollect;
+	// char senBuffer[SIZEOFBUFFER];
+	// char tempSen[DATALEN];
+	// char *curHead;
+	// char *curBuf;
+	// int curBufIndex;
+	// bool noHead;
+	// int dataCollect;
+
+	char serialBuf[SIZEOFBUFFER];
+	
+	std::shared_ptr<int> frontBuf_count;
+	std::shared_ptr<int> backBuf_count;
+	std::shared_ptr<char[]>frontBuf;
+	std::shared_ptr<char[]>backBuf;
+	char *frontBuf_ptr;
+	char *backBuf_ptr;
+
+	char *tempSen;
+	bool init;
+
+	int dataNeedRead = DATALEN;
 
 
+
+	bool senNotInit = true;
 
 
 	

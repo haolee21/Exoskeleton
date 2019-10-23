@@ -9,7 +9,7 @@ import datetime
 import multiprocessing as mp
 
 NUMSEN=16
-DATALEN = NUMSEN*2+2
+DATALEN = NUMSEN*2+1
 VALNUM = 7
 PWMNUM = 4
 sampFreq = 1000/50 #real samp / pre scaler
@@ -66,7 +66,7 @@ def main():
         data = conn.recv(DATALEN+VALNUM+PWMNUM)
         
         try:
-            if(int(data[0]) == 64): #ascii 64 is @, check the start symbol
+            #if(int(data[0]) == 64): #ascii 64 is @, check the start symbol
                 
                 # senP = mp.Process(target=UpdateGraph,args=(graph_sen,data,SenHandle))
                 # valP = mp.Process(target=UpdateGraph,args=(graph_val,data,ValveHandle))
@@ -79,9 +79,9 @@ def main():
                 # valP.join()
                 # pwmP.join()
                 # start = time.time()
-                UpdateGraph(graph_sen,data,SenHandle)
-                UpdateGraph(graph_val,data,ValveHandle)
-                UpdateGraph(graph_pwm,data,PWMHandle)
+            UpdateGraph(graph_sen,data,SenHandle)
+            UpdateGraph(graph_val,data,ValveHandle)
+            UpdateGraph(graph_pwm,data,PWMHandle)
                 # end = time.time()
                 # print(end-start)
             
@@ -94,7 +94,7 @@ def main():
         # start = end 
 def SenHandle(data):
     senData=[]
-    for i in range(1, DATALEN-1, 2):  # remove @ and \n
+    for i in range(0, DATALEN, 2):  # remove @ and \n
         senData.append(int(data[i+1] << 8)+int(data[i]))
     return np.array(senData)
 def ValveHandle(data):
