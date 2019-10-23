@@ -2,8 +2,7 @@
 #define COMMON_HPP
 #define NUMSEN 16
 #define SAMPTIME 1000 //this is in micro second
-
-
+#define DATALEN (NUMSEN*2+1)
 
 
 #include <stdlib.h>
@@ -64,4 +63,18 @@ static void exo_error(int at);
 // #define GPIO_PULL *(gpio+37) // Pull up/pull down
 // #define GPIO_PULLCLK0 *(gpio+38) // Pull up/pull down clock
 // //=======================================================================================================================
+#define NSEC_PER_SEC (1000000000) // The number of nsecs per sec.
+
+#define NSEC 1
+#define USEC (1000 * NSEC)
+#define MSEC (1000 * USEC)
+#define SEC (1000 * MSEC)
+
+static void tsnorm(struct timespec *ts){
+    while (ts->tv_nsec >= NSEC_PER_SEC)
+    {
+        ts->tv_nsec -= NSEC_PER_SEC;
+        ts->tv_sec++;
+    }
+}
 #endif

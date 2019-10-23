@@ -89,6 +89,7 @@ TCCR1B |= (0 << CS12) | (0 << CS11) | (1 << CS10);
 // enable timer compare interrupt
 TIMSK1 |= (1 << OCIE1A);
 sei(); // allow interrupts
+
 }
 
 // the loop function runs over and over again until power down or reset
@@ -110,7 +111,7 @@ void loop()
 		// if (testSent2 > 90)
 		// 	testSent2 = 65;
 
-		*bufferPointer++ = '@';
+		
 
 		for (int senIndex = 0; senIndex < NUMSEN; senIndex++)
 		{
@@ -132,8 +133,8 @@ void loop()
 			digitalWrite(50, LOW);
 			pinCond = true;
 		}
-		
-		Serial.write(buffer,NUMSEN*2+2);
+		//char buffTest[NUMSEN*2+1] = {"AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPP\n"};
+		Serial.write(buffer,NUMSEN*2+1);
 		readyToSend = false;
 		bufferPointer = buffer;
 	}
