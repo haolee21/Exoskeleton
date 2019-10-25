@@ -1,5 +1,6 @@
 #ifndef FSMACHINE_HPP
 #define FSMACHINE_HPP
+#include "common.hpp"
 // This is the finite state machine that used in the controller
 // There are 8 phases in each gait
 

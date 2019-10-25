@@ -71,8 +71,7 @@ void PWMGen::Stop(){
 }
 void PWMGen::Mainloop() {
 
-	pthread_attr_t attr;
-	pthread_t thread;
+
 
 	
 

@@ -75,6 +75,16 @@ Controller::Controller(std::string filePath, Com *_com, bool _display,std::chron
     // this->ValveOff(this->trParam.testOut);
     this->curState = 0;
     this->FSM = FSMachine();
+
+
+    // now we need to actuate some valves, since we prefer the system to isolate each chambers
+    this->ValveOn(this->LKneVal);
+    this->ValveOn(this->RKneVal);
+    this->ValveOn(this->LBalVal);
+    this->ValveOn(this->RBalVal);
+
+
+
 }
 Controller::~Controller()
 {
@@ -188,6 +198,20 @@ void Controller::ConMainLoop(int *_senData, char *senRaw)
         }
         if(this->com->comArray[PIDACTTEST]){
             taskQue.push(std::thread(&Controller::PIDActTest,this,this->com->comVal[PIDACTTEST]));
+        }
+        if(this->com->comArray[TESTONEPWM]){
+            if(this->testOnePWM_flag){
+                this->SetDuty(this->PWMList[com->comVal[TESTONEPWM]],0); //this is a bit hack, I need to turn off pwm valves
+                cout<<"turn off\n";
+                
+                this->testOnePWM_flag=false;
+            }
+            else{
+                taskQue.push(std::thread(&Controller::TestOnePWM,this,this->com->comVal[TESTONEPWM]));
+                this->testOnePWM_flag=true;
+            }
+            this->com->comArray[TESTONEPWM] = false;
+            
         }
     }
     if (this->display)
@@ -593,8 +617,8 @@ float Controller::KnePreRecInput(int knePre,int tankPre){
 //===================================================================================================================
 
 void Controller::BipedEngRec(){
-    char curPhase = this->FSM.CalState(this->senData,this->curState);
-    switch (curPhase){
+    this->curState = this->FSM.CalState(this->senData,this->curState);
+    switch (this->curState){
         case Phase1:
             this->Load_resp('l');
             this->Init_swing('r');
@@ -714,7 +738,7 @@ void Controller::Pre_swing(char side){
 void Controller::KnePreRec(std::shared_ptr<PWMGen> knePreVal,int knePre,int tankPre){
     if(knePre-tankPre>10){
         if(!this->kneRecPID){
-            this->kneRecPID.reset(new PIDCon(10,0.01,0.001,this->KnePreRecInput(knePre,tankPre)));
+            this->kneRecPID.reset(new PIDCon(100,0.01,0.001,this->KnePreRecInput(knePre,tankPre)));
         }
         else
             this->SetDuty(knePreVal,this->kneRecPID->GetDuty(this->KnePreRecInput(knePre,tankPre),this->senData[TIME]));
@@ -732,7 +756,7 @@ void Controller::AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tank
     //When recycle ankle pressure, if the pressure is too high, we direct the ankle pressure to the knee joint
     if(ankPre-tankPre>10){
         if(!this->ankRecPID){
-            this->ankRecPID.reset(new PIDCon(500,0.1,0.001,this->AnkPreRecInput(ankPre,tankPre)));
+            this->ankRecPID.reset(new PIDCon(100,0.1,0.001,this->AnkPreRecInput(ankPre,tankPre)));
         }
         this->ValveOn(balVal);
         this->SetDuty(ankPreVal,this->ankRecPID->GetDuty(this->AnkPreRecInput(ankPre,tankPre),this->senData[TIME]));
@@ -747,7 +771,7 @@ void Controller::AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tank
 bool Controller::CheckSupPre(std::shared_ptr<PWMGen> preVal,int knePre,int tankPre){
     if(knePre-this->kneSupPre<10){
         if(!this->kneSupPID){
-            this->kneSupPID.reset(new PIDCon(800,0.1,0.01,this->SupPreInput(knePre,tankPre)));
+            this->kneSupPID.reset(new PIDCon(100,0.1,0.01,this->SupPreInput(knePre,tankPre)));
         }
         else{
             this->SetDuty(preVal,this->kneSupPID->GetDuty(this->SupPreInput(knePre,tankPre),this->senData[TIME]));
@@ -784,6 +808,18 @@ void Controller::AnkPushOff(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tan
 
 // some test functions
 //=======================================================================================
+
+void Controller::TestOnePWM(int pwmIdx){
+    //kind of stupid, but need to turn on all balvals so pressure won't fill both ankle and knee
+    this->ValveOn(this->LBalVal);
+    this->ValveOn(this->RBalVal);
+
+    this->SetDuty(this->PWMList[pwmIdx],33);
+    this->testOnePWM_flag = true;
+}
+
+
+
 void Controller::TestRAnk(){
     if(this->TestRAnkFlag){
         this->SetDuty(this->RAnkPreVal,0);

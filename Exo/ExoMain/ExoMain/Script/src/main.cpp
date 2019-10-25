@@ -196,6 +196,11 @@ int main(void)
 				com.comArray[PIDACTTEST]=true;
 				com.comVal[PIDACTTEST]=3;
 			}
+			else if(command.substr(0,10)=="testonepwm"){
+				
+				com.comVal[TESTONEPWM]=std::stoi(command.substr(10,1));
+				com.comArray[TESTONEPWM] = true;
+			}
 			else
 				cout<<"not such command\n";	
 		}

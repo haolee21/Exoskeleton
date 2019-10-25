@@ -9,7 +9,7 @@
 #include<ctime> //this timer
 #include<memory>
 #include <unistd.h>
-
+#include "PIDCon.h"
 #include<pthread.h>
 
 union Duty
@@ -45,7 +45,7 @@ private:
 	int onTime;
 	
 
-	// Recorder<int> *pwmRec;
+	
 	std::shared_ptr<Recorder<int>> pwmRec;
 	std::shared_ptr<Recorder<int>> pwmOnOffRec;
 	//timer 

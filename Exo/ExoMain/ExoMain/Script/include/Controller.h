@@ -88,7 +88,7 @@
 #define SYNCOUT 4
 
 // index of command
-#define NUMCOM 15
+#define NUMCOM 16
 #define TESTVAL 0
 #define TESTPWM 1
 #define SHUTPWM 2
@@ -105,6 +105,9 @@
 #define TESTSYNC 12
 #define PIDACTTEST 13
 #define PIDRECTEST 14
+#define TESTONEPWM 15
+
+
 struct Com
 {
 	const int comLen =NUMCOM;
@@ -115,29 +118,6 @@ struct Com
 // index of senData
 // #define NUMSEN 16
 
-#define TIME 0
-#define LHIPPOS 1
-#define LKNEPOS 2
-#define LANKPOS 3
-#define RHIPPOS 4
-#define RKNEPOS 5
-#define RANKPOS 6
-
-#define SYNCREAD 7
-
-#define TANKPRE 9
-#define LKNEPRE 10
-#define LANKPRE 11
-#define RKNEPRE 12
-#define RANKPRE 13
-
-//Some setting constant
-#define RELTIME 10 //time that the valve will open to release pressure
-
-
-
-#define VALNUM 7 //this cannot work with test reacting
-#define PWMNUM 4
 
 
 
@@ -234,6 +214,13 @@ private:
     void TestPWM();
     void ShutDownPWM();
 
+    //test single pwm valve
+    // valve will be actuate with 33% duty cycle
+    std::shared_ptr<PWMGen> testPWM;
+    bool testOnePWM_flag = false;
+    void TestOnePWM(int pwmIdx);
+
+
     // initialize cylinder for supporting body weight
     int sup_LKnePre=250;
     // left leg energy recycle
@@ -312,7 +299,7 @@ private:
     FSMachine FSM ;
     char curState;
     int ankActPre = 300;
-    int kneSupPre = 320;
+    int kneSupPre = 350;
     
     void Init_swing(char side);
     void Mid_swing(char side);
