@@ -32,7 +32,8 @@ Valve::Valve(string name,string path, int valveId,int _valIdx)
 
 Valve::~Valve()
 {
-    
+    this->gpioPin->Off();
+
     if(this->dummy)
         delete this->valveRec;
     

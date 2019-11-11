@@ -299,7 +299,7 @@ private:
     FSMachine FSM ;
     char curState;
     int ankActPre = 300;
-    int kneSupPre = 350;
+    int kneSupPre = 300;
     
     void Init_swing(char side);
     void Mid_swing(char side);

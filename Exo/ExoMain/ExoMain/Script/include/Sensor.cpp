@@ -169,6 +169,7 @@ void *Sensor::senUpdate(void *_sen)
 	std::cout << "sensor ends" << endl;
 	sen->saveData_th.reset(new std::thread(&Sensor::SaveAllData,sen));
 	// this->senRec.reset();
+	return 0;
 }
 void Sensor::SaveAllData(){
 	this->senRec.reset();
