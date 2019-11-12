@@ -89,7 +89,7 @@ int main(void)
 	char portName[] = "/dev/ttyACM0";
 	//Sensor sensor = Sensor(filePath,portName, SAMPTIME,&com,display);
 	std::unique_ptr<Sensor> sensor;
-	sensor.reset(new Sensor(filePath, portName, SAMPTIME, &com, display));
+	sensor.reset(new Sensor(filePath, portName, SAMPTIME, &com, display)); //Not sure where went wrong, but I mess up sth which sensor got destorie
 	std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
 	sensor->Start(startTime);
 	
