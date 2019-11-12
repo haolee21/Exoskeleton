@@ -67,8 +67,8 @@ public:
 	int senData[NUMSEN+1]; //data get from ADC after filter
 
 	char senDataRaw[DATALEN];
-	//shared_ptr<thread> th_SenUpdate;
-	
+	std::shared_ptr<std::mutex> senDataLock;
+
 	pthread_t th_SenUpdate;
 	pthread_attr_t attr;
 
@@ -126,7 +126,7 @@ private:
 	
 	//functions that Ji used
 	
-	void tsnorm(struct timespec *ts);
+	// void tsnorm(struct timespec *ts);
 
 	//Displayer
 	bool display;

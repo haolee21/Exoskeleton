@@ -43,6 +43,12 @@
 int initialize_memory_allocation(void);
 void stack_prefault(void);
 
+#define NSEC_PER_SEC (1000000000) // The number of nsecs per sec.
+
+#define NSEC 1
+#define USEC (1000 * NSEC)
+#define MSEC (1000 * USEC)
+#define SEC (1000 * MSEC)
 // //===================================For Pin.h =======================================================================
 // #define PAGE_SIZE (4*1024)
 // #define BLOCK_SIZE (4*1024)
@@ -91,5 +97,17 @@ void stack_prefault(void);
 
 #define VALNUM 7 //this cannot work with test reacting
 #define PWMNUM 4
+
+class Common
+{
+private:
+    /* data */
+public:
+    Common(/* args */);
+    ~Common();
+    static void tsnorm(struct timespec *ts);
+};
+
+
 
 #endif
