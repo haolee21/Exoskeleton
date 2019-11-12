@@ -87,9 +87,11 @@ int main(void)
 	}
 	
 	char portName[] = "/dev/ttyACM0";
-	Sensor sensor = Sensor(filePath,portName, SAMPTIME,&com,display);
+	//Sensor sensor = Sensor(filePath,portName, SAMPTIME,&com,display);
+	std::unique_ptr<Sensor> sensor;
+	sensor.reset(new Sensor(filePath, portName, SAMPTIME, &com, display));
 	std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
-	sensor.Start(startTime);
+	sensor->Start(startTime);
 	
 	
 	
@@ -206,7 +208,7 @@ int main(void)
 		}
 	}
 	
-	sensor.Stop();
+	sensor->Stop();
 	
 
 

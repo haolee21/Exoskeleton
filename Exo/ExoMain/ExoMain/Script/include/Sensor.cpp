@@ -9,12 +9,6 @@
                                       guranteed safe to access without  \
                                       faulting */
 
-#define NSEC_PER_SEC (1000000000) // The number of nsecs per sec.
-
-#define NSEC 1
-#define USEC (1000 * NSEC)
-#define MSEC (1000 * USEC)
-#define SEC (1000 * MSEC)
 
 
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
@@ -37,6 +31,8 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT,Com *_com,bool _
 		this->backBuf_count.reset(new int(0));
 		this->frontBuf.reset(new char[DATALEN]);
 		this->backBuf.reset(new char[DATALEN]);
+		this->senDataLock.reset(new std::mutex);
+
 		this->frontBuf_ptr = this->frontBuf.get();
 		this->backBuf_ptr = this->backBuf.get();
 		this->init = false;
@@ -107,14 +103,14 @@ void Sensor::Stop()
 	
 }
 //timer
-void Sensor::tsnorm(struct timespec *ts)
-{
-    while (ts->tv_nsec >= NSEC_PER_SEC)
-    {
-        ts->tv_nsec -= NSEC_PER_SEC;
-        ts->tv_sec++;
-    }
-}
+// void Sensor::tsnorm(struct timespec *ts)
+// {
+//     while (ts->tv_nsec >= NSEC_PER_SEC)
+//     {
+//         ts->tv_nsec -= NSEC_PER_SEC;
+//         ts->tv_sec++;
+//     }
+// }
 //
 void *Sensor::senUpdate(void *_sen)
 {
@@ -160,15 +156,15 @@ void *Sensor::senUpdate(void *_sen)
 		
 		
         t.tv_nsec += interval;
-        sen->tsnorm(&t);
+        Common::tsnorm(&t);
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
 		//clock_gettime(CLOCK_MONOTONIC, &t);
 	}
 	cout<<"end sampling\n";
 	(*conTh).join();
 	std::cout << "sensor ends" << endl;
-	sen->saveData_th.reset(new std::thread(&Sensor::SaveAllData,sen));
-	// this->senRec.reset();
+	sen->saveData_th.reset(new std::thread(&Sensor::SaveAllData,sen)); //original purpose is for some reason, sen is destoried before it went through this line
+	//sen->senRec.reset();
 	return 0;
 }
 void Sensor::SaveAllData(){
@@ -309,23 +305,27 @@ void Sensor::readSerialPort(int serialPort)
 	}
 	std::chrono::system_clock::time_point curTime= std::chrono::system_clock::now();
 	microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->origin));
-	this->senData[0] = sen_time.count(); 
 
-	int idx =0;
-	std::vector<int> recSenData;
-	//cout<<"\nsen data: ";
-	for(int i=0;i<NUMSEN;i++){
-		this->senData[i+1] = (int)(this->backBuf[idx]) + (int)(this->backBuf[idx+1] << 8);
-		idx+=2;
-		recSenData.push_back(senData[i+1]);
-		//cout<<setw(4)<<setfill('0')<<this->senData[i+1];
+	{
+		std::lock_guard<std::mutex> lock(*this->senDataLock.get());
+		this->senData[0] = sen_time.count();
+
+		int idx =0;
+		std::vector<int> recSenData;
+	
+		for(int i=0;i<NUMSEN;i++){
+			this->senData[i+1] = (int)(this->backBuf[idx]) + (int)(this->backBuf[idx+1] << 8);
+			idx+=2;
+			recSenData.push_back(senData[i+1]);
 		
-	}
+		
+		}
 	
 	
 
 	
 	this->senRec->PushData((unsigned long)this->senData[0],recSenData);
+	}
 	std::copy(this->backBuf.get(),this->backBuf.get()+DATALEN,this->senDataRaw);
 
 
