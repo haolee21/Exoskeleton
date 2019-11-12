@@ -1,8 +1,9 @@
 #ifndef SENSOR_H
 #define SENSOR_H
+#include "common.hpp"
 #include "Controller.h"
 #include "BWFilter.hpp"
-#include "common.hpp"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -28,9 +29,7 @@
 
 #include <thread>
 #include<iostream>
-#include <wiringSerial.h>
 
-#include <wiringPi.h>
 #include <chrono>
 #include<ctime> //this timer
 
@@ -42,16 +41,17 @@
 #include <unistd.h> // write(), read(), close()
 #include <mutex>
 #include <memory>
+#include<pthread.h>
 //data recording
 #include "Recorder.hpp"
 //need to sync with controller's
-const int DATALEN =NUMSEN*2+2;
-const int SIZEOFBUFFER= DATALEN*1000;
-#define RAWDATALEN 34 //this has to be the same as defined in Sensor.h
 
 using namespace std;
 
 const int recLength = 240000; //This is the pre-allocate memory for recording sensed data
+
+
+#define MY_STACK_SIZE       (100*1024)      /* 100 kB is enough for now. */
 
 class Sensor
 {
@@ -63,11 +63,15 @@ public:
 	void Start(std::chrono::system_clock::time_point startTime);
 	void Stop();
 	
-	unsigned int oriData[NUMSEN]; //original data
-	unsigned int senData[NUMSEN+1]; //data get from ADC after filter
+	int oriData[NUMSEN]; //original data
+	int senData[NUMSEN+1]; //data get from ADC after filter
 
 	char senDataRaw[DATALEN];
-	shared_ptr<thread> th_SenUpdate;
+	std::shared_ptr<std::mutex> senDataLock;
+
+	pthread_t th_SenUpdate;
+	pthread_attr_t attr;
+
 	// thread *th_SenUpdate;
 
 	
@@ -76,20 +80,36 @@ private:
 	bool is_create = false;
 	int serialDevId;
 	bool sw_senUpdate;
-	void senUpdate();
+	static void* senUpdate(void* sen);
 	long sampT;
 	
 	//variables for receiving data
 
-	char senBuffer[SIZEOFBUFFER];
-	char tempSen[DATALEN];
-	char *curHead;
-	char *curBuf;
-	int curBufIndex;
-	bool noHead;
-	int dataCollect;
+	// char senBuffer[SIZEOFBUFFER];
+	// char tempSen[DATALEN];
+	// char *curHead;
+	// char *curBuf;
+	// int curBufIndex;
+	// bool noHead;
+	// int dataCollect;
+
+	char serialBuf[SIZEOFBUFFER];
+	
+	std::shared_ptr<int> frontBuf_count;
+	std::shared_ptr<int> backBuf_count;
+	std::shared_ptr<char[]>frontBuf;
+	std::shared_ptr<char[]>backBuf;
+	char *frontBuf_ptr;
+	char *backBuf_ptr;
+
+	char *tempSen;
+	bool init;
+
+	int dataNeedRead = DATALEN;
 
 
+
+	bool senNotInit = true;
 
 
 	
@@ -106,7 +126,7 @@ private:
 	
 	//functions that Ji used
 	
-	void tsnorm(struct timespec *ts);
+	// void tsnorm(struct timespec *ts);
 
 	//Displayer
 	bool display;
@@ -119,8 +139,8 @@ private:
 	std::string filePath;
 	std::shared_ptr<std::thread> saveData_th;
 	void SaveAllData();
-	// Recorder<unsigned int> *senRec;
-	shared_ptr<Recorder<unsigned int>> senRec; //smart pointer test, failed, don't know why since it works in simpler cases
+	
+	shared_ptr<Recorder<int>> senRec; //smart pointer test, failed, don't know why since it works in simpler cases
 	
 	
 };

@@ -56,24 +56,23 @@ int main(void)
 	// We create directory here since the raspberry pi will sync its time with pc during connection
 	//create the folder for result saving
 	//string homeFolder = "../data";
-	//string homeFolder = "/home/pi/Exo/ExpData";
-	string homeFolder = "/media/pi/Data/ExpData";
-	if(!boost::filesystem::exists(homeFolder))
-		boost::filesystem::create_directory(homeFolder);
+	//string homeFolder = "/home/pi/Data/ExpData";
+	string homeFolder = "/media/pi/ExoData/";
+	if(!boost::filesystem::exists(homeFolder)){
+		//boost::filesystem::create_directory(homeFolder);
+		homeFolder = "/home/pi/Data/";
+		if(!boost::filesystem::exists(homeFolder)){
+			boost::filesystem::create_directory(homeFolder);
+		}
+		//if there is no usb, directly save on sd card
+	}
 	string filePath;
 	{
-		boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();
-		stringstream hour;
-		hour<<setw(2)<<std::setfill('0')<<to_string(timeLocal.time_of_day().hours());
-		stringstream min;
-		min<<setw(2)<<std::setfill('0')<<to_string(timeLocal.time_of_day().minutes());
-		stringstream date;
-		date<<setw(2)<<setfill('0')<<to_string(timeLocal.date().day());
-		stringstream month;
-		month<<setw(2)<<setfill('0')<<to_string(timeLocal.date().month());
-		// filePath = "../data/"+to_string(timeLocal.time_of_day().hours())+to_string(timeLocal.time_of_day().minutes())+
-		// to_string(timeLocal.date().month())+to_string(timeLocal.date().day())+to_string(timeLocal.date().year());
-		filePath = homeFolder+'/'+to_string(timeLocal.date().year())+'-'+month.str()+date.str()+'-'+hour.str()+min.str();
+		time_t result = time(nullptr);
+    	tm* timePtr = localtime(&result);
+    	stringstream curDate;
+    	curDate<<timePtr->tm_year+1900<<'-'<<setw(2)<<setfill('0')<<timePtr->tm_mon+1<<setw(2)<<setfill('0')<<timePtr->tm_mday<<'-'<<setw(2)<<setfill('0')<<timePtr->tm_hour<<setw(2)<<setfill('0')<<timePtr->tm_min;
+    	filePath = homeFolder + curDate.str();
 	}
 	boost::filesystem::create_directory(filePath);
 
@@ -113,11 +112,8 @@ int main(void)
 			}
 			else if(command=="testval")
 				com.comArray[TESTVAL] = !com.comArray[TESTVAL];
-			else if(command=="recl"){
-				com.comArray[ENGRECL] = !com.comArray[ENGRECL];
-				cout<<"recl sensed\n";
-				cout<<com.comArray[ENGRECL]<<endl;
-			}
+			
+			
 			else if(command.substr(0,4)=="samp"){
 				com.comArray[KNEMODSAMP] = !com.comArray[KNEMODSAMP];
 				stringstream numVal(command.substr(4,5));
@@ -184,6 +180,27 @@ int main(void)
 			else if(command == "testsync"){
 				com.comArray[TESTSYNC] = true;
 			}
+			else if(command == "pidtestlk"){
+				com.comArray[PIDACTTEST] = true;
+				com.comVal[PIDACTTEST] =0;
+			}
+			else if(command =="pidtestla"){
+				com.comArray[PIDACTTEST]=true;
+				com.comVal[PIDACTTEST]=1;
+			}
+			else if(command =="pidtestrk" ){
+				com.comArray[PIDACTTEST]=true;
+				com.comVal[PIDACTTEST]=2;
+			}
+			else if(command =="pidtestra"){
+				com.comArray[PIDACTTEST]=true;
+				com.comVal[PIDACTTEST]=3;
+			}
+			else if(command.substr(0,10)=="testonepwm"){
+				
+				com.comVal[TESTONEPWM]=std::stoi(command.substr(10,1));
+				com.comArray[TESTONEPWM] = true;
+			}
 			else
 				cout<<"not such command\n";	
 		}
@@ -196,6 +213,6 @@ int main(void)
 
 
 	DelaySys(5);
-	
+	cout<<"File save to: "<<filePath<<endl;
 	return 0;
 }

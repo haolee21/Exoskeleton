@@ -1,7 +1,9 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 #include "common.hpp"
+#include "FSMachine.hpp"
 #include "Valve.h"
+#include "PIDCon.h"
 #include <chrono>
 #include<time.h> //this timer
 #include<mutex>
@@ -12,6 +14,11 @@
 #include <memory>
 #include <iomanip>
 #include "Displayer.hpp"
+#include <iostream>
+#include <queue>
+// new modification: After having issues with wiringPi, I no longer use this library (not compatiable with cross-compiler for no reason)
+// Now all the pin number is BCM, same as python
+
 //Define the pin number of the controller
 // Attention, the pin number is different for c++ and python library
 // Source: https://www.digikey.com/en/maker/blogs/2019/how-to-use-gpio-on-the-raspberry-pi-with-c
@@ -44,40 +51,63 @@
 //  +-----+-----+---------+------+---+---Pi 3---+---+------+---------+-----+-----+
 
 // I use common name: OP# to sync them
-#define OP1  15
-#define OP2  16
-#define OP3   1
-#define OP4   4
-#define OP5   5
-#define OP6   6
-#define OP7  10
-#define OP8  26
-#define OP9  27
-#define OP10 28
-#define OP11 29
-#define OP12  8
-#define OP13  9
-#define OP14  0
-#define OP15  2
-#define OP16  3
-#define SYNCOUT 7
+// #define OP1  15  14 
+// #define OP2  16  15
+// #define OP3   1  18
+// #define OP4   4  23
+// #define OP5   5  24
+// #define OP6   6  25
+// #define OP7  10  8
+// #define OP8  26  12
+// #define OP9  27  16
+// #define OP10 28  20
+// #define OP11 29  21
+// #define OP12  8  2
+// #define OP13  9  3
+// #define OP14  0  17
+// #define OP15  2  27
+// #define OP16  3  22
+// #define SYNCOUT 7 4
+
+#define OP1  14 
+#define OP2  15
+#define OP3  18
+#define OP4  23
+#define OP5  24
+#define OP6  25
+#define OP7  8
+#define OP8  12
+#define OP9  16
+#define OP10 20
+#define OP11 21
+#define OP12 2
+#define OP13 3
+#define OP14 17
+#define OP15 27
+#define OP16 22
+#define SYNCOUT 4
 
 // index of command
-#define NUMCOM 14
+#define NUMCOM 16
 #define TESTVAL 0
 #define TESTPWM 1
 #define SHUTPWM 2
-#define ENGRECL 3
-#define KNEMODSAMP 4
-#define KNEPREREL 5
-#define TESTALLLEAK 6
-#define FREEWALK 7
-#define TESTLEAK 8
-#define TESTLANK 9
-#define TESTRANK 10
-#define SHOWSEN 11 //Cout the current sensor measurements, 
-#define BIPEDREC 12
-#define TESTSYNC 13
+
+#define KNEMODSAMP 3
+#define KNEPREREL 4
+#define TESTALLLEAK 5
+#define FREEWALK 6
+#define TESTLEAK 7
+#define TESTLANK 8
+#define TESTRANK 9
+#define SHOWSEN 10 //Cout the current sensor measurements, 
+#define BIPEDREC 11
+#define TESTSYNC 12
+#define PIDACTTEST 13
+#define PIDRECTEST 14
+#define TESTONEPWM 15
+
+
 struct Com
 {
 	const int comLen =NUMCOM;
@@ -88,51 +118,8 @@ struct Com
 // index of senData
 // #define NUMSEN 16
 
-#define TIME 0
-#define LHIPPOS 1
-#define LKNEPOS 2
-#define LANKPOS 3
-#define RHIPPOS 4
-#define RKNEPOS 5
-#define RANKPOS 6
-
-#define SYNCREAD 7
-
-#define TANKPRE 9
-#define LKNEPRE 10
-#define LANKPRE 11
-#define RKNEPRE 12
-#define RANKPRE 13
-
-//Some setting constant
-#define RELTIME 10 //time that the valve will open to release pressure
 
 
-
-#define VALNUM 7 //this cannot work with test reacting
-#define PWMNUM 4
-
-// This is the finite state machine that used in the controller
-// The states are
-#define R_Swing 0
-#define R_SwingMid 1
-#define R_HStrike 2
-#define L_AnkPush 3
-#define L_ToeOff 4
-#define L_Swing 5
-#define L_SwingMid 6
-#define L_HStrike 7
-#define R_AnkPush 8
-#define R_ToeOff 9
-class FSMachine
-{
-private:
-    /* data */
-public:
-    FSMachine(/* args */);
-    ~FSMachine();
-    char CalState(unsigned int *curMea, char curState);
-};
 
 
 
@@ -155,12 +142,12 @@ private:
     //connect to pc
     std::shared_ptr<Displayer> client;  //shared_ptr doesn't work here since it cannot be automatically shutdown
     //Displayer *client;
+    void SendToDisp(const char *senRaw);
 
 
-
-    //shared_ptr<unsigned int> senData;
-    unsigned int senData[NUMSEN+1];
-    unsigned int preSen[NUMSEN+1]; 
+    //shared_ptr<int> senData;
+    int senData[NUMSEN+1];
+    int preSen[NUMSEN+1]; 
 
     std::shared_ptr<PWMGen> LKnePreVal;
     std::shared_ptr<PWMGen> RKnePreVal;
@@ -179,7 +166,7 @@ private:
     char *valveCond;
     bool display=false;
     int preSend=0; //scale the sending freq since matplotlib cannot handle it
-    const int dispPreScale = 49; //determine how frequent we send data back to pc
+    const int dispPreScale = 69; //determine how frequent we send data back to pc
     // Valve control
     void ValveOn(std::shared_ptr<Valve> val);
     void ValveOff(std::shared_ptr<Valve> val);
@@ -227,24 +214,24 @@ private:
     void TestPWM();
     void ShutDownPWM();
 
+    //test single pwm valve
+    // valve will be actuate with 33% duty cycle
+    std::shared_ptr<PWMGen> testPWM;
+    bool testOnePWM_flag = false;
+    void TestOnePWM(int pwmIdx);
+
+
     // initialize cylinder for supporting body weight
-    unsigned int sup_LKnePre=250;
+    int sup_LKnePre=250;
     // left leg energy recycle
     struct LeftEngRecycle
     {
         int curPhase=1;
     };
     LeftEngRecycle LEngRec;
-    int CalDuty(unsigned int curPre, unsigned int desPre,unsigned int tankPre);
-    void FSM_loop();
-    int Phase1Con();
-    int Phase2Con();
-    int Phase3Con();
-    int Phase4Con();
-    int Phase5Con();
-    int Phase6Con();
-    int Phase7Con();
-    int Phase8Con();
+    int CalDuty(int curPre, int desPre,int tankPre);
+    
+
     
     //sample Model data 
     struct ConModSamp{
@@ -285,24 +272,62 @@ private:
     void FreeWalk_on();
     void FreeWalk_off();
 
+
+    //PID controller test
+    //=========================================================================================================================
+    void PIDActTest(int joint);
+    void PIDRecTest(int desPre,int joint);
+
+
+
+
+
+
+    //=========================================================================================================================
+    //PID Controllers
+    std::shared_ptr<PIDCon> kneRecPID;
+    std::shared_ptr<PIDCon> ankRecPID;
+    std::shared_ptr<PIDCon> kneSupPID; // we need to re-assign a PID controller everytime we went into that stage
+                                          // the controller are created when phase_pre => phase_next if it is going to be used in next phase
+                                          // we only need one since we will need to prepare for impact on one leg only
+    std::shared_ptr<PIDCon> ankActPID;
+
+
+
+    //=========================================================================================================================
     //Biped walking energy recycle
     FSMachine FSM ;
     char curState;
-    struct PreRecPID{
-        unsigned int kneRecPre = 300;
-        unsigned int ankRecPre = 200;
+    int ankActPre = 300;
+    int kneSupPre = 300;
+    
+    void Init_swing(char side);
+    void Mid_swing(char side);
+    void Term_swing(char side);
+    void Load_resp(char side);
+    void Mid_stance(char side);
+    void Term_stance(char side);
+    void Pre_swing(char side);
 
-    };
+
+
+
     void BipedEngRec();
-    void PreRec(std::shared_ptr<PWMGen> knePreVal,std::shared_ptr<PWMGen> ankPreVal,unsigned int knePre, unsigned int ankPre,unsigned int tankPre);
-    void CheckSupPre(std::shared_ptr<PWMGen> preVal,unsigned int supPre);
-    struct SupPrePID{ //PID controller for generating supporting pressure, it is variable since it may need to be adjusted real-time
-        double kp = 10;
-        double ki = 0.01;
-        double kd = 0.001;
+    
+    void KnePreRec(std::shared_ptr<PWMGen> knePreVal,int knePre, int tankPre);
+    float KnePreRecInput(int knePre,int tankPre);
+    void AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tankPre,std::shared_ptr<Valve> balVal);
+    float AnkPreRecInput(int ankPre,int tankPre);
+    bool CheckSupPre(std::shared_ptr<PWMGen> preVal,int knePre,int tankPre);
 
-    };
-    SupPrePID supPreCon;
+    
+    float SupPreInput(int knePre,int tankPre);
+    
+    float AnkActInput(int ankPre,int tankPre);
+    void AnkPushOff(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tankPre);
+
+
+    //============================================================================================================================================
 
     //Test ankle actuation
     bool TestRAnkFlag = false;
@@ -321,7 +346,7 @@ public:
     ~Controller();
     void PreRel();
     
-    void ConMainLoop(unsigned int *curSen,char* senRaw);
+    void ConMainLoop(int *curSen,char* senRaw);
 };
 
 

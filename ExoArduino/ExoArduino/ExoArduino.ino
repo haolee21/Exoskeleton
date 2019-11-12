@@ -110,7 +110,7 @@ void loop()
 		// if (testSent2 > 90)
 		// 	testSent2 = 65;
 
-		*bufferPointer++ = '@';
+		
 
 		for (int senIndex = 0; senIndex < NUMSEN; senIndex++)
 		{
@@ -133,7 +133,7 @@ void loop()
 			pinCond = true;
 		}
 		
-		Serial.write(buffer,NUMSEN*2+2);
+		Serial.write(buffer,NUMSEN*2+1);
 		readyToSend = false;
 		bufferPointer = buffer;
 	}
