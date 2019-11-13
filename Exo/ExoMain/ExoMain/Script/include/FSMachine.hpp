@@ -2,6 +2,7 @@
 #define FSMACHINE_HPP
 #include "common.hpp"
 #include <memory>
+#include <algorithm>
 // This is the finite state machine that used in the controller
 // There are 8 phases in each gait
 
@@ -44,8 +45,8 @@ private:
     unsigned int p6_idx;
     unsigned int p7_idx;
     unsigned int p8_idx;
-    int curIdx1=0;
-    int curIdx2=0;
+    unsigned int curIdx1=0;
+    unsigned int curIdx2=0;
     // I know it looks redundant, but this makes searching minimal easier
 
     std::unique_ptr<int[]> LHipBuf1;
@@ -64,6 +65,13 @@ private:
     void PushSen1(int *curMea);
     void PushSen2(int *curMea);
     bool reachP8 = false;
+    //P1 and P5 search min angle of ankle
+    void GetP5();
+    void GetP1();
+    //P3 and P7 search min angle of knee
+    //phase detection functions
+    void GetP3();
+    void GetP7();
 
 public:
     FSMachine(/* args */);
@@ -74,5 +82,6 @@ public:
     
     void PushSen(int *curMea);
     void ReachP8();
+    void Reset();
 };
 #endif
