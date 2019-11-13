@@ -74,7 +74,7 @@ Controller::Controller(std::string filePath, Com *_com, bool _display,std::chron
     // this->trParam.testOut.reset(new Valve("TestMea", filePath, 8, 6)); //this uses gpio2
     // this->ValveOff(this->trParam.testOut);
     this->curState = 0;
-    this->FSM = FSMachine();
+    this->FSM.reset(new FSMachine());
 
 
     // now we need to actuate some valves, since we prefer the system to isolate each chambers
@@ -617,7 +617,7 @@ float Controller::KnePreRecInput(int knePre,int tankPre){
 //===================================================================================================================
 
 void Controller::BipedEngRec(){
-    this->curState = this->FSM.CalState(this->senData,this->curState);
+    this->curState = this->FSM->CalState(this->senData,this->curState);
     switch (this->curState){
         case Phase1:
             this->Load_resp('l');

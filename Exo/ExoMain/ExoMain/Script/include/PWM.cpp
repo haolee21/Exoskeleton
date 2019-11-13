@@ -81,15 +81,13 @@ void PWMGen::Mainloop() {
     long int interval = this->sampT*USEC;
    
 	clock_gettime(CLOCK_MONOTONIC, &t);
-	t.tv_nsec += 0 * MSEC;
-    // this->tsnorm(&t);
-	Common::tsnorm(&t);
+	// t.tv_nsec += 0 * MSEC;
+    // // this->tsnorm(&t);
+	// Common::tsnorm(&t);
 	//
 
 	while (this->on) {
-		//timer
-		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
-		//
+	
 		int curOnTime;
 		{
 			std::lock_guard<std::mutex> lock(*this->DutyLock);
@@ -101,8 +99,10 @@ void PWMGen::Mainloop() {
 		pwmDataOn.push_back(curOnTime);
 		this->pwmOnOffRec->PushData(start_time.count(),pwmDataOn);
 		this->gpioPin->On();
-		usleep(curOnTime);
 		
+		//t.tv_nsec += curOnTime * USEC;
+		usleep(curOnTime); //at first I tried clock_nanosleep, but maybe due to accuracy issue, this method is more stable
+		//clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
 		this->gpioPin->Off();
 		
 
@@ -117,10 +117,11 @@ void PWMGen::Mainloop() {
 
 		// timer
 		// calculate next shot
-        t.tv_nsec += interval;
-        // this->tsnorm(&t);
+        //t.tv_nsec += (interval-curOnTime*USEC);
+		t.tv_nsec += interval;
+		// this->tsnorm(&t);
 		Common::tsnorm(&t);
-		//
+		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
 	}
 }
 int PWMGen::GetIdx(){

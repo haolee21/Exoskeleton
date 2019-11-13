@@ -296,7 +296,8 @@ private:
 
     //=========================================================================================================================
     //Biped walking energy recycle
-    FSMachine FSM ;
+    std::shared_ptr<FSMachine> FSM;
+    // FSMachine FSM;
     char curState;
     int ankActPre = 300;
     int kneSupPre = 300;

@@ -1,6 +1,19 @@
 #include "FSMachine.hpp"
 FSMachine::FSMachine(/* args */)
 {
+    this->LHipBuf1.reset(new int[POS_BUF_SIZE]);
+    this->RHipBuf1.reset(new int[POS_BUF_SIZE]);
+    this->LKneBuf1.reset(new int[POS_BUF_SIZE]);
+    this->RKneBuf1.reset(new int[POS_BUF_SIZE]);
+    this->LAnkBuf1.reset(new int[POS_BUF_SIZE]);
+    this->RAnkBuf1.reset(new int[POS_BUF_SIZE]);
+
+    this->LHipBuf2.reset(new int[POS_BUF_SIZE]);
+    this->RHipBuf2.reset(new int[POS_BUF_SIZE]);
+    this->LKneBuf2.reset(new int[POS_BUF_SIZE]);
+    this->RKneBuf2.reset(new int[POS_BUF_SIZE]);
+    this->LAnkBuf2.reset(new int[POS_BUF_SIZE]);
+    this->RAnkBuf2.reset(new int[POS_BUF_SIZE]);
 }
 
 FSMachine::~FSMachine()
@@ -102,4 +115,38 @@ char FSMachine::CalState(int *curMea,char curState){
             return curState;
     }
     
+}
+
+//time based FSM
+void FSMachine::PushSen1(int *curMea){
+    // if it reaches max size of the buffer, we stop recording
+    if(this->curIdx1<POS_BUF_SIZE){
+        this->LHipBuf1[this->curIdx1] = curMea[LHIPPOS];
+        this->RHipBuf1[this->curIdx1] = curMea[RHIPPOS];
+        this->LKneBuf1[this->curIdx1] = curMea[LKNEPOS];
+        this->RKneBuf1[this->curIdx1] = curMea[RKNEPOS];
+        this->LAnkBuf1[this->curIdx1] = curMea[LANKPOS];
+        this->RAnkBuf1[this->curIdx1] = curMea[RANKPOS];
+    }
+}
+void FSMachine::PushSen2(int *curMea){
+    if(this->curIdx2<POS_BUF_SIZE){
+        this->LHipBuf2[this->curIdx2] = curMea[LHIPPOS];
+        this->RHipBuf2[this->curIdx2] = curMea[RHIPPOS];
+        this->LKneBuf2[this->curIdx2] = curMea[LKNEPOS];
+        this->RKneBuf2[this->curIdx2] = curMea[RKNEPOS];
+        this->LAnkBuf2[this->curIdx2] = curMea[LANKPOS];
+        this->RAnkBuf2[this->curIdx2] = curMea[RANKPOS];
+    }
+}
+void FSMachine::PushSen(int *curMea){
+    if(this->reachP8){
+        this->PushSen2(curMea);
+    }
+    else{
+        this->PushSen1(curMea);
+    }
+}
+void FSMachine::ReachP8(){
+    this->reachP8 = true;
 }
