@@ -1,6 +1,6 @@
 #include "common.hpp"
 // This is for real time task
-int initialize_memory_allocation(void)
+int Common::initialize_memory_allocation(void)
 {
     // Allocate some memory
     int i, page_size;
@@ -25,7 +25,7 @@ int initialize_memory_allocation(void)
     free(buffer);
     return 0;
 }
-void stack_prefault(void)
+void Common::stack_prefault(void)
 {
 
     unsigned char dummy[MAX_SAFE_STACK];

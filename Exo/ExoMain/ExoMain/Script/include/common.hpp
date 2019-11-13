@@ -40,8 +40,8 @@
                                       faulting */
 
 
-int initialize_memory_allocation(void);
-void stack_prefault(void);
+// int initialize_memory_allocation(void);
+// void stack_prefault(void);
 
 #define NSEC_PER_SEC (1000000000) // The number of nsecs per sec.
 
@@ -106,6 +106,8 @@ public:
     Common(/* args */);
     ~Common();
     static void tsnorm(struct timespec *ts);
+    static int initialize_memory_allocation(void);
+    static void stack_prefault(void);
 };
 
 

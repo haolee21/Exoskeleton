@@ -64,7 +64,7 @@ void Sensor::Start(std::chrono::system_clock::time_point startTime)
 	//this->th_SenUpdate.reset(new thread(&Sensor::senUpdate, this));
 
 	struct sched_param param;
-	initialize_memory_allocation();
+	Common::initialize_memory_allocation();
 	param.sched_priority = SENSOR_PRIORITY;
 
 	if (sched_setscheduler(0, SCHED_FIFO, &param) == -1){
@@ -77,7 +77,7 @@ void Sensor::Start(std::chrono::system_clock::time_point startTime)
     }
 
     /* Pre-fault our stack */
-	stack_prefault();
+	Common::stack_prefault();
 
 
 
@@ -98,7 +98,7 @@ void Sensor::Stop()
 	this->sw_senUpdate = false;
 	this->serialPortClose(this->serialDevId);
 	//this->th_SenUpdate->join();
-	pthread_join(this->th_SenUpdate,nullptr);
+	pthread_join(this->th_SenUpdate,NULL);
 	std::cout<<"sensor fully stops\n";
 	
 }

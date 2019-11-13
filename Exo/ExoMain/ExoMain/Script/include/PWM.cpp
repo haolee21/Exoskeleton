@@ -19,14 +19,14 @@
 
 typedef std::chrono::duration<unsigned long, std::micro> microsecs_t;
 //timer
-void PWMGen::tsnorm(struct timespec *ts)
-{
-    while (ts->tv_nsec >= NSEC_PER_SEC)
-    {
-        ts->tv_nsec -= NSEC_PER_SEC;
-        ts->tv_sec++;
-    }
-}
+// void PWMGen::tsnorm(struct timespec *ts)
+// {
+//     while (ts->tv_nsec >= NSEC_PER_SEC)
+//     {
+//         ts->tv_nsec -= NSEC_PER_SEC;
+//         ts->tv_sec++;
+//     }
+// }
 //
 PWMGen::PWMGen(std::string valveName, std::string filePath,int pinId,int _sampT,int _pwmIdx,std::chrono::system_clock::time_point _origin)
 {
@@ -82,7 +82,8 @@ void PWMGen::Mainloop() {
    
 	clock_gettime(CLOCK_MONOTONIC, &t);
 	t.tv_nsec += 0 * MSEC;
-    this->tsnorm(&t);
+    // this->tsnorm(&t);
+	Common::tsnorm(&t);
 	//
 
 	while (this->on) {
@@ -117,9 +118,9 @@ void PWMGen::Mainloop() {
 		// timer
 		// calculate next shot
         t.tv_nsec += interval;
-        this->tsnorm(&t);
+        // this->tsnorm(&t);
+		Common::tsnorm(&t);
 		//
-
 	}
 }
 int PWMGen::GetIdx(){

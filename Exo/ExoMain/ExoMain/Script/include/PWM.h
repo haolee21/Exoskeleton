@@ -11,7 +11,8 @@
 #include <unistd.h>
 #include "PIDCon.h"
 #include<pthread.h>
-
+#include "common.hpp"
+#include <time.h>
 union Duty
 {
     int num;
@@ -49,7 +50,7 @@ private:
 	std::shared_ptr<Recorder<int>> pwmRec;
 	std::shared_ptr<Recorder<int>> pwmOnOffRec;
 	//timer 
-	void tsnorm(struct timespec *ts);
+	// void tsnorm(struct timespec *ts);
 	int sampT;
 	long int ms_cnt = 0;
 };
