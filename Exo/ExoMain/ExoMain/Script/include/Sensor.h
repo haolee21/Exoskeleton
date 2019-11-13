@@ -119,7 +119,7 @@ private:
 	void serialPortClose(int serial_port);
 	
 	//Lowpass butterworth filter, this can be implented to arduino if we replace arduino mega with better MCU chips
-	BWFilter bFilter;
+	//BWFilter bFilter;
 	bool filterInit_flag = false;
 
 

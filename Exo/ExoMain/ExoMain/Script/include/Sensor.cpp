@@ -338,6 +338,7 @@ void Sensor::serialPortClose(int serial_port)
 
 Sensor::~Sensor()
 {
+	
 	this->saveData_th->join();
 	std::cout << "start to delete" << std::endl;
 
