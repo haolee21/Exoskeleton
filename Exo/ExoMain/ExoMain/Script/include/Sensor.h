@@ -65,6 +65,8 @@ public:
 	
 	int oriData[NUMSEN]; //original data
 	int senData[NUMSEN+1]; //data get from ADC after filter
+	
+
 
 	char senDataRaw[DATALEN];
 	std::shared_ptr<std::mutex> senDataLock;
@@ -131,6 +133,7 @@ private:
 	//Displayer
 	bool display;
 	//Controller
+	
 	Com *com;
 	std::thread *conTh;
 	void callCon();

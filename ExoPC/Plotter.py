@@ -65,7 +65,8 @@ class Plotter(object):
                     lineList[tempIndex].set_ydata(yData[self.plotArray[tempIndex]-1,:])
                     axes[row,col].draw_artist(axes[row,col].patch)
                     axes[row,col].draw_artist(lineList[tempIndex])
-                    tempIndex = tempIndex+1
+                    tempIndex = tempIndex + 1
+                    
             fig.canvas.update()
             fig.canvas.flush_events()
 

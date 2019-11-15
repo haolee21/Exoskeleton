@@ -45,8 +45,8 @@ private:
     unsigned int p6_idx;
     unsigned int p7_idx;
     unsigned int p8_idx;
-    unsigned int curIdx1=0;
-    unsigned int curIdx2=0;
+    unsigned int curIdx1;
+    unsigned int curIdx2;
     // I know it looks redundant, but this makes searching minimal easier
 
     std::unique_ptr<int[]> LHipBuf1;
@@ -72,6 +72,8 @@ private:
     //phase detection functions
     void GetP3();
     void GetP7();
+
+    bool gaitEnd;
 
 public:
     FSMachine(/* args */);

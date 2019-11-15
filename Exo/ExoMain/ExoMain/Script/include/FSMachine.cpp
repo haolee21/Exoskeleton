@@ -14,6 +14,17 @@ FSMachine::FSMachine(/* args */)
     this->RKneBuf2.reset(new int[POS_BUF_SIZE]);
     this->LAnkBuf2.reset(new int[POS_BUF_SIZE]);
     this->RAnkBuf2.reset(new int[POS_BUF_SIZE]);
+
+    this->gaitEnd = false;
+    this->p1_idx = 0;
+    this->p2_idx = 0;
+    this->p3_idx = 0;
+    this->p5_idx = 0;
+    this->p6_idx = 0;
+    this->p7_idx = 0;
+    this->p8_idx = 0;
+    this->curIdx1 = 0;
+    this->curIdx2 = 0;
 }
 
 FSMachine::~FSMachine()
@@ -127,6 +138,11 @@ void FSMachine::PushSen1(int *curMea){
         this->RKneBuf1[this->curIdx1] = curMea[RKNEPOS];
         this->LAnkBuf1[this->curIdx1] = curMea[LANKPOS];
         this->RAnkBuf1[this->curIdx1] = curMea[RANKPOS];
+        this->curIdx1++;
+        std::cout << "put into buffer1\n";
+    }
+    else{
+        std::cout << "buffer1 is full\n";
     }
 }
 void FSMachine::PushSen2(int *curMea){
@@ -137,6 +153,11 @@ void FSMachine::PushSen2(int *curMea){
         this->RKneBuf2[this->curIdx2] = curMea[RKNEPOS];
         this->LAnkBuf2[this->curIdx2] = curMea[LANKPOS];
         this->RAnkBuf2[this->curIdx2] = curMea[RANKPOS];
+        this->curIdx2++;
+        std::cout << "put into buffer2\n";
+    }
+    else{
+        std::cout << "buffer2 is full\n";
     }
 }
 void FSMachine::PushSen(int *curMea){
@@ -153,22 +174,27 @@ void FSMachine::ReachP8(){
 void FSMachine::Reset(){
     this->curIdx1 = 0;
     this->curIdx2 = 0;
+    this->gaitEnd = false;
 }
 void FSMachine::GetPhaseTime(unsigned long &p1_t, unsigned long &p2_t, unsigned long &p3_t,
                       unsigned long &p5_t, unsigned long &p6_t, unsigned long &p7_t, unsigned long &p8_t)
 {
-    p1_t = (unsigned long)(this->p1_idx + this->curIdx1) * MSEC;
-    p2_t = (unsigned long)(this->p2_idx + this->curIdx1) * MSEC;
-    p3_t = (unsigned long)(this->p3_idx + this->curIdx1) * MSEC;
-    p5_t = (unsigned long)this->p5_idx * MSEC;
-    p6_t = (unsigned long)this->p6_idx * MSEC;
-    p7_t = (unsigned long)this->p7_idx * MSEC;
-    p8_t = (unsigned long)this->p8_idx * MSEC;
+    std::cout << "calculate phase time\n";
+    
+    if (this->gaitEnd)
+    {
+        p1_t = (unsigned long)(this->p1_idx + this->curIdx1) * MSEC;
+        p2_t = (unsigned long)(this->p2_idx + this->curIdx1) * MSEC;
+        p3_t = (unsigned long)(this->p3_idx + this->curIdx1) * MSEC;
+        p5_t = (unsigned long)this->p5_idx * MSEC;
+        p6_t = (unsigned long)this->p6_idx * MSEC;
+        p7_t = (unsigned long)this->p7_idx * MSEC;
+        p8_t = (unsigned long)this->p8_idx * MSEC;
 
 
 
-    this->Reset();
-
+        this->Reset();
+    }
 }
 void FSMachine::GetP5(){
     int *swPoint = std::max_element(this->RAnkBuf1.get(), this->RAnkBuf1.get() + this->curIdx1);
@@ -185,6 +211,8 @@ void FSMachine::GetP3(){
     // here we define it is in the mid of p1 and p3
     unsigned int p2 = this->p1_idx + this->p3_idx;
     this->p2_idx = p2 >> 1;
+
+    this->gaitEnd = true;
 }
 void FSMachine::GetP7(){
     int *swPoint = std::max_element(this->RKneBuf2.get(), this->RKneBuf2.get() + this->curIdx2);

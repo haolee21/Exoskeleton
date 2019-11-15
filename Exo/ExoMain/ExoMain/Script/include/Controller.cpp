@@ -75,6 +75,7 @@ Controller::Controller(std::string filePath, Com *_com, bool _display,std::chron
     // this->ValveOff(this->trParam.testOut);
     this->curState = 0;
     this->FSM.reset(new FSMachine());
+    this->FSMRec.reset(new Recorder<unsigned long>("FSM", filePath, "time,phase1,phase2,phase3,phase5,phase6,phase7,phase8"));
 
 
     // now we need to actuate some valves, since we prefer the system to isolate each chambers
@@ -88,6 +89,10 @@ Controller::Controller(std::string filePath, Com *_com, bool _display,std::chron
 }
 Controller::~Controller()
 {
+    std::cout << "destory controller\n";
+    if (this->SingleGait_th)
+        this->SingleGait_th->join();
+    
     this->PreRel();
     std::shared_ptr<PWMGen> *begPWM=this->PWMList;
     do{
@@ -97,6 +102,7 @@ Controller::~Controller()
     
     delete this->valveCond;
     delete this->pwmDuty;
+
     //delete this->senData;
 }
 
@@ -213,6 +219,37 @@ void Controller::ConMainLoop(int *_senData, char *senRaw)
             this->com->comArray[TESTONEPWM] = false;
             
         }
+        if(this->com->comArray[CON_LANK_ACT]){
+            taskQue.push(std::thread(&Controller::AnkPushOff_main, this, this->LAnkPreVal, this->senData[LANKPRE], this->senData[TANKPRE]));
+        }
+        if(this->com->comArray[CON_RANK_ACT]){
+            taskQue.push(std::thread(&Controller::AnkPushOff_main, this, this->RAnkPreVal, this->senData[RANKPRE], this->senData[TANKPRE]));
+        }
+        if(this->com->comArray[CON_LKNE_REC]){
+            taskQue.push(std::thread(&Controller::KnePreRec_main, this, this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE],this->kneRecPre));
+        }
+        if(this->com->comArray[CON_RKNE_REC]){
+            taskQue.push(std::thread(&Controller::KnePreRec_main, this, this->RKnePreVal, this->senData[RKNEPRE], this->senData[TANKPRE],this->kneRecPre));
+        }
+        if(this->com->comArray[CON_LANK_REC]){
+            taskQue.push(std::thread(&Controller::AnkPreRec_main, this, this->LAnkPreVal, this->senData[LANKPRE], this->senData[TANKPRE],this->LBalVal,this->ankRecPre));
+        }
+        if(this->com->comArray[CON_RANK_REC]){
+            taskQue.push(std::thread(&Controller::AnkPreRec_main, this, this->RAnkPreVal, this->senData[RANKPRE], this->senData[TANKPRE],this->RBalVal,this->ankRecPre));
+        }
+        if(this->com->comArray[CON_LKNE_SUP]){
+            taskQue.push(std::thread(&Controller::CheckSupPre_main, this, this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE],this->kneSupPre));
+        }
+        if(this->com->comArray[CON_RKNE_SUP]){
+            taskQue.push(std::thread(&Controller::CheckSupPre_main, this, this->RKnePreVal, this->senData[RKNEPRE], this->senData[TANKPRE],this->kneSupPre));
+        }
+        if(this->com->comArray[CON_LANK_SUP]){
+            taskQue.push(std::thread(&Controller::CheckSupPre_main, this, this->LAnkPreVal, this->senData[LANKPRE], this->senData[TANKPRE],this->ankSupPre));
+        }
+        if(this->com->comArray[CON_RANK_SUP]){
+            taskQue.push(std::thread(&Controller::CheckSupPre_main, this, this->RAnkPreVal, this->senData[RANKPRE], this->senData[TANKPRE],this->ankSupPre));
+        }
+
     }
     if (this->display)
     {
@@ -545,26 +582,26 @@ void Controller::PIDActTest(int joint){
     //although it is called act test, for knee support, it is also an action
     if(joint==0){
         this->ValveOn(this->LBalVal);
-        if(this->CheckSupPre(this->LKnePreVal,this->senData[LKNEPRE],this->senData[TANKPRE])){
+        if(this->CheckSupPre_main(this->LKnePreVal,this->senData[LKNEPRE],this->senData[TANKPRE],this->kneSupPre)){
             this->com->comArray[PIDACTTEST] = false;
         }
     }     
     else if (joint ==1){
         this->ValveOn(this->LBalVal);
-        if(this->CheckSupPre(this->LAnkPreVal,this->senData[LANKPRE],this->senData[TANKPRE])){
+        if(this->CheckSupPre_main(this->LAnkPreVal,this->senData[LANKPRE],this->senData[TANKPRE],this->ankSupPre)){
             this->com->comArray[PIDACTTEST] = false;
         }
         
     }
     else if(joint ==2){
         this->ValveOn(this->RBalVal);
-        if(this->CheckSupPre(this->RKnePreVal,this->senData[RKNEPRE],this->senData[TANKPRE])){
+        if(this->CheckSupPre_main(this->RKnePreVal,this->senData[RKNEPRE],this->senData[TANKPRE],this->kneSupPre)){
             this->com->comArray[PIDACTTEST] = false;
         }
     }
     else if(joint ==3){
         this->ValveOn(this->RBalVal);
-        if(this->CheckSupPre(this->RAnkPreVal,this->senData[RANKPRE],this->senData[TANKPRE])){
+        if(this->CheckSupPre_main(this->RAnkPreVal,this->senData[RANKPRE],this->senData[TANKPRE],this->ankSupPre)){
             this->com->comArray[PIDACTTEST] = false;
         }
 
@@ -595,9 +632,9 @@ void Controller::PIDRecTest(int desPre,int joint){
 
 // Data pre-process for the PID controller (feedback linearization?)
 //===========================================================================================
-float Controller::SupPreInput(int knePre,int tankPre){
+float Controller::SupPreInput(int knePre,int tankPre,int desPre){
 
-    return (float)(this->kneSupPre-knePre)/(tankPre-knePre);
+    return (float)(desPre-knePre)/(tankPre-knePre);
 }
 float Controller::AnkActInput(int ankPre,int tankPre){
     return (float)(this->ankActPre-ankPre)/(tankPre-ankPre);
@@ -617,40 +654,51 @@ float Controller::KnePreRecInput(int knePre,int tankPre){
 //===================================================================================================================
 
 void Controller::BipedEngRec(){
-    this->curState = this->FSM->CalState(this->senData,this->curState);
-    switch (this->curState){
-        case Phase1:
-            this->Load_resp('l');
-            this->Init_swing('r');
-            break;
-        case Phase2:
-            this->Mid_stance('l');
-            this->Mid_swing('r');
-            break;
-        case Phase3:
-            this->Term_stance('l');
-            break;
-        case Phase4:
-            this->Pre_swing('l');
-            this->Term_swing('r');
-            break;
-        case Phase5:
-            this->Init_swing('l');
-            this->Load_resp('r');
-            break;
-        case Phase6:
-            this->Mid_swing('l');
-            this->Mid_stance('r');
-            break;
-        case Phase7:
-            this->Term_stance('r');
-            break;
-        case Phase8:
-            this->Term_swing('l');
-            this->Pre_swing('r');
-            break;
-        
+    
+
+
+
+
+    if(this->firstGait){
+        this->preHipDiff = this->senData[LHIPPOS] + this->senData[RHIPPOS] - this->LHipMean - this->RHipMean;
+        this->firstGait = false;
     }
+    else{
+        int curHipDiff = this->senData[LHIPPOS] + this->senData[RHIPPOS] - this->LHipMean - this->RHipMean;
+        std::cout << curHipDiff << std::endl;
+        if (this->gaitStart)
+        {
+            if(this->leftFront){
+                if((this->preHipDiff<0)&&(curHipDiff>0)){
+                    FSM->ReachP8();
+                    this->leftFront = false;
+                }
+
+            }
+            else{
+                if((this->preHipDiff>0)&&(curHipDiff<0)){
+                    this->gaitStart = false;
+                    this->leftFront = true;
+                    this->SingleGait_th.reset(new std::thread(&Controller::SingleGaitPeriod, this));
+                    std::cout << "gait starts\n";
+                }
+            }
+
+            FSM->PushSen(this->senData);
+        }
+        else{
+            if((this->preHipDiff>0)&&(curHipDiff<0)){
+                this->gaitStart = true;
+            }
+        }
+        this->preHipDiff = curHipDiff;
+       
+    }
+
+
+
+
+    
 }
 
 
@@ -681,40 +729,51 @@ void Controller::Mid_swing(char side){
 void Controller::Term_swing(char side){
     if(side == 'r'){
         this->ValveOff(this->RKneVal);
-        this->CheckSupPre(this->RKnePreVal,this->senData[RKNEPRE],this->senData[TANKPRE]);
-
+        this->com->comArray[CON_RKNE_SUP] = true;
+        //this->CheckSupPre(this->RKnePreVal, this->senData[RKNEPRE], this->senData[TANKPRE]);
     }
     else{
         this->ValveOff(this->LKneVal);
-        this->CheckSupPre(this->LKnePreVal,this->senData[LKNEPRE],this->senData[TANKPRE]);
+        this->com->comArray[CON_LKNE_SUP] = true;
+        // this->CheckSupPre(this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE]);
     }
 }
 void Controller::Load_resp(char side){
     if(side=='r'){
         this->ValveOff(this->RKneVal);
-        this->KnePreRec(this->RKnePreVal,this->senData[RKNEPRE],this->senData[TANKPRE]);
-        this->AnkPreRec(this->RAnkPreVal,this->senData[RANKPRE],this->senData[TANKPRE],this->RBalVal);
-        
+        this->com->comArray[CON_RKNE_REC] = true;
+        this->com->comArray[CON_RANK_REC] = true;
+        // this->KnePreRec(this->RKnePreVal,this->senData[RKNEPRE],this->senData[TANKPRE]);
+        // this->AnkPreRec(this->RAnkPreVal,this->senData[RANKPRE],this->senData[TANKPRE],this->RBalVal);
     }
     else{
         this->ValveOff(this->LKneVal);
-        this->KnePreRec(this->LKnePreVal,this->senData[LKNEPRE],this->senData[TANKPRE]);
-        this->AnkPreRec(this->LAnkPreVal,this->senData[LANKPRE],this->senData[TANKPRE],this->LBalVal);
-        
+        this->com->comArray[CON_LKNE_REC] = true;
+        this->com->comArray[CON_LANK_REC] = true;
+        // this->KnePreRec(this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE]);
+        // this->AnkPreRec(this->LAnkPreVal,this->senData[LANKPRE],this->senData[TANKPRE],this->LBalVal);
     }
 }
 void Controller::Mid_stance(char side){
-    // do nothing 
-
+    // make sure the pressure valves stops
+    this->SetDuty(this->RKnePreVal, 0);
+    this->SetDuty(this->LKnePreVal, 0);
+    this->SetDuty(this->LAnkPreVal, 0);
+    this->SetDuty(this->RAnkPreVal, 0);
+    this->com->comArray[CON_LKNE_REC] = false;
+    this->com->comArray[CON_RKNE_REC] = false;
+    this->com->comArray[CON_LANK_REC] = false;
+    this->com->comArray[CON_RANK_REC] = false;
 
 }
 void Controller::Term_stance(char side){
     // in terminal stance, the ankle need to slow down while knee needs to extend, so we use balance valve to achieve it.
     if(side=='r'){
-        this->AnkPreRec(this->RAnkPreVal,this->senData[RANKPRE],this->senData[TANKPRE],this->RBalVal);
+        this->com->comArray[CON_RANK_REC] = true;
     }
     else{
-        this->AnkPreRec(this->LAnkPreVal,this->senData[LANKPRE],this->senData[TANKPRE],this->LBalVal);
+        this->com->comArray[CON_LANK_REC] = true;
+        
     }
 
 }
@@ -722,26 +781,34 @@ void Controller::Pre_swing(char side){
     // do nothing
     if(side=='r'){
         this->ValveOn(this->RBalVal);
-        this->AnkPushOff(this->RAnkPreVal,this->senData[RANKPRE],this->senData[TANKPRE]);
     }
     else{
         this->ValveOn(this->LBalVal);
-        this->AnkPushOff(this->LAnkPreVal,this->senData[LANKPRE],this->senData[TANKPRE]);
-
     }
 }
-
+void Controller::Ank_push_off(char side){
+    if(side =='r'){
+        this->com->comArray[CON_RANK_ACT] = true;
+        this->ValveOn(this->RBalVal);
+    }
+    else{
+        this->com->comArray[CON_LANK_ACT] = true;
+        this->ValveOn(this->LBalVal);
+    }
+}
 
 // Actions
 // detail of how pressure valve will operate is defined here
 //===========================================================================================
-void Controller::KnePreRec(std::shared_ptr<PWMGen> knePreVal,int knePre,int tankPre){
-    if(knePre-tankPre>10){
+
+
+void Controller::KnePreRec_main(std::shared_ptr<PWMGen> knePreVal,int knePre,int tankPre,int desPre){
+    if((knePre-tankPre>10)&&(knePre>desPre)){
         if(!this->kneRecPID){
             this->kneRecPID.reset(new PIDCon(100,0.01,0.001,this->KnePreRecInput(knePre,tankPre)));
         }
         else
-            this->SetDuty(knePreVal,this->kneRecPID->GetDuty(this->KnePreRecInput(knePre,tankPre),this->senData[TIME]));
+            this->SetDuty(knePreVal,this->kneRecPID->GetDuty(this->KnePreRecInput(knePre,tankPre)));
 
     }
     else{
@@ -752,14 +819,14 @@ void Controller::KnePreRec(std::shared_ptr<PWMGen> knePreVal,int knePre,int tank
 
 }
 
-void Controller::AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tankPre,std::shared_ptr<Valve> balVal){
+void Controller::AnkPreRec_main(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tankPre,std::shared_ptr<Valve> balVal,int desPre){
     //When recycle ankle pressure, if the pressure is too high, we direct the ankle pressure to the knee joint
-    if(ankPre-tankPre>10){
+    if((ankPre-tankPre>10)&&(ankPre>desPre)){
         if(!this->ankRecPID){
             this->ankRecPID.reset(new PIDCon(100,0.1,0.001,this->AnkPreRecInput(ankPre,tankPre)));
         }
         this->ValveOn(balVal);
-        this->SetDuty(ankPreVal,this->ankRecPID->GetDuty(this->AnkPreRecInput(ankPre,tankPre),this->senData[TIME]));
+        this->SetDuty(ankPreVal,this->ankRecPID->GetDuty(this->AnkPreRecInput(ankPre,tankPre)));
     }
     else{
         
@@ -768,13 +835,13 @@ void Controller::AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tank
     }
 }
 
-bool Controller::CheckSupPre(std::shared_ptr<PWMGen> preVal,int knePre,int tankPre){
-    if(knePre-this->kneSupPre<10){
+bool Controller::CheckSupPre_main(std::shared_ptr<PWMGen> preVal,int knePre,int tankPre,int desPre){
+    if(knePre-desPre<10){
         if(!this->kneSupPID){
-            this->kneSupPID.reset(new PIDCon(100,0.1,0.01,this->SupPreInput(knePre,tankPre)));
+            this->kneSupPID.reset(new PIDCon(100,0.1,0.01,this->SupPreInput(knePre,tankPre,desPre)));
         }
         else{
-            this->SetDuty(preVal,this->kneSupPID->GetDuty(this->SupPreInput(knePre,tankPre),this->senData[TIME]));
+            this->SetDuty(preVal,this->kneSupPID->GetDuty(this->SupPreInput(knePre,tankPre,desPre)));
         }
         return false;
     }
@@ -787,13 +854,13 @@ bool Controller::CheckSupPre(std::shared_ptr<PWMGen> preVal,int knePre,int tankP
     
 
 }
-void Controller::AnkPushOff(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tankPre){
+void Controller::AnkPushOff_main(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tankPre){
     if(this->ankActPre-ankPre<10){
         if(!this->ankActPID){
         this->ankActPID.reset(new PIDCon(800,0.01,0.001,this->AnkActInput(ankPre,tankPre)));
         }
         else{
-            this->SetDuty(ankPreVal,this->ankActPID->GetDuty(this->AnkActInput(ankPre,tankPre),this->senData[TIME]));
+            this->SetDuty(ankPreVal,this->ankActPID->GetDuty(this->AnkActInput(ankPre,tankPre)));
         }
 
     }
@@ -803,8 +870,66 @@ void Controller::AnkPushOff(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tan
     }
 
 }
+//Time based FSM
+void Controller::SingleGaitPeriod(){
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    //phase 4
+    this->Term_stance('l');
+    this->Term_swing('r');
 
+    this->FSM->GetPhaseTime(this->p1_t,this->p2_t,this->p3_t,this->p5_t,this->p6_t,this->p7_t,this->p8_t);
+    std::vector<unsigned long> data = std::vector<unsigned long>{this->p1_t, this->p2_t, this->p3_t, this->p5_t, this->p6_t, this->p7_t, this->p8_t};
+    this->FSMRec->PushData(this->senData[TIME], data);
+    t.tv_nsec += this->p5_t;
+    Common::tsnorm(&t);
+    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+    //phase 5 action
+    this->Init_swing('l');
+    this->Load_resp('r');
 
+    t.tv_nsec += this->p6_t;
+    Common::tsnorm(&t);
+    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+    //phase 6 action
+    this->Ank_push_off('l');
+
+    t.tv_nsec += this->p7_t;
+    Common::tsnorm(&t);
+    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+    //phase 7
+    this->Mid_swing('l');
+    this->Mid_stance('r');
+
+    t.tv_nsec += this->p8_t;
+    Common::tsnorm(&t);
+    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+    //phase 8
+    this->Term_swing('l');
+    this->Term_stance('r');
+
+    t.tv_nsec += this->p1_t;
+    Common::tsnorm(&t);
+    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+    //phase 1
+    this->Load_resp('l');
+    this->Pre_swing('r');
+
+    t.tv_nsec += this->p2_t;
+    Common::tsnorm(&t);
+    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+    //phase 2
+    this->Ank_push_off('r');
+
+    t.tv_nsec += this->p3_t;
+    Common::tsnorm(&t);
+    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+    //phase 3
+    this->Mid_stance('l');
+    this->Mid_swing('r');
+
+    this->gaitEnd = true;
+}
 
 // some test functions
 //=======================================================================================

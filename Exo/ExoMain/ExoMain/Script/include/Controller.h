@@ -88,7 +88,7 @@
 #define SYNCOUT 4
 
 // index of command
-#define NUMCOM 16
+#define NUMCOM 26
 #define TESTVAL 0
 #define TESTPWM 1
 #define SHUTPWM 2
@@ -107,7 +107,16 @@
 #define PIDRECTEST 14
 #define TESTONEPWM 15
 
-
+#define CON_LANK_ACT 16
+#define CON_RANK_ACT 17
+#define CON_LKNE_REC 18
+#define CON_RKNE_REC 19
+#define CON_LANK_REC 20
+#define CON_RANK_REC 21
+#define CON_LKNE_SUP 22
+#define CON_RKNE_SUP 23
+#define CON_LANK_SUP 24
+#define CON_RANK_SUP 25
 struct Com
 {
 	const int comLen =NUMCOM;
@@ -174,6 +183,7 @@ private:
     void SetDuty(std::shared_ptr<PWMGen> pwmVal,int duty);
     char *pwmDuty;
     //command
+    
     Com *com;
 
     // valve control func and parameter
@@ -301,7 +311,13 @@ private:
     char curState;
     int ankActPre = 300;
     int kneSupPre = 300;
-    
+    int ankSupPre = 200;
+    int kneRecPre = 350;
+    int ankRecPre = 350;
+
+    const int LHipMean = 410;
+    const int RHipMean = 564;
+    void BipedEngRec();
     void Init_swing(char side);
     void Mid_swing(char side);
     void Term_swing(char side);
@@ -309,25 +325,42 @@ private:
     void Mid_stance(char side);
     void Term_stance(char side);
     void Pre_swing(char side);
-
-
-
-
-    void BipedEngRec();
-    
-    void KnePreRec(std::shared_ptr<PWMGen> knePreVal,int knePre, int tankPre);
-    float KnePreRecInput(int knePre,int tankPre);
-    void AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tankPre,std::shared_ptr<Valve> balVal);
-    float AnkPreRecInput(int ankPre,int tankPre);
-    bool CheckSupPre(std::shared_ptr<PWMGen> preVal,int knePre,int tankPre);
-
-    
-    float SupPreInput(int knePre,int tankPre);
-    
+    void Ank_push_off(char side);
+    // since measurements will not be updated in FSM, we need to call a different function in controller's main loop
+    void AnkPushOff_main(std::shared_ptr<PWMGen> preVal, int ankPre, int tankPre);
     float AnkActInput(int ankPre,int tankPre);
-    void AnkPushOff(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tankPre);
+    
+    
+    
+    float KnePreRecInput(int knePre,int tankPre);
+    void KnePreRec_main(std::shared_ptr<PWMGen> knePreVal,int knePre, int tankPre,int desPre);
+
+   
+    float AnkPreRecInput(int ankPre,int tankPre);
+    void AnkPreRec_main(std::shared_ptr<PWMGen> ankPreVal, int ankPre, int tankPre, std::shared_ptr<Valve> balVal,int desPre);
 
 
+    
+    bool CheckSupPre_main(std::shared_ptr<PWMGen> preVal, int knePre, int tankPre, int supPre);
+    float SupPreInput(int knePre,int tankPre,int supPre);
+    
+    
+    //time based FSM
+    unsigned long p1_t;
+    unsigned long p2_t;
+    unsigned long p3_t;
+    unsigned long p5_t;
+    unsigned long p6_t;
+    unsigned long p7_t;
+    unsigned long p8_t;
+    void SingleGaitPeriod();
+    shared_ptr<thread> SingleGait_th;
+    bool gaitEnd = true; //this flag is set false when SingleGaitPeriod is called, and set true when it ends
+    bool gaitStart = false;
+    bool firstGait = true;
+    bool leftFront;
+    int preHipDiff;
+    shared_ptr<Recorder<unsigned long>> FSMRec;
     //============================================================================================================================================
 
     //Test ankle actuation

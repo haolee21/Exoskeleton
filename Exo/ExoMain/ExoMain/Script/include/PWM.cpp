@@ -2,13 +2,13 @@
 
 #include <vector>
 
-#define MY_PRIORITY (49)             /* we use 49 as the PRREMPT_RT use 50 \
-                                        as the priority of kernel tasklets \
-                                        and interrupt handler by default */
-#define POOLSIZE (200 * 1024 * 1024) // 200MB
-#define MAX_SAFE_STACK (100 * 1024)  /* The maximum stack size which is \
-                                      guranteed safe to access without  \
-                                      faulting */
+// #define MY_PRIORITY (49)             /* we use 49 as the PRREMPT_RT use 50 \
+//                                         as the priority of kernel tasklets \
+//                                         and interrupt handler by default */
+// #define POOLSIZE (200 * 1024 * 1024) // 200MB
+// #define MAX_SAFE_STACK (100 * 1024)  /* The maximum stack size which is \
+//                                       guranteed safe to access without  \
+//                                       faulting */
 
 #define NSEC_PER_SEC (1000000000) // The number of nsecs per sec.
 
@@ -18,16 +18,7 @@
 #define SEC (1000 * MSEC)
 
 typedef std::chrono::duration<unsigned long, std::micro> microsecs_t;
-//timer
-// void PWMGen::tsnorm(struct timespec *ts)
-// {
-//     while (ts->tv_nsec >= NSEC_PER_SEC)
-//     {
-//         ts->tv_nsec -= NSEC_PER_SEC;
-//         ts->tv_sec++;
-//     }
-// }
-//
+
 PWMGen::PWMGen(std::string valveName, std::string filePath,int pinId,int _sampT,int _pwmIdx,std::chrono::system_clock::time_point _origin)
 {
 	this->origin = _origin;

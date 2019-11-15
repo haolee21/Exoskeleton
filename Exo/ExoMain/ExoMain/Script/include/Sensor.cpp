@@ -47,7 +47,7 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT,Com *_com,bool _
 		
 		this->senRec.reset(new Recorder<int>("sen",_filePath,"Time,LHipPos,LKnePos,LAnkPos,RHipPos,RKnePos,RAnkPos,sen7,sen8,TankPre,LKnePre,LAnkPre,RKnePre,RAnkPre,sen14,sen15,sen16"));
 		//Controller
-		this->com = _com;		
+		this->com = _com;
 	}
 	else
 		std::cout << "Sensor already created" << endl;
@@ -96,9 +96,10 @@ void Sensor::Stop()
 {
 	std::cout << "get into stop" << endl;
 	this->sw_senUpdate = false;
+	pthread_join(this->th_SenUpdate,NULL);
 	this->serialPortClose(this->serialDevId);
 	//this->th_SenUpdate->join();
-	pthread_join(this->th_SenUpdate,NULL);
+	
 	std::cout<<"sensor fully stops\n";
 	
 }
@@ -165,6 +166,7 @@ void *Sensor::senUpdate(void *_sen)
 	std::cout << "sensor ends" << endl;
 	sen->saveData_th.reset(new std::thread(&Sensor::SaveAllData,sen)); //original purpose is for some reason, sen is destoried before it went through this line
 	// sen->senRec.reset();
+	
 	return 0;
 }
 void Sensor::SaveAllData(){
@@ -312,10 +314,11 @@ void Sensor::readSerialPort(int serialPort)
 
 		int idx =0;
 		std::vector<int> recSenData;
-	
+		
 		for(int i=0;i<NUMSEN;i++){
-			this->senData[i+1] = (int)(this->backBuf[idx]) + (int)(this->backBuf[idx+1] << 8);
-			idx+=2;
+			int curSen = (int)(this->backBuf[idx]) + (int)(this->backBuf[idx+1] << 8);
+			this->senData[i + 1] = curSen;
+			idx += 2;
 			recSenData.push_back(senData[i+1]);
 		
 		

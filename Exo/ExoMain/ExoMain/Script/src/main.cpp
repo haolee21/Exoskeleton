@@ -78,18 +78,18 @@ int main(void)
 
 
 	//define command array
-	Com com;
+	Com *com = new Com();
 
 
-	for(int i = 0;i<com.comLen;i++){
-		com.comArray[i] = false;
+	for(int i = 0;i<com->comLen;i++){
+		com->comArray[i] = false;
 
 	}
 	
 	char portName[] = "/dev/ttyACM0";
 	//Sensor sensor = Sensor(filePath,portName, SAMPTIME,&com,display);
 	std::unique_ptr<Sensor> sensor;
-	sensor.reset(new Sensor(filePath, portName, SAMPTIME, &com, display));
+	sensor.reset(new Sensor(filePath, portName, SAMPTIME, com, display));
 	std::chrono::system_clock::time_point startTime = std::chrono::system_clock::now();
 	sensor->Start(startTime);
 	
@@ -101,77 +101,77 @@ int main(void)
 		string command;
 		cin>>command;
 		{
-			lock_guard<mutex> lock(com.comLock);
+			lock_guard<mutex> lock(com->comLock);
 			if(command=="testpwm"){
-				if (com.comArray[TESTPWM]==false)
-					com.comArray[TESTPWM]=true;
+				if (com->comArray[TESTPWM]==false)
+					com->comArray[TESTPWM]=true;
 				else{
-					com.comArray[TESTPWM]=false;
-					com.comArray[SHUTPWM]=true;
+					com->comArray[TESTPWM]=false;
+					com->comArray[SHUTPWM]=true;
 
 				}
 					 
 			}
 			else if(command=="testval")
-				com.comArray[TESTVAL] = !com.comArray[TESTVAL];
+				com->comArray[TESTVAL] = !com->comArray[TESTVAL];
 			
 			
 			else if(command.substr(0,4)=="samp"){
-				com.comArray[KNEMODSAMP] = !com.comArray[KNEMODSAMP];
+				com->comArray[KNEMODSAMP] = !com->comArray[KNEMODSAMP];
 				stringstream numVal(command.substr(4,5));
 				int num;
 				numVal>>num;
-				com.comVal[KNEMODSAMP]=num;
+				com->comVal[KNEMODSAMP]=num;
 			}
 			else if(command=="knerel"){
-				com.comArray[KNEPREREL] = true;
+				com->comArray[KNEPREREL] = true;
 			}
 			else if(command == "testallleak"){
-				com.comArray[TESTALLLEAK] = true;
+				com->comArray[TESTALLLEAK] = true;
 			}
 			else if(command=="freewalk"){
-				com.comArray[FREEWALK]=true;
+				com->comArray[FREEWALK]=true;
 			}
 
 			
 			else if(command=="testleak1"){
-				com.comArray[TESTLEAK] = true;
-				com.comVal[TESTLEAK]=1;
+				com->comArray[TESTLEAK] = true;
+				com->comVal[TESTLEAK]=1;
 			}
 			else if(command=="testleak2"){
-				com.comArray[TESTLEAK] = true;
-				com.comVal[TESTLEAK]=2;
+				com->comArray[TESTLEAK] = true;
+				com->comVal[TESTLEAK]=2;
 			}
 			else if(command=="testleak3"){
-				com.comArray[TESTLEAK]=true;
-				com.comVal[TESTLEAK]=3;
+				com->comArray[TESTLEAK]=true;
+				com->comVal[TESTLEAK]=3;
 			}
 			else if(command=="testleak4"){
-				com.comArray[TESTLEAK]=true;
-				com.comVal[TESTLEAK]=4;
+				com->comArray[TESTLEAK]=true;
+				com->comVal[TESTLEAK]=4;
 			}
 			else if(command=="testleak5"){
-				com.comArray[TESTLEAK]=true;
-				com.comVal[TESTLEAK]=5;
+				com->comArray[TESTLEAK]=true;
+				com->comVal[TESTLEAK]=5;
 			}
 			else if(command=="testleak6"){
-				com.comArray[TESTLEAK]=true;
-				com.comVal[TESTLEAK]=6;
+				com->comArray[TESTLEAK]=true;
+				com->comVal[TESTLEAK]=6;
 			}
 			else if(command == "end")
 				break;
 			else if(command =="testlank"){
-				com.comArray[TESTLANK]=true;
+				com->comArray[TESTLANK]=true;
 			}
 			else if(command == "testrank"){
-				com.comArray[TESTRANK]=true;
+				com->comArray[TESTRANK]=true;
 			}
 			else if(command =="r"){
-				com.comArray[SHOWSEN]=true;
+				com->comArray[SHOWSEN]=true;
 			}
 			else if(command == "bipedrec"){
-				com.comArray[BIPEDREC] = !com.comArray[BIPEDREC];
-				if(com.comArray[BIPEDREC]==true)
+				com->comArray[BIPEDREC] = !com->comArray[BIPEDREC];
+				if(com->comArray[BIPEDREC]==true)
 					std::cout<<"Biped energy recycle on\n";
 				else
 				{
@@ -180,28 +180,28 @@ int main(void)
 				
 			}
 			else if(command == "testsync"){
-				com.comArray[TESTSYNC] = true;
+				com->comArray[TESTSYNC] = true;
 			}
 			else if(command == "pidtestlk"){
-				com.comArray[PIDACTTEST] = true;
-				com.comVal[PIDACTTEST] =0;
+				com->comArray[PIDACTTEST] = true;
+				com->comVal[PIDACTTEST] =0;
 			}
 			else if(command =="pidtestla"){
-				com.comArray[PIDACTTEST]=true;
-				com.comVal[PIDACTTEST]=1;
+				com->comArray[PIDACTTEST]=true;
+				com->comVal[PIDACTTEST]=1;
 			}
 			else if(command =="pidtestrk" ){
-				com.comArray[PIDACTTEST]=true;
-				com.comVal[PIDACTTEST]=2;
+				com->comArray[PIDACTTEST]=true;
+				com->comVal[PIDACTTEST]=2;
 			}
 			else if(command =="pidtestra"){
-				com.comArray[PIDACTTEST]=true;
-				com.comVal[PIDACTTEST]=3;
+				com->comArray[PIDACTTEST]=true;
+				com->comVal[PIDACTTEST]=3;
 			}
 			else if(command.substr(0,10)=="testonepwm"){
 				
-				com.comVal[TESTONEPWM]=std::stoi(command.substr(10,1));
-				com.comArray[TESTONEPWM] = true;
+				com->comVal[TESTONEPWM]=std::stoi(command.substr(10,1));
+				com->comArray[TESTONEPWM] = true;
 			}
 			else
 				cout<<"not such command\n";	
@@ -217,5 +217,6 @@ int main(void)
 	DelaySys(5);
 	sensor.reset();
 	cout << "File save to: " << filePath << endl;
+	delete com;
 	return 0;
 }
