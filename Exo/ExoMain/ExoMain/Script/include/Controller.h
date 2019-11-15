@@ -358,9 +358,9 @@ private:
     unsigned long p8_t;
     void SingleGaitPeriod();
     shared_ptr<thread> SingleGait_th;
-    bool gaitEnd = true; //this flag is set false when SingleGaitPeriod is called, and set true when it ends
-    bool gaitStart = false;
-    bool firstGait = true;
+    bool gaitEnd; //this flag is set false when SingleGaitPeriod is called, and set true when it ends
+    bool gaitStart;
+    bool initGait;
     bool leftFront;
     int preHipDiff;
     shared_ptr<Recorder<unsigned long>> FSMRec;

@@ -15,7 +15,7 @@ FSMachine::FSMachine(/* args */)
     this->LAnkBuf2.reset(new int[POS_BUF_SIZE]);
     this->RAnkBuf2.reset(new int[POS_BUF_SIZE]);
 
-    this->gaitEnd = false;
+   
     this->p1_idx = 0;
     this->p2_idx = 0;
     this->p3_idx = 0;
@@ -38,100 +38,110 @@ FSMachine::~FSMachine()
 #define RHIP_PUSH_POS 600
 #define RANK_ENDPUSH_POS 450
 #define LKNE_REC_POS 690
-char FSMachine::CalState(int *curMea,char curState){
-    
-    
+char FSMachine::CalState(int *curMea, char curState)
+{
 
-    switch (curState){
-        case Phase1:
-            if(curMea[LKNEPOS]>LKNE_MIN_POS){
-                return Phase1;
-                
-            }
-            else{
-                std::cout<<"Phase2\n";
-                return Phase2;
-                
-            }
-            break;
-        case Phase2:
-            if(curMea[LHIPPOS]>LHIP_MIN_POS){
-                return Phase2;
-            }
-            else{
-                std::cout<<"Phase3\n";
-                return  Phase3;
-                
-            }
-            break;
-        case Phase3:
-            if(curMea[LANKPOS]>LANK_PUSH_POS){
-                return  Phase3;
-            }
-            else{
-                std::cout<<"Phase4\n";
-                return  Phase4;
-                
-            }
-            break;
-        case Phase4:
-            if(curMea[RKNEPOS]<RKNE_REC_POS){
-                return  Phase4;
-            }
-            else{
-                std::cout<<"Phase5\n";
-                return  Phase5;
-                
-            }
-            break;
-        case Phase5:
-            if(curMea[RKNEPOS]<RKNE_ENDREC_POS){
-                return  Phase5;
-            }
-            else{
-                std::cout<<"Phase6\n";
-                return  Phase6;
-                
-            }
-            break;
-        case Phase6:
-            if(curMea[RHIPPOS]<RHIP_PUSH_POS){
-                return  Phase6;
-            }
-            else{
-                std::cout<<"Phase7\n";
-                return  Phase7;
-                
-            }
-            break;
-        case Phase7:
-            if(curMea[RANKPOS]<RANK_ENDPUSH_POS){
-                return  Phase7;
-            }
-            else{
-                std::cout<<"Phase8\n";
-                return  Phase8;
-            }
-            break;
-        case Phase8:
-            if(curMea[LKNEPOS]<LKNE_REC_POS){
-                return  Phase8;
-            }
-            else{
-                std::cout<<"Phase1\n";
-                return  Phase1;
-            }
-            break;
-        default:
-            return curState;
+    switch (curState)
+    {
+    case Phase1:
+        if (curMea[LKNEPOS] > LKNE_MIN_POS)
+        {
+            return Phase1;
+        }
+        else
+        {
+            std::cout << "Phase2\n";
+            return Phase2;
+        }
+        break;
+    case Phase2:
+        if (curMea[LHIPPOS] > LHIP_MIN_POS)
+        {
+            return Phase2;
+        }
+        else
+        {
+            std::cout << "Phase3\n";
+            return Phase3;
+        }
+        break;
+    case Phase3:
+        if (curMea[LANKPOS] > LANK_PUSH_POS)
+        {
+            return Phase3;
+        }
+        else
+        {
+            std::cout << "Phase4\n";
+            return Phase4;
+        }
+        break;
+    case Phase4:
+        if (curMea[RKNEPOS] < RKNE_REC_POS)
+        {
+            return Phase4;
+        }
+        else
+        {
+            std::cout << "Phase5\n";
+            return Phase5;
+        }
+        break;
+    case Phase5:
+        if (curMea[RKNEPOS] < RKNE_ENDREC_POS)
+        {
+            return Phase5;
+        }
+        else
+        {
+            std::cout << "Phase6\n";
+            return Phase6;
+        }
+        break;
+    case Phase6:
+        if (curMea[RHIPPOS] < RHIP_PUSH_POS)
+        {
+            return Phase6;
+        }
+        else
+        {
+            std::cout << "Phase7\n";
+            return Phase7;
+        }
+        break;
+    case Phase7:
+        if (curMea[RANKPOS] < RANK_ENDPUSH_POS)
+        {
+            return Phase7;
+        }
+        else
+        {
+            std::cout << "Phase8\n";
+            return Phase8;
+        }
+        break;
+    case Phase8:
+        if (curMea[LKNEPOS] < LKNE_REC_POS)
+        {
+            return Phase8;
+        }
+        else
+        {
+            std::cout << "Phase1\n";
+            return Phase1;
+        }
+        break;
+    default:
+        return curState;
     }
-    
 }
 
 //time based FSM
-void FSMachine::PushSen1(int *curMea){
+void FSMachine::PushSen1(int *curMea)
+{
     // if it reaches max size of the buffer, we stop recording
-    if(this->curIdx1<POS_BUF_SIZE){
+    if (this->curIdx1 < POS_BUF_SIZE)
+    {
         this->LHipBuf1[this->curIdx1] = curMea[LHIPPOS];
         this->RHipBuf1[this->curIdx1] = curMea[RHIPPOS];
         this->LKneBuf1[this->curIdx1] = curMea[LKNEPOS];
@@ -139,14 +149,16 @@ void FSMachine::PushSen1(int *curMea){
         this->LAnkBuf1[this->curIdx1] = curMea[LANKPOS];
         this->RAnkBuf1[this->curIdx1] = curMea[RANKPOS];
         this->curIdx1++;
-        std::cout << "put into buffer1\n";
     }
-    else{
+    else
+    {
         std::cout << "buffer1 is full\n";
     }
 }
-void FSMachine::PushSen2(int *curMea){
-    if(this->curIdx2<POS_BUF_SIZE){
+void FSMachine::PushSen2(int *curMea)
+{
+    if (this->curIdx2 < POS_BUF_SIZE)
+    {
         this->LHipBuf2[this->curIdx2] = curMea[LHIPPOS];
         this->RHipBuf2[this->curIdx2] = curMea[RHIPPOS];
         this->LKneBuf2[this->curIdx2] = curMea[LKNEPOS];
@@ -154,70 +166,90 @@ void FSMachine::PushSen2(int *curMea){
         this->LAnkBuf2[this->curIdx2] = curMea[LANKPOS];
         this->RAnkBuf2[this->curIdx2] = curMea[RANKPOS];
         this->curIdx2++;
-        std::cout << "put into buffer2\n";
     }
-    else{
+    else
+    {
         std::cout << "buffer2 is full\n";
     }
 }
-void FSMachine::PushSen(int *curMea){
-    if(this->reachP8){
+void FSMachine::PushSen(int *curMea)
+{
+    if (this->reachP8)
+    {
         this->PushSen2(curMea);
     }
-    else{
+    else
+    {
         this->PushSen1(curMea);
     }
 }
-void FSMachine::ReachP8(){
+void FSMachine::ReachP8()
+{
     this->reachP8 = true;
 }
-void FSMachine::Reset(){
+void FSMachine::Reset()
+{
     this->curIdx1 = 0;
     this->curIdx2 = 0;
-    this->gaitEnd = false;
+   
+    this->reachP8 = false;
+    this->p1_idx = 0;
+    this->p2_idx = 0;
+    this->p3_idx = 0;
+    this->p5_idx = 0;
+    this->p6_idx = 0;
+    this->p7_idx = 0;
+    this->p8_idx = 0;
 }
 void FSMachine::GetPhaseTime(unsigned long &p1_t, unsigned long &p2_t, unsigned long &p3_t,
-                      unsigned long &p5_t, unsigned long &p6_t, unsigned long &p7_t, unsigned long &p8_t)
+                             unsigned long &p5_t, unsigned long &p6_t, unsigned long &p7_t, unsigned long &p8_t)
 {
     std::cout << "calculate phase time\n";
-    
-    if (this->gaitEnd)
-    {
-        p1_t = (unsigned long)(this->p1_idx + this->curIdx1) * MSEC;
-        p2_t = (unsigned long)(this->p2_idx + this->curIdx1) * MSEC;
-        p3_t = (unsigned long)(this->p3_idx + this->curIdx1) * MSEC;
-        p5_t = (unsigned long)this->p5_idx * MSEC;
-        p6_t = (unsigned long)this->p6_idx * MSEC;
-        p7_t = (unsigned long)this->p7_idx * MSEC;
-        p8_t = (unsigned long)this->p8_idx * MSEC;
 
+    this->GetP1();
+    this->GetP3();
+    this->GetP5();
+    this->GetP7();
+    p1_t = (unsigned long)(this->p1_idx + this->curIdx1) * MSEC;
+    p2_t = (unsigned long)(this->p2_idx + this->curIdx1) * MSEC;
+    p3_t = (unsigned long)(this->p3_idx + this->curIdx1) * MSEC;
+    p5_t = (unsigned long)this->p5_idx * MSEC;
+    p6_t = (unsigned long)this->p6_idx * MSEC;
+    p7_t = (unsigned long)this->p7_idx * MSEC;
+    p8_t = (unsigned long)this->p8_idx * MSEC;
 
-
-        this->Reset();
-    }
+    std::cout << p1_idx << ',' << p2_idx << ',' << p3_idx << ',' << p5_idx << ',' << p6_idx << ',' << p7_idx << ',' << p8_idx << std::endl;
+    this->Reset();
 }
-void FSMachine::GetP5(){
+void FSMachine::GetP5()
+{
     int *swPoint = std::max_element(this->RAnkBuf1.get(), this->RAnkBuf1.get() + this->curIdx1);
+
     this->p5_idx = swPoint - this->RAnkBuf1.get();
 }
-void FSMachine::GetP1(){
+void FSMachine::GetP1()
+{
     int *swPoint = std::min_element(this->LAnkBuf1.get(), this->LAnkBuf1.get() + this->curIdx1);
+    std::cout << "p1 original is" << this->p1_idx << std::endl;
     this->p1_idx = swPoint - this->LAnkBuf1.get();
+    std::cout << "p1 is now " << this->p1_idx << std::endl;
 }
-void FSMachine::GetP3(){
+void FSMachine::GetP3()
+{
     int *swPoint = std::min_element(this->LKneBuf2.get(), this->LKneBuf2.get() + this->curIdx2);
-    this->p3_idx = swPoint -this->LKneBuf2.get();
-    // for here we hard code the ankle push-off time 
+    this->p3_idx = swPoint - this->LKneBuf2.get();
+    // for here we hard code the ankle push-off time
     // here we define it is in the mid of p1 and p3
     unsigned int p2 = this->p1_idx + this->p3_idx;
     this->p2_idx = p2 >> 1;
 
-    this->gaitEnd = true;
+    
 }
-void FSMachine::GetP7(){
+void FSMachine::GetP7()
+{
     int *swPoint = std::max_element(this->RKneBuf2.get(), this->RKneBuf2.get() + this->curIdx2);
     this->p7_idx = swPoint - this->RKneBuf2.get();
-    // for here we hard code the ankle push-off time 
+    // for here we hard code the ankle push-off time
     // here we define it is in the mid of p5 and p7_idx
     unsigned int p6 = this->p5_idx + this->p7_idx;
     this->p6_idx = p6 >> 1;

@@ -74,6 +74,9 @@ Controller::Controller(std::string filePath, Com *_com, bool _display,std::chron
     // this->trParam.testOut.reset(new Valve("TestMea", filePath, 8, 6)); //this uses gpio2
     // this->ValveOff(this->trParam.testOut);
     this->curState = 0;
+    this->initGait = false;
+    this->gaitStart = false;
+    this->gaitEnd = true;
     this->FSM.reset(new FSMachine());
     this->FSMRec.reset(new Recorder<unsigned long>("FSM", filePath, "time,phase1,phase2,phase3,phase5,phase6,phase7,phase8"));
 
@@ -550,7 +553,7 @@ void Controller::TestAllLeak(){
 
 //=================================================================================================================
 void Controller::FreeWalk_on(){
-    //call TestAllLeak with RelVal open
+    //call TestAllLeak with RelVal on
 
     this->TestAllLeakOn();
     this->ValveOn(this->RelVal);
@@ -582,7 +585,9 @@ void Controller::PIDActTest(int joint){
     //although it is called act test, for knee support, it is also an action
     if(joint==0){
         this->ValveOn(this->LBalVal);
-        if(this->CheckSupPre_main(this->LKnePreVal,this->senData[LKNEPRE],this->senData[TANKPRE],this->kneSupPre)){
+        this->ValveOn(this->LKneVal);
+        if (this->CheckSupPre_main(this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE], this->kneSupPre))
+        {
             this->com->comArray[PIDACTTEST] = false;
         }
     }     
@@ -595,7 +600,9 @@ void Controller::PIDActTest(int joint){
     }
     else if(joint ==2){
         this->ValveOn(this->RBalVal);
-        if(this->CheckSupPre_main(this->RKnePreVal,this->senData[RKNEPRE],this->senData[TANKPRE],this->kneSupPre)){
+        this->ValveOn(this->RKneVal);
+        if (this->CheckSupPre_main(this->RKnePreVal, this->senData[RKNEPRE], this->senData[TANKPRE], this->kneSupPre))
+        {
             this->com->comArray[PIDACTTEST] = false;
         }
     }
@@ -654,47 +661,46 @@ float Controller::KnePreRecInput(int knePre,int tankPre){
 //===================================================================================================================
 
 void Controller::BipedEngRec(){
-    
+    int curHipDiff = this->senData[LHIPPOS] + this->senData[RHIPPOS] - this->LHipMean - this->RHipMean;
 
-
-
-
-    if(this->firstGait){
-        this->preHipDiff = this->senData[LHIPPOS] + this->senData[RHIPPOS] - this->LHipMean - this->RHipMean;
-        this->firstGait = false;
-    }
-    else{
-        int curHipDiff = this->senData[LHIPPOS] + this->senData[RHIPPOS] - this->LHipMean - this->RHipMean;
-        std::cout << curHipDiff << std::endl;
-        if (this->gaitStart)
-        {
-            if(this->leftFront){
-                if((this->preHipDiff<0)&&(curHipDiff>0)){
-                    FSM->ReachP8();
-                    this->leftFront = false;
+    if(this->initGait){
+        if(this->gaitStart){
+            
+            
+            if ((this->preHipDiff < 0) && (curHipDiff > 0))
+            {
+                if(this->gaitEnd){
+                    this->gaitEnd = false;
+                    std::cout << this->preHipDiff << ',' << curHipDiff << std::endl;
+                    if(this->SingleGait_th){
+                        this->SingleGait_th->join();
+                    }
+                    std::cout << "create thread\n";
+                    this->SingleGait_th.reset(new std::thread(&Controller::SingleGaitPeriod, this));
                 }
-
             }
             else{
-                if((this->preHipDiff>0)&&(curHipDiff<0)){
-                    this->gaitStart = false;
-                    this->leftFront = true;
-                    this->SingleGait_th.reset(new std::thread(&Controller::SingleGaitPeriod, this));
-                    std::cout << "gait starts\n";
-                }
+                
+                this->FSM->PushSen(this->senData);
             }
 
-            FSM->PushSen(this->senData);
         }
         else{
-            if((this->preHipDiff>0)&&(curHipDiff<0)){
+            if((this->preHipDiff>0) &&(curHipDiff<0)){
+                std::cout << "start gait\n";
                 this->gaitStart = true;
             }
         }
-        this->preHipDiff = curHipDiff;
-       
-    }
 
+    }
+    else{
+        this->initGait = true;
+    }
+    this->preHipDiff = curHipDiff;
+
+
+
+    
 
 
 
@@ -718,36 +724,36 @@ void Controller::Init_swing(char side){
 void Controller::Mid_swing(char side){
     if(side =='r'){
         this->ValveOff(this->RBalVal);
-        this->ValveOff(this->RKneVal);
+        this->ValveOn(this->RKneVal);
     }
     else{
         this->ValveOff(this->LBalVal);
-        this->ValveOff(this->LKneVal);
+        this->ValveOn(this->LKneVal);
 
     }
 }
 void Controller::Term_swing(char side){
     if(side == 'r'){
-        this->ValveOff(this->RKneVal);
+        this->ValveOn(this->RKneVal);
         this->com->comArray[CON_RKNE_SUP] = true;
         //this->CheckSupPre(this->RKnePreVal, this->senData[RKNEPRE], this->senData[TANKPRE]);
     }
     else{
-        this->ValveOff(this->LKneVal);
+        this->ValveOn(this->LKneVal);
         this->com->comArray[CON_LKNE_SUP] = true;
         // this->CheckSupPre(this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE]);
     }
 }
 void Controller::Load_resp(char side){
     if(side=='r'){
-        this->ValveOff(this->RKneVal);
+        this->ValveOn(this->RKneVal);
         this->com->comArray[CON_RKNE_REC] = true;
         this->com->comArray[CON_RANK_REC] = true;
         // this->KnePreRec(this->RKnePreVal,this->senData[RKNEPRE],this->senData[TANKPRE]);
         // this->AnkPreRec(this->RAnkPreVal,this->senData[RANKPRE],this->senData[TANKPRE],this->RBalVal);
     }
     else{
-        this->ValveOff(this->LKneVal);
+        this->ValveOn(this->LKneVal);
         this->com->comArray[CON_LKNE_REC] = true;
         this->com->comArray[CON_LANK_REC] = true;
         // this->KnePreRec(this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE]);
@@ -756,15 +762,20 @@ void Controller::Load_resp(char side){
 }
 void Controller::Mid_stance(char side){
     // make sure the pressure valves stops
-    this->SetDuty(this->RKnePreVal, 0);
-    this->SetDuty(this->LKnePreVal, 0);
-    this->SetDuty(this->LAnkPreVal, 0);
-    this->SetDuty(this->RAnkPreVal, 0);
-    this->com->comArray[CON_LKNE_REC] = false;
-    this->com->comArray[CON_RKNE_REC] = false;
-    this->com->comArray[CON_LANK_REC] = false;
-    this->com->comArray[CON_RANK_REC] = false;
+    if(side =='r'){
+        this->SetDuty(this->RKnePreVal, 0);
+        this->SetDuty(this->RAnkPreVal, 0);
+        //this is needed since the previous stage is load response
+        this->com->comArray[CON_RKNE_REC] = false;
+        this->com->comArray[CON_RANK_REC] = false;
+    }
+    else{
+        this->SetDuty(this->LKnePreVal, 0);
+        this->SetDuty(this->LAnkPreVal, 0);
+        this->com->comArray[CON_LKNE_REC] = false;
+        this->com->comArray[CON_LANK_REC] = false;
 
+    }
 }
 void Controller::Term_stance(char side){
     // in terminal stance, the ankle need to slow down while knee needs to extend, so we use balance valve to achieve it.
@@ -878,7 +889,9 @@ void Controller::SingleGaitPeriod(){
     this->Term_stance('l');
     this->Term_swing('r');
 
+
     this->FSM->GetPhaseTime(this->p1_t,this->p2_t,this->p3_t,this->p5_t,this->p6_t,this->p7_t,this->p8_t);
+    std::cout << "in controller: " << this->p1_t << ',' << this->p2_t << ',' << this->p3_t << ',' << this->p5_t << ',' << this->p6_t << ',' << this->p7_t << ',' << this->p8_t << std::endl;
     std::vector<unsigned long> data = std::vector<unsigned long>{this->p1_t, this->p2_t, this->p3_t, this->p5_t, this->p6_t, this->p7_t, this->p8_t};
     this->FSMRec->PushData(this->senData[TIME], data);
     t.tv_nsec += this->p5_t;
@@ -904,6 +917,7 @@ void Controller::SingleGaitPeriod(){
     t.tv_nsec += this->p8_t;
     Common::tsnorm(&t);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+    this->FSM->ReachP8();
     //phase 8
     this->Term_swing('l');
     this->Term_stance('r');
@@ -927,8 +941,9 @@ void Controller::SingleGaitPeriod(){
     //phase 3
     this->Mid_stance('l');
     this->Mid_swing('r');
-
+    
     this->gaitEnd = true;
+    std::cout << "gait ends\n";
 }
 
 // some test functions

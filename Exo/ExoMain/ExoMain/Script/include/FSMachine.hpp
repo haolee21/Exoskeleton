@@ -33,7 +33,7 @@ FSM only tells what is the current state
 
 #define RHIP_PREP_POS 450
 
-#define POS_BUF_SIZE 5000  //this is the upper limit of each phase, if one phase last for more than 2 sec, we should stop
+#define POS_BUF_SIZE 2500  //this is the upper limit of each phase, if one phase last for more than 2 sec, we should stop
 class FSMachine
 {
 private:
@@ -73,7 +73,7 @@ private:
     void GetP3();
     void GetP7();
 
-    bool gaitEnd;
+  
 
 public:
     FSMachine(/* args */);
