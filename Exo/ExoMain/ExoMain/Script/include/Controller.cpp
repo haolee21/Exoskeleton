@@ -22,8 +22,8 @@ Controller::Controller(std::string filePath, Com *_com, bool _display,std::chron
         // this->client.reset(new Displayer());
     }
 
-    this->valveCond = new char[VALNUM];
-    this->pwmDuty = new char[PWMNUM];
+    this->valveCond.reset(new char[VALNUM]);
+    this->pwmDuty.reset(new char[PWMNUM]);
 
     this->com = _com;
 
@@ -100,8 +100,8 @@ Controller::~Controller()
         (*begPWM)->Stop();
     }while(++begPWM!=std::end(this->PWMList));
     
-    delete this->valveCond;
-    delete this->pwmDuty;
+    // delete this->valveCond;
+    // delete this->pwmDuty;
 
     //delete this->senData;
 }
@@ -268,8 +268,8 @@ void Controller::SendToDisp(const char *senRaw){
     if(this->preSend==this->dispPreScale){
             char sendData[DATALEN + VALNUM + PWMNUM];
             std::copy(senRaw, senRaw + DATALEN, sendData);
-            std::copy(this->valveCond, this->valveCond + VALNUM, sendData + DATALEN);
-            std::copy(this->pwmDuty, this->pwmDuty + PWMNUM, sendData + DATALEN + VALNUM);
+            std::copy(this->valveCond.get(), this->valveCond.get() + VALNUM, sendData + DATALEN);
+            std::copy(this->pwmDuty.get(), this->pwmDuty.get() + PWMNUM, sendData + DATALEN + VALNUM);
             this->client->send(sendData, DATALEN + VALNUM + PWMNUM);
             this->preSend = 0;
 

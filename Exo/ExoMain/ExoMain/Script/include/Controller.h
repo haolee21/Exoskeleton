@@ -172,7 +172,9 @@ private:
     void Sleep(int sleepTime);
 
     //displayer
-    char *valveCond;
+    // char *valveCond;
+    std::shared_ptr<char[]> valveCond;
+
     bool display=false;
     int preSend=0; //scale the sending freq since matplotlib cannot handle it
     const int dispPreScale = 69; //determine how frequent we send data back to pc
@@ -181,9 +183,10 @@ private:
     void ValveOff(std::shared_ptr<Valve> val);
     // PWM control
     void SetDuty(std::shared_ptr<PWMGen> pwmVal,int duty);
-    char *pwmDuty;
+    // char *pwmDuty;
+    std::shared_ptr<char[]> pwmDuty;
     //command
-    
+
     Com *com;
 
     // valve control func and parameter
