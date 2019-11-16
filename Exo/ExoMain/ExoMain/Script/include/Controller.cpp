@@ -778,14 +778,7 @@ void Controller::Mid_stance(char side){
     }
 }
 void Controller::Term_stance(char side){
-    // in terminal stance, the ankle need to slow down while knee needs to extend, so we use balance valve to achieve it.
-    if(side=='r'){
-        this->com->comArray[CON_RANK_REC] = true;
-    }
-    else{
-        this->com->comArray[CON_LANK_REC] = true;
-        
-    }
+
 
 }
 void Controller::Pre_swing(char side){

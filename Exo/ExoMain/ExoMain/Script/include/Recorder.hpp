@@ -19,26 +19,28 @@
 
 #include "RecData.hpp"
 
-#define MAXRECLENGTH 10000
+#define MAXRECLENGTH 20000
 
 
 template<class T>
 class Recorder
 {
 private:
-    RecData<T> *curData;
+    std::unique_ptr<RecData<T>> curData;
+    // RecData<T> *curData;
     std::queue<std::string> dataTemps;
     int tempCount;
     std::unique_ptr<RecData<T>> test;
     // this is for creating temperary object for saving, I am not sure do I really need it
-    RecData<T> *tempData;
+    std::unique_ptr<RecData<T>> tempData;
+    // RecData<T> *tempData;
     std::string Label;
     std::string recorderName;
 
 
     int tempFilesCount;
     
-    void writeTemp(RecData<T> *tempData); 
+    void writeTemp(); 
 
     // saving file
     std::string filePath;
@@ -68,7 +70,7 @@ Recorder<T>::Recorder(std::string recName,std::string _filePath, std::string _la
 
     //create memory for temperary storage
     // since it may go out of the scope, we put it in the heap
-    this->curData = new RecData<T>();
+    this->curData.reset(new RecData<T>());
     this->tempFilesCount =0;
     
 
@@ -93,7 +95,7 @@ Recorder<T>::~Recorder()
     
     if(!this->dataTemps.empty())
         std::cout<<"Temperary files remaining\n";
-    delete this->curData;
+    
     
 
 }
@@ -105,14 +107,14 @@ void Recorder<T>::PushData(unsigned long curTime, std::vector<T> curData){
         
         this->tempCount =0;
         //we need to allocate new memory for storage
-        this->tempData = this->curData;
-        this->curData = new RecData<T>();
-        this->threadQue.push(new std::thread(&Recorder<T>::writeTemp,this,this->tempData));   
+        this->tempData.swap(this->curData);
+        this->curData.reset(new RecData<T>());
+        this->threadQue.push(new std::thread(&Recorder<T>::writeTemp,this));   
     }
 }
 
 template<class T>
-void Recorder<T>::writeTemp(RecData<T> *tempData)
+void Recorder<T>::writeTemp()
 {
     std::string fileName;
     fileName = this->filePath+ this->recorderName + std::to_string(this->tempFilesCount++) + ".temp";
@@ -120,8 +122,8 @@ void Recorder<T>::writeTemp(RecData<T> *tempData)
     {
         std::ofstream tempSaveFile(fileName);
         boost::archive::text_oarchive ar(tempSaveFile);
-        ar& (*tempData);
-        delete tempData;
+        ar& (*this->tempData);
+        
     }
     
 }

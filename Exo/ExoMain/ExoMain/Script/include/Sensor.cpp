@@ -165,7 +165,7 @@ void *Sensor::senUpdate(void *_sen)
 	(*conTh).join();
 	std::cout << "sensor ends" << endl;
 	sen->saveData_th.reset(new std::thread(&Sensor::SaveAllData,sen)); //original purpose is for some reason, sen is destoried before it went through this line
-	// sen->senRec.reset();
+	//sen->senRec.reset();
 	
 	return 0;
 }
@@ -341,8 +341,8 @@ void Sensor::serialPortClose(int serial_port)
 
 Sensor::~Sensor()
 {
-	
-	this->saveData_th->join();
+	if(this->saveData_th)
+		this->saveData_th->join();
 	std::cout << "start to delete" << std::endl;
 
 }
