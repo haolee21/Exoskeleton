@@ -1,30 +1,29 @@
 #include "FSMachine.hpp"
 FSMachine::FSMachine(/* args */)
 {
-    this->LHipBuf1.reset(new int[POS_BUF_SIZE]);
-    this->RHipBuf1.reset(new int[POS_BUF_SIZE]);
-    this->LKneBuf1.reset(new int[POS_BUF_SIZE]);
-    this->RKneBuf1.reset(new int[POS_BUF_SIZE]);
-    this->LAnkBuf1.reset(new int[POS_BUF_SIZE]);
-    this->RAnkBuf1.reset(new int[POS_BUF_SIZE]);
+    this->LHipBuf.reset(new int[POS_BUF_SIZE]);
+    this->RHipBuf.reset(new int[POS_BUF_SIZE]);
+    this->LKneBuf.reset(new int[POS_BUF_SIZE]);
+    this->RKneBuf.reset(new int[POS_BUF_SIZE]);
+    this->LAnkBuf.reset(new int[POS_BUF_SIZE]);
+    this->RAnkBuf.reset(new int[POS_BUF_SIZE]);
 
-    this->LHipBuf2.reset(new int[POS_BUF_SIZE]);
-    this->RHipBuf2.reset(new int[POS_BUF_SIZE]);
-    this->LKneBuf2.reset(new int[POS_BUF_SIZE]);
-    this->RKneBuf2.reset(new int[POS_BUF_SIZE]);
-    this->LAnkBuf2.reset(new int[POS_BUF_SIZE]);
-    this->RAnkBuf2.reset(new int[POS_BUF_SIZE]);
-
-   
     this->p1_idx = 0;
     this->p2_idx = 0;
     this->p3_idx = 0;
+    this->p4_idx = 0;
     this->p5_idx = 0;
     this->p6_idx = 0;
     this->p7_idx = 0;
     this->p8_idx = 0;
-    this->curIdx1 = 0;
-    this->curIdx2 = 0;
+    this->p9_idx = 0;
+    this->p10_idx = 0;
+    this->swIdx = 0;
+
+    this->curIdx = 0;
+    this->timeReady = false;
+    this->halfGait = false;
+    this->gaitStart = false;
 }
 
 FSMachine::~FSMachine()
@@ -137,120 +136,156 @@ char FSMachine::CalState(int *curMea, char curState)
 }
 
 //time based FSM
-void FSMachine::PushSen1(int *curMea)
-{
-    // if it reaches max size of the buffer, we stop recording
-    if (this->curIdx1 < POS_BUF_SIZE)
-    {
-        this->LHipBuf1[this->curIdx1] = curMea[LHIPPOS];
-        this->RHipBuf1[this->curIdx1] = curMea[RHIPPOS];
-        this->LKneBuf1[this->curIdx1] = curMea[LKNEPOS];
-        this->RKneBuf1[this->curIdx1] = curMea[RKNEPOS];
-        this->LAnkBuf1[this->curIdx1] = curMea[LANKPOS];
-        this->RAnkBuf1[this->curIdx1] = curMea[RANKPOS];
-        this->curIdx1++;
-    }
-    else
-    {
-        std::cout << "buffer1 is full\n";
-    }
-}
-void FSMachine::PushSen2(int *curMea)
-{
-    if (this->curIdx2 < POS_BUF_SIZE)
-    {
-        this->LHipBuf2[this->curIdx2] = curMea[LHIPPOS];
-        this->RHipBuf2[this->curIdx2] = curMea[RHIPPOS];
-        this->LKneBuf2[this->curIdx2] = curMea[LKNEPOS];
-        this->RKneBuf2[this->curIdx2] = curMea[RKNEPOS];
-        this->LAnkBuf2[this->curIdx2] = curMea[LANKPOS];
-        this->RAnkBuf2[this->curIdx2] = curMea[RANKPOS];
-        this->curIdx2++;
-    }
-    else
-    {
-        std::cout << "buffer2 is full\n";
-    }
-}
+
 void FSMachine::PushSen(int *curMea)
 {
-    if (this->reachP8)
+    int hipDiff = curMea[LHIPPOS] + curMea[RHIPPOS] - this->LHipMean - this->RHipMean;
+    
+    if ((this->preHipDiff > 0) && (hipDiff < 0))
     {
-        this->PushSen2(curMea);
+        // before the first step, we have to wait for the starting point
+        // but after the first step, whenever we switch the leg, we just need to re init the FSM
+        if (!this->gaitStart)
+        {
+            this->gaitStart = true;
+        }
+        else
+        {
+            this->CalPhaseTime();
+            this->Reset();
+        }
     }
-    else
+    if (this->gaitStart)
     {
-        this->PushSen1(curMea);
+        if (this->curIdx < POS_BUF_SIZE)
+        {
+            this->LHipBuf[this->curIdx] = curMea[LHIPPOS];
+            this->RHipBuf[this->curIdx] = curMea[RHIPPOS];
+            this->LKneBuf[this->curIdx] = curMea[LKNEPOS];
+            this->RKneBuf[this->curIdx] = curMea[RKNEPOS];
+            this->LAnkBuf[this->curIdx] = curMea[LANKPOS];
+            this->RAnkBuf[this->curIdx] = curMea[RANKPOS];
+
+            this->curIdx++;
+        }
+        else
+        {
+            std::cout << "buffer is full\n";
+        }
+        if (!halfGait)
+        {
+            if ((this->preHipDiff < 0) && (hipDiff > 0))
+            {
+                this->halfGait = true;
+                this->swIdx = this->curIdx - 1;
+            }
+        }
     }
-}
-void FSMachine::ReachP8()
-{
-    this->reachP8 = true;
+
+    this->preHipDiff = hipDiff;
 }
 void FSMachine::Reset()
 {
-    this->curIdx1 = 0;
-    this->curIdx2 = 0;
-   
-    this->reachP8 = false;
-    this->p1_idx = 0;
-    this->p2_idx = 0;
-    this->p3_idx = 0;
-    this->p5_idx = 0;
-    this->p6_idx = 0;
-    this->p7_idx = 0;
-    this->p8_idx = 0;
+    this->swIdx = 0;
+    this->curIdx = 0;
+    // this->p1_idx = 0;
+    // this->p2_idx = 0;
+    // this->p3_idx = 0;
+    // this->p4_idx = 0;
+    // this->p5_idx = 0;
+    // this->p6_idx = 0;
+    // this->p7_idx = 0;
+    // this->p8_idx = 0;
+    // this->p9_idx = 0;
+    // this->p10_idx = 0;
 }
-void FSMachine::GetPhaseTime(unsigned long &p1_t, unsigned long &p2_t, unsigned long &p3_t,
-                             unsigned long &p5_t, unsigned long &p6_t, unsigned long &p7_t, unsigned long &p8_t)
+void FSMachine::GetPhaseTime(unsigned long &p1_t, unsigned long &p2_t, unsigned long &p3_t, unsigned long &p4_t, unsigned long &p5_t,
+                             unsigned long &p6_t, unsigned long &p7_t, unsigned long &p8_t, unsigned long &p9_t, unsigned long &p10_t)
 {
     std::cout << "calculate phase time\n";
-
-    this->GetP1();
-    this->GetP3();
-    this->GetP5();
-    this->GetP7();
-    p1_t = (unsigned long)(this->p1_idx + this->curIdx1) * MSEC;
-    p2_t = (unsigned long)(this->p2_idx + this->curIdx1) * MSEC;
-    p3_t = (unsigned long)(this->p3_idx + this->curIdx1) * MSEC;
-    p5_t = (unsigned long)this->p5_idx * MSEC;
-    p6_t = (unsigned long)this->p6_idx * MSEC;
-    p7_t = (unsigned long)this->p7_idx * MSEC;
-    p8_t = (unsigned long)this->p8_idx * MSEC;
-
-    std::cout << p1_idx << ',' << p2_idx << ',' << p3_idx << ',' << p5_idx << ',' << p6_idx << ',' << p7_idx << ',' << p8_idx << std::endl;
-    this->Reset();
-}
-void FSMachine::GetP5()
-{
-    int *swPoint = std::max_element(this->RAnkBuf1.get(), this->RAnkBuf1.get() + this->curIdx1);
-
-    this->p5_idx = swPoint - this->RAnkBuf1.get();
+    {
+        std::lock_guard<std::mutex> lock(this->lock);
+        if (this->timeReady)
+        {
+            p1_t = (unsigned long)this->p1_idx * MSEC;
+            p2_t = (unsigned long)this->p2_idx * MSEC;
+            p3_t = (unsigned long)this->p3_idx * MSEC;
+            p4_t = (unsigned long)this->p4_idx * MSEC;
+            p5_t = (unsigned long)this->p5_idx * MSEC;
+            p6_t = (unsigned long)this->p6_idx * MSEC;
+            p7_t = (unsigned long)this->p7_idx * MSEC;
+            p8_t = (unsigned long)this->p8_idx * MSEC;
+            p9_t = (unsigned long)this->p9_idx * MSEC;
+            p10_t = (unsigned long)this->p10_idx * MSEC;
+            this->timeReady = false;
+        }
+    }
+     std::cout << p1_idx << ',' << p2_idx << ',' << p3_idx << ',' << p4_idx << ',' << p5_idx << ',' << p6_idx << ',' << p7_idx << ',' << p8_idx << p9_idx << ',' << p10_idx << std::endl;
 }
 void FSMachine::GetP1()
 {
-    int *swPoint = std::min_element(this->LAnkBuf1.get(), this->LAnkBuf1.get() + this->curIdx1);
-    std::cout << "p1 original is" << this->p1_idx << std::endl;
-    this->p1_idx = swPoint - this->LAnkBuf1.get();
-    std::cout << "p1 is now " << this->p1_idx << std::endl;
+    int *swPoint = std::min_element(this->LAnkBuf.get() + this->swIdx, this->LAnkBuf.get() + this->curIdx - 1);
+    this->p1_idx = swPoint - this->LAnkBuf.get();
+}
+void FSMachine::GetP2()
+{
+    this->p2_idx = this->p1_idx + 80;
 }
 void FSMachine::GetP3()
 {
-    int *swPoint = std::min_element(this->LKneBuf2.get(), this->LKneBuf2.get() + this->curIdx2);
-    this->p3_idx = swPoint - this->LKneBuf2.get();
-    // for here we hard code the ankle push-off time
-    // here we define it is in the mid of p1 and p3
-    unsigned int p2 = this->p1_idx + this->p3_idx;
-    this->p2_idx = p2 >> 1;
-
-    
+    int *swPoint = std::min_element(this->LKneBuf.get() + this->swIdx, this->LKneBuf.get() + this->curIdx - 1);
+    this->p3_idx = swPoint - this->LKneBuf.get();
+}
+void FSMachine::GetP4()
+{
+    int *swPoint = std::max_element(this->RKneBuf.get() + this->swIdx, this->RKneBuf.get() + this->curIdx - 1);
+    this->p4_idx = swPoint - this->RKneBuf.get();
+}
+void FSMachine::GetP5()
+{
+    int *swPoint = std::min_element(this->RKneBuf.get(), this->RAnkBuf.get() + this->swIdx);
+    this->p5_idx = swPoint - this->RAnkBuf.get();
+}
+void FSMachine::GetP6()
+{
+    int *swPoint = std::max_element(this->RAnkBuf.get(), this->RAnkBuf.get() + this->swIdx);
+    this->p6_idx = swPoint - this->RAnkBuf.get();
 }
 void FSMachine::GetP7()
 {
-    int *swPoint = std::max_element(this->RKneBuf2.get(), this->RKneBuf2.get() + this->curIdx2);
-    this->p7_idx = swPoint - this->RKneBuf2.get();
-    // for here we hard code the ankle push-off time
-    // here we define it is in the mid of p5 and p7_idx
-    unsigned int p6 = this->p5_idx + this->p7_idx;
-    this->p6_idx = p6 >> 1;
+    this->p7_idx = this->p6_idx + 80;
+}
+void FSMachine::GetP8()
+{
+    int *swPoint = std::max_element(this->RKneBuf.get(), this->RKneBuf.get() + this->swIdx);
+    this->p8_idx = swPoint - this->RKneBuf.get();
+}
+void FSMachine::GetP9()
+{
+    int *swPoint = std::min_element(this->LKneBuf.get(), this->LKneBuf.get() + this->swIdx);
+    this->p9_idx = swPoint - this->LKneBuf.get();
+}
+void FSMachine::GetP10()
+{
+    int *swPoint = std::max_element(this->LKneBuf.get() + this->swIdx, this->LKneBuf.get() + this->curIdx - 1);
+    this->p10_idx = swPoint - this->LKneBuf.get();
+}
+void FSMachine::CalPhaseTime()
+{
+    std::lock_guard<std::mutex> lock(this->lock);
+    this->GetP1();
+    this->GetP2();
+    this->GetP3();
+    this->GetP4();
+    this->GetP5();
+    this->GetP6();
+    this->GetP7();
+    this->GetP8();
+    this->GetP9();
+    this->GetP10();
+    this->timeReady = true;
+}
+bool FSMachine::IsReady(){
+    std::lock_guard<std::mutex> lock(this->lock);
+    return this->timeReady;
 }

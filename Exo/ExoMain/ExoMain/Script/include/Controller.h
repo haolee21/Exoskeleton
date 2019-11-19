@@ -312,9 +312,9 @@ private:
     std::shared_ptr<FSMachine> FSM;
     // FSMachine FSM;
     char curState;
-    int ankActPre = 300;
+    int ankActPre = 320;
     int kneSupPre = 300;
-    int ankSupPre = 200;
+    int ankSupPre = 400;
     int kneRecPre = 350;
     int ankRecPre = 350;
 
@@ -328,7 +328,7 @@ private:
     void Mid_stance(char side);
     void Term_stance(char side);
     void Pre_swing(char side);
-    void Ank_push_off(char side);
+
     // since measurements will not be updated in FSM, we need to call a different function in controller's main loop
     void AnkPushOff_main(std::shared_ptr<PWMGen> preVal, int ankPre, int tankPre);
     float AnkActInput(int ankPre,int tankPre);
@@ -352,12 +352,16 @@ private:
     unsigned long p1_t;
     unsigned long p2_t;
     unsigned long p3_t;
+    unsigned long p4_t;
     unsigned long p5_t;
     unsigned long p6_t;
     unsigned long p7_t;
     unsigned long p8_t;
+    unsigned long p9_t;
+    unsigned long p10_t;
     void SingleGaitPeriod();
     shared_ptr<thread> SingleGait_th;
+    bool singleGaitJoin;
     bool gaitEnd; //this flag is set false when SingleGaitPeriod is called, and set true when it ends
     bool gaitStart;
     bool initGait;
