@@ -280,6 +280,11 @@ void Controller::ConMainLoop(int *_senData, char *senRaw)
         {
             taskQue.push(std::thread(&Controller::CheckSupPre_main, this, this->RAnkPreVal, this->senData[RANKPRE], this->senData[TANKPRE], this->ankSupPre));
         }
+        if (this->com->comArray[CON_SET_INIT_POS])
+        {
+            this->com->comArray[CON_SET_INIT_POS] = false;
+            taskQue.push(std::thread(&FSMachine::SetInitPos,this->FSM.get(), this->senData[LHIPPOS], this->senData[RHIPPOS]));
+        }
     }
     if (this->display)
     {
@@ -739,12 +744,11 @@ void Controller::BipedEngRec()
     if (this->gaitStart)
     {
         this->FSM->PushSen(this->senData);
-        if(this->singleGaitJoin&&this->gaitEnd){
+        if (this->singleGaitJoin && this->gaitEnd)
+        {
             this->SingleGait_th->join();
             this->singleGaitJoin = false;
-
         }
-        
 
         if (this->FSM->IsReady() && this->gaitEnd)
         {
@@ -957,9 +961,9 @@ void Controller::SingleGaitPeriod()
     clock_gettime(CLOCK_MONOTONIC, &t);
 
     this->FSM->GetPhaseTime(this->p1_t, this->p2_t, this->p3_t, this->p4_t, this->p5_t, this->p6_t, this->p7_t, this->p8_t, this->p9_t, this->p10_t);
-    std::cout << "in controller: " << this->p1_t << ',' << this->p2_t << ',' << this->p3_t << ',' << this->p5_t << ',' << this->p6_t << ',' << this->p7_t << ',' << this->p8_t << std::endl;
+    std::cout << "in controller: " << this->p1_t << ',' << this->p2_t << ','<<this->p3_t<<',' << this->p4_t << ',' << this->p5_t << ',' << this->p6_t << ',' << this->p7_t << ',' << this->p8_t<<','<<this->p9_t<<','<<this->p10_t << std::endl;
     std::vector<unsigned long> data = std::vector<unsigned long>{this->p1_t, this->p2_t, this->p3_t, this->p4_t, this->p5_t, this->p6_t, this->p7_t, this->p8_t, this->p9_t, this->p10_t};
-    this->FSMRec->PushData(this->senData[TIME], data);
+    this->FSMRec->PushData((unsigned long)this->senData[TIME], data);
 
     //phase 5
     t.tv_nsec += this->p5_t;

@@ -24,6 +24,7 @@ FSMachine::FSMachine(/* args */)
     this->timeReady = false;
     this->halfGait = false;
     this->gaitStart = false;
+
 }
 
 FSMachine::~FSMachine()
@@ -139,7 +140,7 @@ char FSMachine::CalState(int *curMea, char curState)
 
 void FSMachine::PushSen(int *curMea)
 {
-    int hipDiff = curMea[LHIPPOS] + curMea[RHIPPOS] - this->LHipMean - this->RHipMean;
+    int hipDiff =this->mvf.DataFilt(curMea[LHIPPOS] + curMea[RHIPPOS] - this->LHipMean - this->RHipMean);
     
     if ((this->preHipDiff > 0) && (hipDiff < 0))
     {
@@ -220,7 +221,7 @@ void FSMachine::GetPhaseTime(unsigned long &p1_t, unsigned long &p2_t, unsigned 
             this->timeReady = false;
         }
     }
-     std::cout << p1_idx << ',' << p2_idx << ',' << p3_idx << ',' << p4_idx << ',' << p5_idx << ',' << p6_idx << ',' << p7_idx << ',' << p8_idx << p9_idx << ',' << p10_idx << std::endl;
+     std::cout << p1_idx << ',' << p2_idx << ',' << p3_idx << ',' << p4_idx << ',' << p5_idx << ',' << p6_idx << ',' << p7_idx << ',' << p8_idx <<','<< p9_idx << ',' << p10_idx << std::endl;
 }
 void FSMachine::GetP1()
 {
@@ -243,7 +244,7 @@ void FSMachine::GetP4()
 }
 void FSMachine::GetP5()
 {
-    int *swPoint = std::min_element(this->RKneBuf.get(), this->RAnkBuf.get() + this->swIdx);
+    int *swPoint = std::min_element(this->RAnkBuf.get(), this->RAnkBuf.get() + this->swIdx);
     this->p5_idx = swPoint - this->RAnkBuf.get();
 }
 void FSMachine::GetP6()
@@ -288,4 +289,8 @@ void FSMachine::CalPhaseTime()
 bool FSMachine::IsReady(){
     std::lock_guard<std::mutex> lock(this->lock);
     return this->timeReady;
+}
+void FSMachine::SetInitPos(int curLHip,int curRHip){
+    this->RHipMean = curRHip;
+    this->LHipMean = curLHip;
 }

@@ -83,6 +83,7 @@ Recorder<T>::~Recorder()
     {
         std::thread *curThread = this->threadQue.front();
         curThread->join();
+       
         this->threadQue.pop();
     }
     

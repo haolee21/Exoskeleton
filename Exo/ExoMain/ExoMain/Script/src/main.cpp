@@ -71,7 +71,7 @@ int main(void)
 		time_t result = time(nullptr);
     	tm* timePtr = localtime(&result);
     	stringstream curDate;
-    	curDate<<timePtr->tm_year+1900<<'-'<<setw(2)<<setfill('0')<<timePtr->tm_mon+1<<setw(2)<<setfill('0')<<timePtr->tm_mday<<'-'<<setw(2)<<setfill('0')<<timePtr->tm_hour<<setw(2)<<setfill('0')<<timePtr->tm_min;
+    	curDate<<timePtr->tm_year+1900<<'-'<<setw(2)<<setfill('0')<<timePtr->tm_mon+1<<setw(2)<<setfill('0')<<timePtr->tm_mday<<'-'<<setw(2)<<setfill('0')<<timePtr->tm_hour<<setw(2)<<setfill('0')<<timePtr->tm_min<<':'<<setw(2)<<setfill('0')<<timePtr->tm_sec;
     	filePath = homeFolder + curDate.str();
 	}
 	boost::filesystem::create_directory(filePath);
@@ -202,6 +202,9 @@ int main(void)
 				
 				com->comVal[TESTONEPWM]=std::stoi(command.substr(10,1));
 				com->comArray[TESTONEPWM] = true;
+			}
+			else if(command == "setinitpos"){
+				com->comArray[CON_SET_INIT_POS] = true;
 			}
 			else
 				cout<<"not such command\n";	

@@ -4,6 +4,7 @@
 #include <memory>
 #include <algorithm>
 #include <mutex> 
+#include "MovAvgFilt.hpp"
 // This is the finite state machine that used in the controller
 // There are 8 phases in each gait
 
@@ -36,6 +37,7 @@ FSM only tells what is the current state
 #define RHIP_PREP_POS 450
 
 #define POS_BUF_SIZE 10000  //this is the upper limit of each phase, if one phase last for more than 2 sec, we should stop
+#define MVFORDER 2//it has to be power of 2
 class FSMachine
 {
 private:
@@ -86,6 +88,8 @@ private:
     bool timeReady;
     std::mutex lock;
 
+    MovAvgFilt<MVFORDER> mvf;
+
 public:
     FSMachine(/* args */);
     ~FSMachine();
@@ -97,5 +101,6 @@ public:
     void LeftFront();
     void Reset();
     bool IsReady();
+    void SetInitPos(int curLHipPos,int curRHipPos);
 };
 #endif

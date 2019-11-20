@@ -16,6 +16,7 @@
 #include "Displayer.hpp"
 #include <iostream>
 #include <queue>
+#include "MovAvgFilt.hpp"
 // new modification: After having issues with wiringPi, I no longer use this library (not compatiable with cross-compiler for no reason)
 // Now all the pin number is BCM, same as python
 
@@ -88,7 +89,7 @@
 #define SYNCOUT 4
 
 // index of command
-#define NUMCOM 26
+#define NUMCOM 27
 #define TESTVAL 0
 #define TESTPWM 1
 #define SHUTPWM 2
@@ -117,6 +118,7 @@
 #define CON_RKNE_SUP 23
 #define CON_LANK_SUP 24
 #define CON_RANK_SUP 25
+#define CON_SET_INIT_POS 26
 struct Com
 {
 	const int comLen =NUMCOM;
@@ -313,8 +315,8 @@ private:
     // FSMachine FSM;
     char curState;
     int ankActPre = 320;
-    int kneSupPre = 300;
-    int ankSupPre = 400;
+    int kneSupPre = 350;
+    int ankSupPre = 300;
     int kneRecPre = 350;
     int ankRecPre = 350;
 
@@ -368,6 +370,7 @@ private:
     bool leftFront;
     int preHipDiff;
     shared_ptr<Recorder<unsigned long>> FSMRec;
+
     //============================================================================================================================================
 
     //Test ankle actuation
