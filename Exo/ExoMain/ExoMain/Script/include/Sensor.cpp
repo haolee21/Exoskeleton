@@ -26,7 +26,7 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT,std::shared_ptr<
 		this->filePath = _filePath;
 		std::cout << "Create Sensor" << endl;
 		this->serialDevId = this->serialPortConnect(portName);
-		this->sampT = sampT;
+		this->sampT = sampT*USEC;
 		
 		//initialize data receiving buffer
 		this->frontBuf_count.reset(new int(0));
@@ -39,9 +39,14 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT,std::shared_ptr<
 		this->backBuf_ptr = this->backBuf.get();
 		this->init = false;
 		this->falseSenCount = 0;
-		memset(&this->senData, 0, NUMSEN + 1);
-		memset(&this->serialBuf,'\0',SIZEOFBUFFER);
-		memset(&this->senDataRaw, '\0', DATALEN);
+
+		this->senData.reset(new int[NUMSEN + 1]);
+		this->oriData.reset(new int[NUMSEN]);
+		this->senDataRaw.reset(new char[DATALEN]);
+
+		memset(this->senData.get(), 0, NUMSEN + 1);
+		memset(this->serialBuf,'\0',SIZEOFBUFFER);
+		memset(this->senDataRaw.get(), '\0', DATALEN);
 		if (this->serialDevId == -1)
 			std::cout << "Sensor init failed" << endl;
 
@@ -126,14 +131,14 @@ void Sensor::Stop()
 void *Sensor::senUpdate(void *_sen)
 {
 	Sensor *sen = (Sensor*) _sen;
-	Controller *con = new Controller(sen->filePath,sen->com,sen->display,sen->origin);
+	Controller *con = new Controller(sen->filePath,sen->com,sen->display,sen->origin,sen->sampT);
 	std::unique_ptr<std::thread> conTh;
 	bool conStart = false;
 
 	//for accurate timer
 	
     
-    long int interval = sen->sampT*USEC;
+    
     
 
 	struct timespec t;
@@ -163,15 +168,18 @@ void *Sensor::senUpdate(void *_sen)
 		
 		if (conStart)
 		{
-			if(conTh->joinable()){ //I am not sure but the program stop to freeze after I put this 
-				conTh->join();
-			}
+			// if(conTh->joinable()){ //I am not sure but the program stop to freeze after I put this 
+			// 	conTh->join();
+			// }
+			
 		}
 		else{
 			conStart = true;
+			con->Start(sen->senData.get(), sen->senDataRaw.get(), sen->senDataLock.get());
 		}
-		conTh.reset(new std::thread(&Controller::ConMainLoop,con,sen->senData,sen->senDataRaw));
+		//conTh.reset(new std::thread(&Controller::ConMainLoop,con,sen->senData.get(),sen->senDataRaw.get()));
 		
+
 		{
 			std::lock_guard<std::mutex> lock(sen->senUpdateLock);
 			curSenCond = sen->sw_senUpdate;
@@ -186,13 +194,13 @@ void *Sensor::senUpdate(void *_sen)
 		// calculate next shot
 		
 		
-        t.tv_nsec += interval;
+        t.tv_nsec += sen->sampT;
         Common::tsnorm(&t);
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
 		//clock_gettime(CLOCK_MONOTONIC, &t);
 	}
 	std::cout<<"end sampling\n";
-	conTh->join();
+	con->Stop();
 	std::cout << "sensor ends" << endl;
 	sen->saveData_th.reset(new std::thread(&Sensor::SaveAllData,sen)); //original purpose is for some reason, sen is destoried before it went through this line
 	sen->saveData_th->join();
@@ -372,7 +380,7 @@ void Sensor::readSerialPort(int serialPort)
 		}
 	}
 	//the wrong measurements will still get transfer to the pc
-	std::copy(this->backBuf.get(),this->backBuf.get()+DATALEN,this->senDataRaw);
+	std::copy(this->backBuf.get(),this->backBuf.get()+DATALEN,this->senDataRaw.get());
 
 
 

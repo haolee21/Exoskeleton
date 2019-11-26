@@ -155,7 +155,10 @@ private:
     //Displayer *client;
     void SendToDisp(const char *senRaw);
 
-
+    std::mutex *senLock;
+    std::mutex conSW_lock;
+    bool sw_conMain = false;
+    std::thread conMain_th;
     //shared_ptr<int> senData;
     int senData[NUMSEN+1];
     int preSen[NUMSEN+1]; 
@@ -167,9 +170,7 @@ private:
     std::shared_ptr<PWMGen> RAnkPreVal;
     std::shared_ptr<PWMGen> PWMList[PWMNUM];
 
-
-   
-
+    long sampT;
     void WaitToSync();
     void Sleep(int sleepTime);
 
@@ -387,11 +388,13 @@ public:
     // Valve* ValveList[VALNUM];
     std::shared_ptr<Valve> ValveList[VALNUM];
 
-    Controller(std::string _filePath,Com *_com,bool display,std::chrono::system_clock::time_point origin);
+    Controller(std::string _filePath,Com *_com,bool display,std::chrono::system_clock::time_point origin,long _sampT);
     ~Controller();
     void PreRel();
-    
-    void ConMainLoop(int *curSen,char* senRaw);
+
+    void Start(int *senData, char *senRaw, std::mutex *senDataLock);
+    void Stop();
+    void ConMainLoop(int *curSen, char *senRaw,std::mutex *senDataLock);
 };
 
 
