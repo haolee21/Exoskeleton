@@ -39,9 +39,14 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT,std::shared_ptr<
 		this->backBuf_ptr = this->backBuf.get();
 		this->init = false;
 		this->falseSenCount = 0;
-		memset(&this->senData, 0, NUMSEN + 1);
-		memset(&this->serialBuf,'\0',SIZEOFBUFFER);
-		memset(&this->senDataRaw, '\0', DATALEN);
+
+		this->senData.reset(new int[NUMSEN + 1]);
+		this->oriData.reset(new int[NUMSEN]);
+		this->senDataRaw.reset(new char[DATALEN]);
+
+		memset(this->senData.get(), 0, NUMSEN + 1);
+		memset(this->serialBuf,'\0',SIZEOFBUFFER);
+		memset(this->senDataRaw.get(), '\0', DATALEN);
 		if (this->serialDevId == -1)
 			std::cout << "Sensor init failed" << endl;
 
@@ -170,7 +175,7 @@ void *Sensor::senUpdate(void *_sen)
 		else{
 			conStart = true;
 		}
-		conTh.reset(new std::thread(&Controller::ConMainLoop,con,sen->senData,sen->senDataRaw));
+		conTh.reset(new std::thread(&Controller::ConMainLoop,con,sen->senData.get(),sen->senDataRaw.get()));
 		
 		{
 			std::lock_guard<std::mutex> lock(sen->senUpdateLock);
@@ -372,7 +377,7 @@ void Sensor::readSerialPort(int serialPort)
 		}
 	}
 	//the wrong measurements will still get transfer to the pc
-	std::copy(this->backBuf.get(),this->backBuf.get()+DATALEN,this->senDataRaw);
+	std::copy(this->backBuf.get(),this->backBuf.get()+DATALEN,this->senDataRaw.get());
 
 
 

@@ -63,14 +63,14 @@ public:
 	void Start(std::chrono::system_clock::time_point startTime);
 	void Stop();
 	
-	int oriData[NUMSEN]; //original data
-	int senData[NUMSEN+1]; //data get from ADC after filter
-	
-
-
-	char senDataRaw[DATALEN];
+	// int oriData[NUMSEN]; //original data
+	// int senData[NUMSEN+1]; //data get from ADC after filter
+	std::shared_ptr<int[]> oriData;
+	std::shared_ptr<int[]> senData;
+	std::shared_ptr<char[]> senDataRaw;
+	// char senDataRaw[DATALEN];
 	std::shared_ptr<std::mutex> senDataLock;
-
+	
 	pthread_t th_SenUpdate;
 	pthread_attr_t attr;
 
