@@ -71,15 +71,16 @@ int main(void)
 		time_t result = time(nullptr);
     	tm* timePtr = localtime(&result);
     	stringstream curDate;
-    	curDate<<timePtr->tm_year+1900<<'-'<<setw(2)<<setfill('0')<<timePtr->tm_mon+1<<setw(2)<<setfill('0')<<timePtr->tm_mday<<'-'<<setw(2)<<setfill('0')<<timePtr->tm_hour<<setw(2)<<setfill('0')<<timePtr->tm_min<<':'<<setw(2)<<setfill('0')<<timePtr->tm_sec;
+    	curDate<<timePtr->tm_year+1900<<'-'<<setw(2)<<setfill('0')<<timePtr->tm_mon+1<<setw(2)<<setfill('0')<<timePtr->tm_mday<<'-'<<setw(2)<<setfill('0')<<timePtr->tm_hour<<setw(2)<<setfill('0')<<timePtr->tm_min<<'-'<<setw(2)<<setfill('0')<<timePtr->tm_sec;
     	filePath = homeFolder + curDate.str();
 	}
 	boost::filesystem::create_directory(filePath);
 
 
 	//define command array
-	Com *com = new Com();
-
+	std::shared_ptr<Com> com;
+	com.reset(new Com());
+	// Com *com = new Com();
 
 	for(int i = 0;i<com->comLen;i++){
 		com->comArray[i] = false;
@@ -203,7 +204,7 @@ int main(void)
 				com->comVal[TESTONEPWM]=std::stoi(command.substr(10,1));
 				com->comArray[TESTONEPWM] = true;
 			}
-			else if(command == "setinitpos"){
+			else if(command == "setinit"){
 				com->comArray[CON_SET_INIT_POS] = true;
 			}
 			else
@@ -218,8 +219,9 @@ int main(void)
 
 
 	DelaySys(5);
-	sensor.reset();
 	cout << "File save to: " << filePath << endl;
-	delete com;
+	sensor.reset();
+	
+
 	return 0;
 }

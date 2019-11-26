@@ -57,7 +57,7 @@ class Sensor
 {
 public:
 	
-	Sensor(string _filePath,char *port,long sampTmicro,Com *com,bool display); //sampT is in milli
+	Sensor(string _filePath,char *port,long sampTmicro,std::shared_ptr<Com> com,bool display); //sampT is in milli
 	~Sensor();
 	
 	void Start(std::chrono::system_clock::time_point startTime);
@@ -82,9 +82,11 @@ private:
 	bool is_create = false;
 	int serialDevId;
 	bool sw_senUpdate;
-	static void* senUpdate(void* sen);
-	long sampT;
 	
+	
+	static void *senUpdate(void *sen);
+	long sampT;
+	std::mutex senUpdateLock;
 	//variables for receiving data
 
 	// char senBuffer[SIZEOFBUFFER];
@@ -108,8 +110,7 @@ private:
 	bool init;
 
 	int dataNeedRead = DATALEN;
-
-
+	int falseSenCount;
 
 	bool senNotInit = true;
 
@@ -119,7 +120,8 @@ private:
 	int serialPortConnect(char *portName);
 	void readSerialPort(int serialPort);
 	void serialPortClose(int serial_port);
-	
+	std::shared_ptr<Pin> ResetPin;
+
 	//Lowpass butterworth filter, this can be implented to arduino if we replace arduino mega with better MCU chips
 	//BWFilter bFilter;
 	bool filterInit_flag = false;

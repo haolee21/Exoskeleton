@@ -63,7 +63,7 @@ void setup()
 	testSent2 = 65;
 	curIndex = 0;
 	bufferPointer = buffer;
-	Serial.begin(1000000, SERIAL_8E1);
+	Serial.begin(460800, SERIAL_8E1);
 	// for (int i = 0; i < NUMSEN; i++)
 	// {
 	// 	for (int k = 0; k < NUMSAMP; k++)

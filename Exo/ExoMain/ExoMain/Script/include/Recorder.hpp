@@ -45,8 +45,8 @@ private:
     // saving file
     std::string filePath;
     std::queue<std::thread*> threadQue;
+    //std::queue<std::unique_ptr<std::thread>> threadQue;
 
-    
 
 public:
     Recorder(std::string recName,std::string _filePath, std::string _label);
@@ -83,7 +83,7 @@ Recorder<T>::~Recorder()
     {
         std::thread *curThread = this->threadQue.front();
         curThread->join();
-       
+        delete curThread;
         this->threadQue.pop();
     }
     

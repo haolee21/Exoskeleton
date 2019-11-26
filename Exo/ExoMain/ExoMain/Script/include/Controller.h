@@ -351,25 +351,26 @@ private:
     
     
     //time based FSM
-    unsigned long p1_t;
-    unsigned long p2_t;
-    unsigned long p3_t;
-    unsigned long p4_t;
-    unsigned long p5_t;
-    unsigned long p6_t;
-    unsigned long p7_t;
-    unsigned long p8_t;
-    unsigned long p9_t;
-    unsigned long p10_t;
+    long p1_t;
+    long p2_t;
+    long p3_t;
+    long p4_t;
+    long p5_t;
+    long p6_t;
+    long p7_t;
+    long p8_t;
+    long p9_t;
+    long p10_t;
     void SingleGaitPeriod();
     shared_ptr<thread> SingleGait_th;
     bool singleGaitJoin;
     bool gaitEnd; //this flag is set false when SingleGaitPeriod is called, and set true when it ends
+    std::shared_ptr<std::mutex> gaitEndLock;
     bool gaitStart;
     bool initGait;
     bool leftFront;
     int preHipDiff;
-    shared_ptr<Recorder<unsigned long>> FSMRec;
+    struct timespec gaitTimer;
 
     //============================================================================================================================================
 

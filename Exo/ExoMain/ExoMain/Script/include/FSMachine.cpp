@@ -1,5 +1,5 @@
 #include "FSMachine.hpp"
-FSMachine::FSMachine(/* args */)
+FSMachine::FSMachine(std::string filePath)
 {
     this->LHipBuf.reset(new int[POS_BUF_SIZE]);
     this->RHipBuf.reset(new int[POS_BUF_SIZE]);
@@ -24,7 +24,7 @@ FSMachine::FSMachine(/* args */)
     this->timeReady = false;
     this->halfGait = false;
     this->gaitStart = false;
-
+    this->FSMRec.reset(new Recorder<int>("FSM", filePath, "time,phase1,phase2,phase3,phase4,phase5,phase6,phase7,phase8,phase9,phase10"));
 }
 
 FSMachine::~FSMachine()
@@ -140,8 +140,8 @@ char FSMachine::CalState(int *curMea, char curState)
 
 void FSMachine::PushSen(int *curMea)
 {
-    int hipDiff =this->mvf.DataFilt(curMea[LHIPPOS] + curMea[RHIPPOS] - this->LHipMean - this->RHipMean);
-    
+    int hipDiff = this->mvf.DataFilt(curMea[LHIPPOS] + curMea[RHIPPOS] - this->LHipMean - this->RHipMean);
+
     if ((this->preHipDiff > 0) && (hipDiff < 0))
     {
         // before the first step, we have to wait for the starting point
@@ -160,18 +160,20 @@ void FSMachine::PushSen(int *curMea)
     {
         if (this->curIdx < POS_BUF_SIZE)
         {
+            // std::cout << this->curIdx << std::endl;
             this->LHipBuf[this->curIdx] = curMea[LHIPPOS];
             this->RHipBuf[this->curIdx] = curMea[RHIPPOS];
             this->LKneBuf[this->curIdx] = curMea[LKNEPOS];
             this->RKneBuf[this->curIdx] = curMea[RKNEPOS];
             this->LAnkBuf[this->curIdx] = curMea[LANKPOS];
             this->RAnkBuf[this->curIdx] = curMea[RANKPOS];
-
             this->curIdx++;
         }
         else
         {
-            std::cout << "buffer is full\n";
+            //std::cout << "buffer is full\n";
+            // std::lock_guard<std::mutex> lock(this->lock);
+            //this->timeReady = true;
         }
         if (!halfGait)
         {
@@ -200,28 +202,51 @@ void FSMachine::Reset()
     // this->p9_idx = 0;
     // this->p10_idx = 0;
 }
-void FSMachine::GetPhaseTime(unsigned long &p1_t, unsigned long &p2_t, unsigned long &p3_t, unsigned long &p4_t, unsigned long &p5_t,
-                             unsigned long &p6_t, unsigned long &p7_t, unsigned long &p8_t, unsigned long &p9_t, unsigned long &p10_t)
+void FSMachine::GetPhaseTime(int curTime, long &p1_t, long &p2_t, long &p3_t, long &p4_t, long &p5_t,
+                             long &p6_t, long &p7_t, long &p8_t, long &p9_t, long &p10_t)
 {
     std::cout << "calculate phase time\n";
     {
         std::lock_guard<std::mutex> lock(this->lock);
         if (this->timeReady)
         {
-            p1_t = (unsigned long)this->p1_idx * MSEC;
-            p2_t = (unsigned long)this->p2_idx * MSEC;
-            p3_t = (unsigned long)this->p3_idx * MSEC;
-            p4_t = (unsigned long)this->p4_idx * MSEC;
-            p5_t = (unsigned long)this->p5_idx * MSEC;
-            p6_t = (unsigned long)this->p6_idx * MSEC;
-            p7_t = (unsigned long)this->p7_idx * MSEC;
-            p8_t = (unsigned long)this->p8_idx * MSEC;
-            p9_t = (unsigned long)this->p9_idx * MSEC;
-            p10_t = (unsigned long)this->p10_idx * MSEC;
+            // p1_t = (unsigned long)this->p1_idx * MSEC;
+            // p2_t = (unsigned long)this->p2_idx * MSEC;
+            // p3_t = (unsigned long)this->p3_idx * MSEC;
+            // p4_t = (unsigned long)this->p4_idx * MSEC;
+            // p5_t = (unsigned long)this->p5_idx * MSEC;
+            // p6_t = (unsigned long)this->p6_idx * MSEC;
+            // p7_t = (unsigned long)this->p7_idx * MSEC;
+            // p8_t = (unsigned long)this->p8_idx * MSEC;
+            // p9_t = (unsigned long)this->p9_idx * MSEC;
+            // p10_t = (unsigned long)this->p10_idx * MSEC;
+            p1_t = (long)100*MSEC;
+            p2_t = (long)100*MSEC;
+            p3_t = (long)100*MSEC;
+            p4_t = (long)100*MSEC;
+            p5_t = (long)100*MSEC;
+            p6_t = (long)100*MSEC;
+            p7_t = (long)100*MSEC;
+            p8_t = (long)100*MSEC;
+            p9_t = (long)100*MSEC;
+            p10_t = (long)100*MSEC;
             this->timeReady = false;
         }
+        
     }
-     std::cout << p1_idx << ',' << p2_idx << ',' << p3_idx << ',' << p4_idx << ',' << p5_idx << ',' << p6_idx << ',' << p7_idx << ',' << p8_idx <<','<< p9_idx << ',' << p10_idx << std::endl;
+    p1_t = (long)500*MSEC;
+    p2_t = (long)500*MSEC;
+    p3_t = (long)500*MSEC;
+    p4_t = (long)500*MSEC;
+    p5_t = (long)500*MSEC;
+    p6_t = (long)500*MSEC;
+    p7_t = (long)500*MSEC;
+    p8_t = (long)500*MSEC;
+    p9_t = (long)500*MSEC;
+    p10_t = (long)500*MSEC;
+    std::vector<int> data = std::vector<int>{this->p1_idx, this->p2_idx, this->p3_idx, this->p4_idx, this->p5_idx, this->p6_idx, this->p7_idx, this->p8_idx, this->p9_idx, this->p10_idx};
+    this->FSMRec->PushData((unsigned long)curTime, data);
+    std::cout << p1_idx << ',' << p2_idx << ',' << p3_idx << ',' << p4_idx << ',' << p5_idx << ',' << p6_idx << ',' << p7_idx << ',' << p8_idx << ',' << p9_idx << ',' << p10_idx << std::endl;
 }
 void FSMachine::GetP1()
 {
@@ -286,11 +311,19 @@ void FSMachine::CalPhaseTime()
     this->GetP10();
     this->timeReady = true;
 }
-bool FSMachine::IsReady(){
-    std::lock_guard<std::mutex> lock(this->lock);
-    return this->timeReady;
+bool FSMachine::IsReady()
+{
+    bool curCond;
+    {
+        std::lock_guard<std::mutex> lock(this->lock);
+        curCond = this->timeReady;
+    }
+
+    return curCond;
 }
-void FSMachine::SetInitPos(int curLHip,int curRHip){
+void FSMachine::SetInitPos(int curLHip, int curRHip)
+{
     this->RHipMean = curRHip;
     this->LHipMean = curLHip;
+    std::cout << "set init pos, LHip:" << curLHip << ", RHip:" << curRHip << std::endl;
 }

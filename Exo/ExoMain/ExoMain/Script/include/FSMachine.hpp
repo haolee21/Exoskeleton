@@ -5,6 +5,9 @@
 #include <algorithm>
 #include <mutex> 
 #include "MovAvgFilt.hpp"
+#include <vector>
+#include <Recorder.hpp>
+#include <string>
 // This is the finite state machine that used in the controller
 // There are 8 phases in each gait
 
@@ -36,24 +39,24 @@ FSM only tells what is the current state
 
 #define RHIP_PREP_POS 450
 
-#define POS_BUF_SIZE 10000  //this is the upper limit of each phase, if one phase last for more than 2 sec, we should stop
-#define MVFORDER 2//it has to be power of 2
+#define POS_BUF_SIZE 5000  //this is the upper limit of each phase, if one phase last for more than 2 sec, we should stop
+#define MVFORDER 4//it has to be power of 2
 class FSMachine
 {
 private:
     //time based FSM
-    unsigned int p1_idx;
-    unsigned int p2_idx;
-    unsigned int p3_idx;
-    unsigned int p4_idx;
-    unsigned int p5_idx;
-    unsigned int p6_idx;
-    unsigned int p7_idx;
-    unsigned int p8_idx;
-    unsigned int p9_idx;
-    unsigned int p10_idx;
-    unsigned int swIdx;
-    unsigned int curIdx;
+    int p1_idx;
+    int p2_idx;
+    int p3_idx;
+    int p4_idx;
+    int p5_idx;
+    int p6_idx;
+    int p7_idx;
+    int p8_idx;
+    int p9_idx;
+    int p10_idx;
+    int swIdx;
+    int curIdx;
     // I know it looks redundant, but this makes searching minimal easier
 
     std::unique_ptr<int[]> LHipBuf;
@@ -89,13 +92,14 @@ private:
     std::mutex lock;
 
     MovAvgFilt<MVFORDER> mvf;
+    std::shared_ptr<Recorder<int>> FSMRec;
 
 public:
-    FSMachine(/* args */);
+    FSMachine(std::string filePath);
     ~FSMachine();
     char CalState(int *curMea, char curState);
-    void GetPhaseTime(unsigned long &p1_t, unsigned long &p2_t, unsigned long &p3_t,unsigned long &p4_t,unsigned long &p5_t,
-                      unsigned long &p6_t, unsigned long &p7_t, unsigned long &p8_t, unsigned long &p9_t,unsigned long &p10_t);
+    void GetPhaseTime(int curTime,long &p1_t,long &p2_t,long &p3_t,long &p4_t,long &p5_t,
+                      long &p6_t, long &p7_t, long &p8_t, long &p9_t,long &p10_t);
     
     void PushSen(int *curMea);
     void LeftFront();
