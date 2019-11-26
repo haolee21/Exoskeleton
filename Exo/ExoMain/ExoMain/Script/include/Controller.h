@@ -155,7 +155,10 @@ private:
     //Displayer *client;
     void SendToDisp(const char *senRaw);
 
-
+    std::mutex *senLock;
+    std::mutex conSW_lock;
+    bool sw_conMain = false;
+    std::thread conMain_th;
     //shared_ptr<int> senData;
     int senData[NUMSEN+1];
     int preSen[NUMSEN+1]; 
@@ -390,8 +393,10 @@ public:
     Controller(std::string _filePath,Com *_com,bool display,std::chrono::system_clock::time_point origin);
     ~Controller();
     void PreRel();
-    
-    void ConMainLoop(int *curSen,char* senRaw);
+
+    void Start(int *senData, char *senRaw, std::mutex *senLock);
+    void Stop();
+    void ConMainLoop(int *curSen, char *senRaw);
 };
 
 

@@ -1128,3 +1128,18 @@ void Controller::ShowSen()
     }
     std::cout << std::endl;
 }
+void Controller::Start(int *senData, char *senRaw, std::mutex *senLock){
+    if(!this->sw_conMain){
+        this->conMain_th = std::thread(&Controller::ConMainLoop, this, senData, senRaw);
+        this->sw_conMain = true;
+    }
+    else{
+        std::cout << "controller already started\n";
+    }
+}
+void Controller::Stop(){
+    if(this->sw_conMain){
+        this->sw_conMain = false;
+        this->conMain_th.join();
+    }
+}

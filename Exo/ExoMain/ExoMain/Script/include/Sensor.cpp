@@ -168,15 +168,17 @@ void *Sensor::senUpdate(void *_sen)
 		
 		if (conStart)
 		{
-			if(conTh->joinable()){ //I am not sure but the program stop to freeze after I put this 
-				conTh->join();
-			}
+			// if(conTh->joinable()){ //I am not sure but the program stop to freeze after I put this 
+			// 	conTh->join();
+			// }
+			con->Stop();
 		}
 		else{
 			conStart = true;
 		}
-		conTh.reset(new std::thread(&Controller::ConMainLoop,con,sen->senData.get(),sen->senDataRaw.get()));
-		
+		//conTh.reset(new std::thread(&Controller::ConMainLoop,con,sen->senData.get(),sen->senDataRaw.get()));
+		con->Start(sen->senData.get(), sen->senDataRaw.get(), sen->senDataLock.get());
+
 		{
 			std::lock_guard<std::mutex> lock(sen->senUpdateLock);
 			curSenCond = sen->sw_senUpdate;
@@ -197,7 +199,7 @@ void *Sensor::senUpdate(void *_sen)
 		//clock_gettime(CLOCK_MONOTONIC, &t);
 	}
 	std::cout<<"end sampling\n";
-	conTh->join();
+	con->Stop();
 	std::cout << "sensor ends" << endl;
 	sen->saveData_th.reset(new std::thread(&Sensor::SaveAllData,sen)); //original purpose is for some reason, sen is destoried before it went through this line
 	sen->saveData_th->join();
