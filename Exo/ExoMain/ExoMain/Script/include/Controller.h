@@ -170,9 +170,7 @@ private:
     std::shared_ptr<PWMGen> RAnkPreVal;
     std::shared_ptr<PWMGen> PWMList[PWMNUM];
 
-
-   
-
+    long sampT;
     void WaitToSync();
     void Sleep(int sleepTime);
 
@@ -390,7 +388,7 @@ public:
     // Valve* ValveList[VALNUM];
     std::shared_ptr<Valve> ValveList[VALNUM];
 
-    Controller(std::string _filePath,Com *_com,bool display,std::chrono::system_clock::time_point origin);
+    Controller(std::string _filePath,Com *_com,bool display,std::chrono::system_clock::time_point origin,long _sampT);
     ~Controller();
     void PreRel();
 

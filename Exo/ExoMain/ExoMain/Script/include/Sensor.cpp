@@ -26,7 +26,7 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT,std::shared_ptr<
 		this->filePath = _filePath;
 		std::cout << "Create Sensor" << endl;
 		this->serialDevId = this->serialPortConnect(portName);
-		this->sampT = sampT;
+		this->sampT = sampT*USEC;
 		
 		//initialize data receiving buffer
 		this->frontBuf_count.reset(new int(0));
@@ -131,14 +131,14 @@ void Sensor::Stop()
 void *Sensor::senUpdate(void *_sen)
 {
 	Sensor *sen = (Sensor*) _sen;
-	Controller *con = new Controller(sen->filePath,sen->com,sen->display,sen->origin);
+	Controller *con = new Controller(sen->filePath,sen->com,sen->display,sen->origin,sen->sampT);
 	std::unique_ptr<std::thread> conTh;
 	bool conStart = false;
 
 	//for accurate timer
 	
     
-    long int interval = sen->sampT*USEC;
+    
     
 
 	struct timespec t;
@@ -171,13 +171,14 @@ void *Sensor::senUpdate(void *_sen)
 			// if(conTh->joinable()){ //I am not sure but the program stop to freeze after I put this 
 			// 	conTh->join();
 			// }
-			con->Stop();
+			
 		}
 		else{
 			conStart = true;
+			con->Start(sen->senData.get(), sen->senDataRaw.get(), sen->senDataLock.get());
 		}
 		//conTh.reset(new std::thread(&Controller::ConMainLoop,con,sen->senData.get(),sen->senDataRaw.get()));
-		con->Start(sen->senData.get(), sen->senDataRaw.get(), sen->senDataLock.get());
+		
 
 		{
 			std::lock_guard<std::mutex> lock(sen->senUpdateLock);
@@ -193,7 +194,7 @@ void *Sensor::senUpdate(void *_sen)
 		// calculate next shot
 		
 		
-        t.tv_nsec += interval;
+        t.tv_nsec += sen->sampT;
         Common::tsnorm(&t);
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
 		//clock_gettime(CLOCK_MONOTONIC, &t);
