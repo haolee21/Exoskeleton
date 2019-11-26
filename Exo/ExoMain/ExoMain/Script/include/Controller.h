@@ -392,9 +392,9 @@ public:
     ~Controller();
     void PreRel();
 
-    void Start(int *senData, char *senRaw, std::mutex *senLock);
+    void Start(int *senData, char *senRaw, std::mutex *senDataLock);
     void Stop();
-    void ConMainLoop(int *curSen, char *senRaw);
+    void ConMainLoop(int *curSen, char *senRaw,std::mutex *senDataLock);
 };
 
 

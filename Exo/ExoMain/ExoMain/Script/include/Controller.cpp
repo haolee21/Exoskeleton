@@ -168,7 +168,7 @@ void Controller::ShutDownPWM()
 }
 // main loop
 // =================================================================================================================
-void Controller::ConMainLoop(int *_senData, char *senRaw)
+void Controller::ConMainLoop(int *_senData, char *senRaw,std::mutex *senDataLock)
 {
 
     struct timespec conTimer;
@@ -178,8 +178,11 @@ void Controller::ConMainLoop(int *_senData, char *senRaw)
         
         queue<thread> taskQue;
         // this->senData = senData;
-
-        std::memcpy(this->senData, _senData, std::size_t((NUMSEN + 1) * sizeof(int)));
+        {
+            std::lock_guard<std::mutex> curLock(*senDataLock);
+            std::memcpy(this->senData, _senData, std::size_t((NUMSEN + 1) * sizeof(int)));
+        }
+        
 
         {
             std::lock_guard<std::mutex> lock(this->com->comLock);
@@ -1139,11 +1142,11 @@ void Controller::ShowSen()
     }
     std::cout << std::endl;
 }
-void Controller::Start(int *senData, char *senRaw, std::mutex *senLock)
+void Controller::Start(int *senData, char *senRaw, std::mutex *senDataLock)
 {
     if (!this->sw_conMain)
     {
-        this->conMain_th = std::thread(&Controller::ConMainLoop, this, senData, senRaw);
+        this->conMain_th = std::thread(&Controller::ConMainLoop, this, senData, senRaw,senDataLock);
         this->sw_conMain = true;
     }
     else
