@@ -205,7 +205,7 @@ void FSMachine::Reset()
 void FSMachine::GetPhaseTime(int curTime, long &p1_t, long &p2_t, long &p3_t, long &p4_t, long &p5_t,
                              long &p6_t, long &p7_t, long &p8_t, long &p9_t, long &p10_t)
 {
-    std::cout << "calculate phase time\n";
+    // std::cout << "calculate phase time\n";
     {
         std::lock_guard<std::mutex> lock(this->lock);
         if (this->timeReady)
@@ -234,19 +234,19 @@ void FSMachine::GetPhaseTime(int curTime, long &p1_t, long &p2_t, long &p3_t, lo
         }
         
     }
-    p1_t = (long)500*MSEC;
-    p2_t = (long)500*MSEC;
-    p3_t = (long)500*MSEC;
-    p4_t = (long)500*MSEC;
-    p5_t = (long)500*MSEC;
-    p6_t = (long)500*MSEC;
-    p7_t = (long)500*MSEC;
-    p8_t = (long)500*MSEC;
-    p9_t = (long)500*MSEC;
-    p10_t = (long)500*MSEC;
+    p1_t = (long)10*MSEC;
+    p2_t = (long)10*MSEC;
+    p3_t = (long)10*MSEC;
+    p4_t = (long)10*MSEC;
+    p5_t = (long)10*MSEC;
+    p6_t = (long)10*MSEC;
+    p7_t = (long)10*MSEC;
+    p8_t = (long)10*MSEC;
+    p9_t = (long)10*MSEC;
+    p10_t = (long)10*MSEC;
     std::vector<int> data = std::vector<int>{this->p1_idx, this->p2_idx, this->p3_idx, this->p4_idx, this->p5_idx, this->p6_idx, this->p7_idx, this->p8_idx, this->p9_idx, this->p10_idx};
     this->FSMRec->PushData((unsigned long)curTime, data);
-    std::cout << p1_idx << ',' << p2_idx << ',' << p3_idx << ',' << p4_idx << ',' << p5_idx << ',' << p6_idx << ',' << p7_idx << ',' << p8_idx << ',' << p9_idx << ',' << p10_idx << std::endl;
+    // std::cout << p1_idx << ',' << p2_idx << ',' << p3_idx << ',' << p4_idx << ',' << p5_idx << ',' << p6_idx << ',' << p7_idx << ',' << p8_idx << ',' << p9_idx << ',' << p10_idx << std::endl;
 }
 void FSMachine::GetP1()
 {

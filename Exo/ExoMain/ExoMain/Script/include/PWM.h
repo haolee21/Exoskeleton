@@ -30,8 +30,9 @@ public:
 	std::mutex* DutyLock;
 	void Stop();
 	int GetIdx();
-	Duty duty;
-
+	Duty duty; //the reason why it is public is because I use it in the controller to update the display, it should be rewrote
+	void SetPID_const(float kp, float kd, float ki,int preIn);
+	void PushMea(int curTime,float curMea);
 
 private:
 	std::chrono::system_clock::time_point origin;
@@ -41,6 +42,7 @@ private:
 	void Mainloop();
 	std::shared_ptr<std::thread> pwmTh;
 	void CalTime(int duty);
+	std::shared_ptr<PIDCon> pid;
 	
 	//calculate on time
 	int onTime;
@@ -50,9 +52,10 @@ private:
 	std::shared_ptr<Recorder<int>> pwmRec;
 	std::shared_ptr<Recorder<int>> pwmOnOffRec;
 	//timer 
-	// void tsnorm(struct timespec *ts);
 	int sampT;
 	long int ms_cnt = 0;
+
+	
 };
 
 #endif //PWM_H

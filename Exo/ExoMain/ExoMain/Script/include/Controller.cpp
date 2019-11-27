@@ -913,17 +913,20 @@ void Controller::KnePreRec_main(std::shared_ptr<PWMGen> knePreVal, int knePre, i
 {
     if ((knePre - tankPre > 10) && (knePre > desPre))
     {
-        if (!this->kneRecPID)
+        if (!this->kneRecPID_set)
         {
-            this->kneRecPID.reset(new PIDCon(100, 0.01, 0.001, this->KnePreRecInput(knePre, tankPre)));
+            this->kneRecPID_set = true;
+            knePreVal->SetPID_const(100, 0.01, 0.001,this->KnePreRecInput(knePre, tankPre));
         }
-        else
-            this->SetDuty(knePreVal, this->kneRecPID->GetDuty(this->KnePreRecInput(knePre, tankPre)));
+        else{
+            knePreVal->PushMea(this->senData[TIME],this->KnePreRecInput(knePre, tankPre));
+            this->pwmDuty[knePreVal->GetIdx()] = knePreVal->duty.byte[0];
+        }
     }
     else
     {
+        this->kneRecPID_set = false;
         this->SetDuty(knePreVal, 0);
-        this->kneRecPID.reset();
     }
 }
 
@@ -932,18 +935,22 @@ void Controller::AnkPreRec_main(std::shared_ptr<PWMGen> ankPreVal, int ankPre, i
     //When recycle ankle pressure, if the pressure is too high, we direct the ankle pressure to the knee joint
     if ((ankPre - tankPre > 10) && (ankPre > desPre))
     {
-        if (!this->ankRecPID)
+        if (!this->ankRecPID_set)
         {
-            this->ankRecPID.reset(new PIDCon(100, 0.1, 0.001, this->AnkPreRecInput(ankPre, tankPre)));
+            this->ankRecPID_set = true;
+            ankPreVal->SetPID_const(100, 0.01, 0.001, this->AnkPreRecInput(ankPre, tankPre));
+            // this->ankRecPID.reset(new PIDCon(100, 0.1, 0.001, this->AnkPreRecInput(ankPre, tankPre)));
+            this->ValveOn(balVal);
         }
-        this->ValveOn(balVal);
-        this->SetDuty(ankPreVal, this->ankRecPID->GetDuty(this->AnkPreRecInput(ankPre, tankPre)));
+        else{
+            ankPreVal->PushMea(this->senData[TIME],this->AnkPreRecInput(ankPre, tankPre));
+            this->pwmDuty[ankPreVal->GetIdx()] = ankPreVal->duty.byte[0];
+        }
     }
     else
     {
-
+        this->ankRecPID_set = false;
         this->ValveOff(balVal);
-        this->ankRecPID.reset();
     }
 }
 
@@ -951,21 +958,23 @@ bool Controller::CheckSupPre_main(std::shared_ptr<PWMGen> preVal, int knePre, in
 {
     if (knePre - desPre < 10)
     {
-        if (!this->kneSupPID)
+        if (!this->kneSupPID_set)
         {
-            this->kneSupPID.reset(new PIDCon(100, 0.1, 0.01, this->SupPreInput(knePre, tankPre, desPre)));
+            this->kneSupPID_set = true;
+            preVal->SetPID_const(100, 0.1, 0.01, this->SupPreInput(knePre, tankPre, desPre));
         }
         else
         {
-            this->SetDuty(preVal, this->kneSupPID->GetDuty(this->SupPreInput(knePre, tankPre, desPre)));
+            preVal->PushMea(this->senData[TIME], this->SupPreInput(knePre, tankPre, desPre));
+            this->pwmDuty[preVal->GetIdx()] = preVal->duty.byte[0];
         }
         return false;
     }
     else
     {
-        std::cout << "done\n";
-        this->SetDuty(preVal, 0);
-        this->kneSupPID.reset();
+        preVal->PushMea(this->senData[TIME], -500.0f);
+        this->pwmDuty[preVal->GetIdx()] = preVal->duty.byte[0];
+        this->kneSupPID_set = false;
         return true;
     }
 }
@@ -973,19 +982,22 @@ void Controller::AnkPushOff_main(std::shared_ptr<PWMGen> ankPreVal, int ankPre, 
 {
     if (this->ankActPre - ankPre < 10)
     {
-        if (!this->ankActPID)
+        if (!this->ankActPID_set)
         {
-            this->ankActPID.reset(new PIDCon(800, 0.01, 0.001, this->AnkActInput(ankPre, tankPre)));
+            ankActPID_set = true;
+            ankPreVal->SetPID_const(800, 0.01, 0.001, this->AnkActInput(ankPre, tankPre));
+            // this->ankActPID.reset(new PIDCon(800, 0.01, 0.001, this->AnkActInput(ankPre, tankPre)));
         }
         else
         {
-            this->SetDuty(ankPreVal, this->ankActPID->GetDuty(this->AnkActInput(ankPre, tankPre)));
+            ankPreVal->PushMea(this->senData[TIME], this->AnkActInput(ankPre, tankPre));
+            this->pwmDuty[ankPreVal->GetIdx()] = ankPreVal->duty.byte[0];
         }
     }
     else
     {
-        this->ankActPID.reset();
-        this->SetDuty(ankPreVal, 0);
+        ankPreVal->PushMea(this->senData[TIME], -500.0f);
+        this->pwmDuty[ankPreVal->GetIdx()] = ankPreVal->duty.byte[0];
     }
 }
 //Time based FSM
@@ -994,7 +1006,7 @@ void Controller::SingleGaitPeriod()
 
     clock_gettime(CLOCK_MONOTONIC, &this->gaitTimer);
     this->FSM->GetPhaseTime(this->senData[TIME], this->p1_t, this->p2_t, this->p3_t, this->p4_t, this->p5_t, this->p6_t, this->p7_t, this->p8_t, this->p9_t, this->p10_t);
-    std::cout << "total wait time= " << (long long)this->p1_t + this->p2_t + this->p3_t + this->p4_t + this->p5_t + this->p6_t + this->p7_t + this->p8_t + this->p9_t + this->p10_t << "ns" << std::endl;
+    //std::cout << "total wait time= " << (long long)this->p1_t + this->p2_t + this->p3_t + this->p4_t + this->p5_t + this->p6_t + this->p7_t + this->p8_t + this->p9_t + this->p10_t << "ns" << std::endl;
     // this->gaitTimer.tv_nsec += (10*this->p1_t);
     // Common::tsnorm(&this->gaitTimer);
     // clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
@@ -1009,10 +1021,8 @@ void Controller::SingleGaitPeriod()
 
     //phase 6
     this->gaitTimer.tv_nsec += this->p6_t;
-
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    //usleep(this->p6_t);
     this->Load_resp('r');
 
     //phase 7
@@ -1020,7 +1030,6 @@ void Controller::SingleGaitPeriod()
 
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    //usleep(this->p7_t);
     this->Pre_swing('l');
 
     //phase 8
@@ -1028,7 +1037,7 @@ void Controller::SingleGaitPeriod()
 
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    //usleep(this->p8_t);
+    
     this->Init_swing('l');
 
     //phase 9
@@ -1036,7 +1045,6 @@ void Controller::SingleGaitPeriod()
 
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    // usleep(this->p9_t);
     this->Mid_swing('l');
 
     //phase 10
@@ -1044,7 +1052,7 @@ void Controller::SingleGaitPeriod()
 
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    // usleep(this->p10_t);
+    
     this->Term_swing('l');
     this->Term_stance('r');
 
@@ -1053,14 +1061,14 @@ void Controller::SingleGaitPeriod()
     this->gaitTimer.tv_nsec += this->p1_t;
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    // usleep(this->p1_t);
+    
     this->Load_resp('l');
 
     //phase 2
     this->gaitTimer.tv_nsec += this->p2_t;
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    // usleep(this->p2_t);
+    
     this->Mid_stance('l');
     this->Pre_swing('r');
 
@@ -1068,14 +1076,14 @@ void Controller::SingleGaitPeriod()
     this->gaitTimer.tv_nsec += this->p3_t;
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    // usleep(this->p3_t);
-    this->Init_swing('r');
+    
+    // this->Init_swing('r');
 
     //phase 4
     this->gaitTimer.tv_nsec += this->p4_t;
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    // usleep(this->p4_t);
+
     this->Mid_swing('r');
     std::cout << "gait ends2\n";
     {
