@@ -926,7 +926,10 @@ void Controller::KnePreRec_main(std::shared_ptr<PWMGen> knePreVal, int knePre, i
     else
     {
         this->kneRecPID_set = false;
-        this->SetDuty(knePreVal, 0);
+        knePreVal->PushMea(this->senData[TIME], -500.0f);
+        this->pwmDuty[knePreVal->GetIdx()] = knePreVal->duty.byte[0];
+        this->com->comArray[CON_LKNE_REC] = false;
+        this->com->comArray[CON_RKNE_REC] = false;
     }
 }
 
@@ -950,7 +953,11 @@ void Controller::AnkPreRec_main(std::shared_ptr<PWMGen> ankPreVal, int ankPre, i
     else
     {
         this->ankRecPID_set = false;
-        this->ValveOff(balVal);
+        ankPreVal->PushMea(this->senData[TIME], -500.0f);
+        this->pwmDuty[ankPreVal->GetIdx()] = ankPreVal->duty.byte[0];
+        this->com->comArray[CON_LANK_REC] = false;
+        this->com->comArray[CON_RANK_REC] = false;
+
     }
 }
 
@@ -1023,14 +1030,14 @@ void Controller::SingleGaitPeriod()
     this->gaitTimer.tv_nsec += this->p6_t;
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    this->Load_resp('r');
+    // this->Load_resp('r');
 
     //phase 7
     this->gaitTimer.tv_nsec += this->p7_t;
 
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    this->Pre_swing('l');
+    // this->Pre_swing('l');
 
     //phase 8
     this->gaitTimer.tv_nsec += this->p8_t;
@@ -1038,14 +1045,14 @@ void Controller::SingleGaitPeriod()
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
     
-    this->Init_swing('l');
+    // this->Init_swing('l');
 
     //phase 9
     this->gaitTimer.tv_nsec += this->p9_t;
 
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    this->Mid_swing('l');
+    // this->Mid_swing('l');
 
     //phase 10
     this->gaitTimer.tv_nsec += this->p10_t;
@@ -1053,8 +1060,8 @@ void Controller::SingleGaitPeriod()
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
     
-    this->Term_swing('l');
-    this->Term_stance('r');
+    // this->Term_swing('l');
+    // this->Term_stance('r');
 
     //phase 1
 
@@ -1062,15 +1069,15 @@ void Controller::SingleGaitPeriod()
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
     
-    this->Load_resp('l');
+    // this->Load_resp('l');
 
     //phase 2
     this->gaitTimer.tv_nsec += this->p2_t;
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
     
-    this->Mid_stance('l');
-    this->Pre_swing('r');
+    // this->Mid_stance('l');
+    // this->Pre_swing('r');
 
     //phase 3
     this->gaitTimer.tv_nsec += this->p3_t;
@@ -1084,7 +1091,7 @@ void Controller::SingleGaitPeriod()
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
 
-    this->Mid_swing('r');
+    // this->Mid_swing('r');
     std::cout << "gait ends2\n";
     {
         std::lock_guard<std::mutex> curLock(*this->gaitEndLock);
