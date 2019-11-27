@@ -301,14 +301,18 @@ private:
 
     //=========================================================================================================================
     //PID Controllers
-    std::shared_ptr<PIDCon> kneRecPID;
-    std::shared_ptr<PIDCon> ankRecPID;
-    std::shared_ptr<PIDCon> kneSupPID; // we need to re-assign a PID controller everytime we went into that stage
-                                          // the controller are created when phase_pre => phase_next if it is going to be used in next phase
-                                          // we only need one since we will need to prepare for impact on one leg only
-    std::shared_ptr<PIDCon> ankActPID;
+    // std::shared_ptr<PIDCon> kneRecPID;
+    // std::shared_ptr<PIDCon> ankRecPID;
+    // std::shared_ptr<PIDCon> kneSupPID; // we need to re-assign a PID controller everytime we went into that stage
+    //                                       // the controller are created when phase_pre => phase_next if it is going to be used in next phase
+    //                                       // we only need one since we will need to prepare for impact on one leg only
+    // std::shared_ptr<PIDCon> ankActPID;
 
-
+    //flag for make sure we have update the pid controller parameters
+    bool kneRecPID_set = false;
+    bool ankRecPID_set = false;
+    bool kneSupPID_set = false;
+    bool ankActPID_set = false;
 
     //=========================================================================================================================
     //Biped walking energy recycle

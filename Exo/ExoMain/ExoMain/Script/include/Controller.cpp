@@ -913,17 +913,20 @@ void Controller::KnePreRec_main(std::shared_ptr<PWMGen> knePreVal, int knePre, i
 {
     if ((knePre - tankPre > 10) && (knePre > desPre))
     {
-        if (!this->kneRecPID)
+        if (!this->kneRecPID_set)
         {
-            this->kneRecPID.reset(new PIDCon(100, 0.01, 0.001, this->KnePreRecInput(knePre, tankPre)));
+            this->kneRecPID_set = true;
+            knePreVal->SetPID_const(100, 0.01, 0.001,this->KnePreRecInput(knePre, tankPre));
         }
-        else
-            this->SetDuty(knePreVal, this->kneRecPID->GetDuty(this->KnePreRecInput(knePre, tankPre)));
+        else{
+            knePreVal->PushMea(this->senData[TIME],this->KnePreRecInput(knePre, tankPre));
+            this->pwmDuty[knePreVal->GetIdx()] = knePreVal->duty.byte[0];
+        }
     }
     else
     {
+        this->kneRecPID_set = false;
         this->SetDuty(knePreVal, 0);
-        this->kneRecPID.reset();
     }
 }
 
@@ -932,18 +935,22 @@ void Controller::AnkPreRec_main(std::shared_ptr<PWMGen> ankPreVal, int ankPre, i
     //When recycle ankle pressure, if the pressure is too high, we direct the ankle pressure to the knee joint
     if ((ankPre - tankPre > 10) && (ankPre > desPre))
     {
-        if (!this->ankRecPID)
+        if (!this->ankRecPID_set)
         {
-            this->ankRecPID.reset(new PIDCon(100, 0.1, 0.001, this->AnkPreRecInput(ankPre, tankPre)));
+            this->ankRecPID_set = true;
+            ankPreVal->SetPID_const(100, 0.01, 0.001, this->AnkPreRecInput(ankPre, tankPre));
+            // this->ankRecPID.reset(new PIDCon(100, 0.1, 0.001, this->AnkPreRecInput(ankPre, tankPre)));
+            this->ValveOn(balVal);
         }
-        this->ValveOn(balVal);
-        this->SetDuty(ankPreVal, this->ankRecPID->GetDuty(this->AnkPreRecInput(ankPre, tankPre)));
+        else{
+            ankPreVal->PushMea(this->senData[TIME],this->AnkPreRecInput(ankPre, tankPre));
+            this->pwmDuty[ankPreVal->GetIdx()] = ankPreVal->duty.byte[0];
+        }
     }
     else
     {
-
+        this->ankRecPID_set = false;
         this->ValveOff(balVal);
-        this->ankRecPID.reset();
     }
 }
 
@@ -951,21 +958,23 @@ bool Controller::CheckSupPre_main(std::shared_ptr<PWMGen> preVal, int knePre, in
 {
     if (knePre - desPre < 10)
     {
-        if (!this->kneSupPID)
+        if (!this->kneSupPID_set)
         {
-            this->kneSupPID.reset(new PIDCon(100, 0.1, 0.01, this->SupPreInput(knePre, tankPre, desPre)));
+            this->kneSupPID_set = true;
+            preVal->SetPID_const(100, 0.1, 0.01, this->SupPreInput(knePre, tankPre, desPre));
         }
         else
         {
-            this->SetDuty(preVal, this->kneSupPID->GetDuty(this->SupPreInput(knePre, tankPre, desPre)));
+            preVal->PushMea(this->senData[TIME], this->SupPreInput(knePre, tankPre, desPre));
+            this->pwmDuty[preVal->GetIdx()] = preVal->duty.byte[0];
         }
         return false;
     }
     else
     {
-        
-        this->SetDuty(preVal, 0);
-        this->kneSupPID.reset();
+        preVal->PushMea(this->senData[TIME], -500.0f);
+        this->pwmDuty[preVal->GetIdx()] = preVal->duty.byte[0];
+        this->kneSupPID_set = false;
         return true;
     }
 }
@@ -973,19 +982,22 @@ void Controller::AnkPushOff_main(std::shared_ptr<PWMGen> ankPreVal, int ankPre, 
 {
     if (this->ankActPre - ankPre < 10)
     {
-        if (!this->ankActPID)
+        if (!this->ankActPID_set)
         {
-            this->ankActPID.reset(new PIDCon(800, 0.01, 0.001, this->AnkActInput(ankPre, tankPre)));
+            ankActPID_set = true;
+            ankPreVal->SetPID_const(800, 0.01, 0.001, this->AnkActInput(ankPre, tankPre));
+            // this->ankActPID.reset(new PIDCon(800, 0.01, 0.001, this->AnkActInput(ankPre, tankPre)));
         }
         else
         {
-            this->SetDuty(ankPreVal, this->ankActPID->GetDuty(this->AnkActInput(ankPre, tankPre)));
+            ankPreVal->PushMea(this->senData[TIME], this->AnkActInput(ankPre, tankPre));
+            this->pwmDuty[ankPreVal->GetIdx()] = ankPreVal->duty.byte[0];
         }
     }
     else
     {
-        this->ankActPID.reset();
-        this->SetDuty(ankPreVal, 0);
+        ankPreVal->PushMea(this->senData[TIME], -500.0f);
+        this->pwmDuty[ankPreVal->GetIdx()] = ankPreVal->duty.byte[0];
     }
 }
 //Time based FSM
