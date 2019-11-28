@@ -666,6 +666,7 @@ void Controller::PIDActTest(int joint)
         this->ValveOn(this->LKneVal);
         if (this->CheckSupPre_main(this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE], this->kneSupPre))
         {
+            std::lock_guard<std::mutex> curLock(this->com->comLock); //not necessary, but who knows one day I may use it in different thread
             this->com->comArray[PIDACTTEST] = false;
         }
     }
@@ -794,8 +795,14 @@ void Controller::BipedEngRec()
     }
     if (curCond)
     {
+        if(this->needJoin){
+            // std::cout << "join\n";
+            // this->SingleGait_th->join();
+        }
+        std::cout << "create\n";
         this->SingleGait_th.reset(new std::thread(&Controller::SingleGaitPeriod, this));
         this->SingleGait_th->detach();
+        this->needJoin = true;
         this->gaitEnd = false;
     }
 }
@@ -806,14 +813,21 @@ void Controller::Init_swing(char side)
     if (side == 'r')
     {
         this->ValveOff(this->RKneVal);
-        this->com->comArray[CON_RANK_ACT] = false;
+        
         this->SetDuty(this->RAnkPreVal, 0);
+        {
+            std::lock_guard<std::mutex> curLock(this->com->comLock);
+            this->com->comArray[CON_RANK_ACT] = false;
+        }
     }
     else
     {
         this->ValveOff(this->LKneVal);
-        this->com->comArray[CON_LANK_ACT] = false;
         this->SetDuty(this->LAnkPreVal, 0);
+        {
+            std::lock_guard<std::mutex> curLock(this->com->comLock);
+            this->com->comArray[CON_LANK_ACT] = false;
+        }
     }
 }
 void Controller::Mid_swing(char side)
@@ -834,12 +848,20 @@ void Controller::Term_swing(char side)
     if (side == 'r')
     {
         this->ValveOn(this->RBalVal);
-        this->com->comArray[CON_RKNE_SUP] = true;
+        {
+            std::lock_guard<std::mutex> curLock(this->com->comLock);
+            this->com->comArray[CON_RKNE_SUP] = true;
+        }
+        
     }
     else
     {
         this->ValveOn(this->LKneVal);
-        this->com->comArray[CON_LKNE_SUP] = true;
+        {
+            std::lock_guard<std::mutex> curLock(this->com->comLock);
+            this->com->comArray[CON_LKNE_SUP] = true;
+        }
+        
         // this->CheckSupPre(this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE]);
     }
 }
@@ -847,6 +869,7 @@ void Controller::Load_resp(char side)
 {
     if (side == 'r')
     {
+        std::lock_guard<std::mutex> curLock(this->com->comLock);
         this->com->comArray[CON_RKNE_SUP] = false;
 
         this->com->comArray[CON_RKNE_REC] = true;
@@ -854,6 +877,7 @@ void Controller::Load_resp(char side)
     }
     else
     {
+        std::lock_guard<std::mutex> curLock(this->com->comLock);
         this->com->comArray[CON_LKNE_SUP] = false;
         this->com->comArray[CON_LKNE_REC] = true;
         this->com->comArray[CON_LANK_REC] = true;
@@ -869,16 +893,24 @@ void Controller::Mid_stance(char side)
         //this is needed since the previous stage is load response
         this->SetDuty(this->RKnePreVal, 0);
         this->SetDuty(this->RAnkPreVal, 0);
-        this->com->comArray[CON_RKNE_REC] = false;
-        this->com->comArray[CON_RANK_REC] = false;
+        {
+            std::lock_guard<std::mutex> curLock(this->com->comLock);
+            this->com->comArray[CON_RKNE_REC] = false;
+            this->com->comArray[CON_RANK_REC] = false;
+        }
+        
         this->ValveOff(this->RBalVal);
     }
     else
     {
         this->SetDuty(this->LKnePreVal, 0);
         this->SetDuty(this->LAnkPreVal, 0);
-        this->com->comArray[CON_LKNE_REC] = false;
-        this->com->comArray[CON_LANK_REC] = false;
+        {
+            std::lock_guard<std::mutex> curLock(this->com->comLock);
+            this->com->comArray[CON_LKNE_REC] = false;
+            this->com->comArray[CON_LANK_REC] = false;
+        }
+        
         this->ValveOff(this->LBalVal);
     }
 }
@@ -897,10 +929,12 @@ void Controller::Pre_swing(char side)
 {
     if (side == 'r')
     {
+        std::lock_guard<std::mutex> curLock(this->com->comLock);
         this->com->comArray[CON_RANK_ACT] = true;
     }
     else
     {
+        std::lock_guard<std::mutex> curLock(this->com->comLock);
         this->com->comArray[CON_LANK_ACT] = true;
     }
 }
@@ -1006,7 +1040,7 @@ void Controller::AnkPushOff_main(std::shared_ptr<PWMGen> ankPreVal, int ankPre, 
 //Time based FSM
 void Controller::SingleGaitPeriod()
 {
-
+    std::cout << "start gait\n";
     clock_gettime(CLOCK_MONOTONIC, &this->gaitTimer);
     this->FSM->GetPhaseTime(this->senData[TIME], this->p1_t, this->p2_t, this->p3_t, this->p4_t, this->p5_t, this->p6_t, this->p7_t, this->p8_t, this->p9_t, this->p10_t);
     //std::cout << "total wait time= " << (long long)this->p1_t + this->p2_t + this->p3_t + this->p4_t + this->p5_t + this->p6_t + this->p7_t + this->p8_t + this->p9_t + this->p10_t << "ns" << std::endl;
@@ -1021,13 +1055,13 @@ void Controller::SingleGaitPeriod()
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
     this->Term_stance('l');
     this->Term_swing('r');
-
+    std::cout << "pass phase 5\n";
     //phase 6
     this->gaitTimer.tv_nsec += this->p6_t;
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
     this->Load_resp('r');
-
+    
     //phase 7
     this->gaitTimer.tv_nsec += this->p7_t;
 

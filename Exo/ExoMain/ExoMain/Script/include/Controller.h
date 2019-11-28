@@ -376,7 +376,7 @@ private:
     bool leftFront;
     int preHipDiff;
     struct timespec gaitTimer;
-
+    bool needJoin=false;
     //============================================================================================================================================
 
     //Test ankle actuation
