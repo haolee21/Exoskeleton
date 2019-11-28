@@ -176,6 +176,7 @@ private:
 
     //displayer
     // char *valveCond;
+    std::mutex ValveCondLock; //protect pwmDuty and ValveCond since I will have to update it in FSMLoop
     std::shared_ptr<char[]> valveCond;
 
     bool display=false;
@@ -366,17 +367,26 @@ private:
     long p8_t;
     long p9_t;
     long p10_t;
-    void SingleGaitPeriod();
-    shared_ptr<thread> SingleGait_th;
-    bool singleGaitJoin;
-    bool gaitEnd; //this flag is set false when SingleGaitPeriod is called, and set true when it ends
-    std::shared_ptr<std::mutex> gaitEndLock;
+    
+    
+
+    
     bool gaitStart;
     bool initGait;
     bool leftFront;
     int preHipDiff;
     struct timespec gaitTimer;
-    bool needJoin=false;
+    
+
+    void FSMLoop();
+    std::shared_ptr<std::thread> FSMLoop_th;
+    void SingleGaitPeriod();
+    void FSM_start();
+    bool sw_FSM = false;
+    void FSM_stop();
+    std::mutex FSMLock;
+    bool gaitEnd; //this flag is set false when SingleGaitPeriod is called, and set true when it ends
+    std::mutex gaitEndLock;
     //============================================================================================================================================
 
     //Test ankle actuation

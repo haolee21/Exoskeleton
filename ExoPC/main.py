@@ -12,7 +12,7 @@ NUMSEN=16
 DATALEN = NUMSEN*2+1
 VALNUM = 7
 PWMNUM = 4
-sampFreq = 1000/50 #real samp / pre scaler
+sampFreq = 800/50 #real samp / pre scaler
 def main():
     #sync time with pc
     ssh = paramiko.SSHClient()

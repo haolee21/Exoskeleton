@@ -103,6 +103,7 @@ void Sensor::Start(std::chrono::system_clock::time_point startTime)
 }
 void Sensor::Stop()
 {
+	
 	std::cout << "get into stop" << endl;
 	{
 		std::lock_guard<mutex> lock(this->senUpdateLock);
@@ -131,7 +132,8 @@ void Sensor::Stop()
 void *Sensor::senUpdate(void *_sen)
 {
 	Sensor *sen = (Sensor*) _sen;
-	Controller *con = new Controller(sen->filePath,sen->com,sen->display,sen->origin,sen->sampT);
+	std::shared_ptr<Controller> con;
+	con.reset(new Controller(sen->filePath, sen->com, sen->display, sen->origin, sen->sampT));
 	std::unique_ptr<std::thread> conTh;
 	bool conStart = false;
 
@@ -205,7 +207,7 @@ void *Sensor::senUpdate(void *_sen)
 	sen->saveData_th.reset(new std::thread(&Sensor::SaveAllData,sen)); //original purpose is for some reason, sen is destoried before it went through this line
 	sen->saveData_th->join();
 	//sen->senRec.reset();
-	delete con;
+	
 
 	return 0;
 }

@@ -74,7 +74,6 @@ Controller::Controller(std::string filePath, Com *_com, bool _display, std::chro
     this->initGait = false;
     this->gaitStart = false;
     this->gaitEnd = true;
-    this->gaitEndLock.reset(new std::mutex);
     this->FSM.reset(new FSMachine(filePath));
 
     // now we need to actuate some valves, since we prefer the system to isolate each chambers
@@ -94,25 +93,12 @@ Controller::Controller(std::string filePath, Com *_com, bool _display, std::chro
     this->p8_t = 10000l;
     this->p9_t = 10000l;
     this->p10_t = 10000l;
-    this->singleGaitJoin = false;
+  
 }
 Controller::~Controller()
 {
     std::cout << "destory controller\n";
-    if (this->singleGaitJoin)
-    {
-        bool notEnd;
-        do
-        {
-            {
-                std::lock_guard<std::mutex> curLock(*this->gaitEndLock);
-                notEnd = this->gaitEnd;
-            }
-            usleep(5000);
-        } while (!notEnd);
-
-        // this->SingleGait_th->join();
-    }
+    this->FSM_stop();
 
     this->PreRel();
     std::shared_ptr<PWMGen> *begPWM = this->PWMList;
@@ -341,8 +327,12 @@ void Controller::SendToDisp(const char *senRaw)
     {
         char sendData[DATALEN + VALNUM + PWMNUM];
         std::copy(senRaw, senRaw + DATALEN, sendData);
-        std::copy(this->valveCond.get(), this->valveCond.get() + VALNUM, sendData + DATALEN);
-        std::copy(this->pwmDuty.get(), this->pwmDuty.get() + PWMNUM, sendData + DATALEN + VALNUM);
+        {
+            std::lock_guard<std::mutex> curLock(this->ValveCondLock);
+            std::copy(this->valveCond.get(), this->valveCond.get() + VALNUM, sendData + DATALEN);
+            std::copy(this->pwmDuty.get(), this->pwmDuty.get() + PWMNUM, sendData + DATALEN + VALNUM);
+        }
+        
         this->client->send(sendData, DATALEN + VALNUM + PWMNUM);
         this->preSend = 0;
     }
@@ -437,6 +427,7 @@ void Controller::TestPWM()
 
 void Controller::SetDuty(std::shared_ptr<PWMGen> pwmVal, int duty)
 {
+    std::lock_guard<std::mutex> curLock(this->ValveCondLock);
     pwmVal->SetDuty(duty, this->senData[TIME]);
     this->pwmDuty[pwmVal->GetIdx()] = pwmVal->duty.byte[0];
 }
@@ -444,6 +435,7 @@ void Controller::SetDuty(std::shared_ptr<PWMGen> pwmVal, int duty)
 //============================================================================================================
 void Controller::ValveOn(std::shared_ptr<Valve> val)
 {
+    std::lock_guard<std::mutex> curLock(this->ValveCondLock);
     val->On(this->senData[TIME]);
     this->valveCond[val->GetValIdx()] = 'd';
 }
@@ -788,23 +780,10 @@ void Controller::BipedEngRec()
     // this->preHipDiff = curHipDiff;
 
     //test, assume the function is trigger every time is is done
-    bool curCond = false;
-    {
-        std::lock_guard<std::mutex> curLock(*this->gaitEndLock);
-        curCond = this->gaitEnd;
+    if(!this->sw_FSM){
+        this->FSM_start();
     }
-    if (curCond)
-    {
-        if(this->needJoin){
-            // std::cout << "join\n";
-            // this->SingleGait_th->join();
-        }
-        std::cout << "create\n";
-        this->SingleGait_th.reset(new std::thread(&Controller::SingleGaitPeriod, this));
-        this->SingleGait_th->detach();
-        this->needJoin = true;
-        this->gaitEnd = false;
-    }
+    
 }
 
 // 7 Phases of single leg's walking gait
@@ -1017,6 +996,7 @@ bool Controller::CheckSupPre_main(std::shared_ptr<PWMGen> preVal, int knePre, in
 }
 void Controller::AnkPushOff_main(std::shared_ptr<PWMGen> ankPreVal, int ankPre, int tankPre)
 {
+    //std::cout << "running valves" << ankPreVal->GetIdx() << std::endl;
     if (this->ankActPre - ankPre < 10)
     {
         if (!this->ankActPID_set)
@@ -1053,78 +1033,78 @@ void Controller::SingleGaitPeriod()
 
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    this->Term_stance('l');
-    this->Term_swing('r');
+    // this->Term_stance('l');
+    // this->Term_swing('r');
     std::cout << "pass phase 5\n";
     //phase 6
     this->gaitTimer.tv_nsec += this->p6_t;
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    this->Load_resp('r');
-    
+    // this->Load_resp('r');
+    std::cout << "pass phase 6\n";
     //phase 7
     this->gaitTimer.tv_nsec += this->p7_t;
 
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    this->Pre_swing('l');
-
+    // this->Pre_swing('l');
+    std::cout << "pass phase 7\n";
     //phase 8
     this->gaitTimer.tv_nsec += this->p8_t;
 
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
     
-    this->Init_swing('l');
-
+    // this->Init_swing('l');
+    std::cout << "pass phase 8\n";
     //phase 9
     this->gaitTimer.tv_nsec += this->p9_t;
 
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    this->Mid_swing('l');
-
+    // this->Mid_swing('l');
+    std::cout << "pass phase 9\n";
     //phase 10
     this->gaitTimer.tv_nsec += this->p10_t;
 
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
     
-    this->Term_swing('l');
-    this->Term_stance('r');
-
+    // this->Term_swing('l');
+    // this->Term_stance('r');
+    std::cout << "pass phase 10\n";
     //phase 1
 
     this->gaitTimer.tv_nsec += this->p1_t;
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
     
-    this->Load_resp('l');
-
+    // this->Load_resp('l');
+    std::cout << "pass phase 1\n";
     //phase 2
     this->gaitTimer.tv_nsec += this->p2_t;
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
     
-    this->Mid_stance('l');
-    this->Pre_swing('r');
-
+    // this->Mid_stance('l');
+    // this->Pre_swing('r');
+    std::cout << "pass phase 2\n";
     //phase 3
     this->gaitTimer.tv_nsec += this->p3_t;
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
     
-    this->Init_swing('r');
-
+    // this->Init_swing('r');
+    std::cout << "pass phase 3\n";
     //phase 4
     this->gaitTimer.tv_nsec += this->p4_t;
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
 
-    this->Mid_swing('r');
-    std::cout << "gait ends2\n";
+    // this->Mid_swing('r');
+    std::cout << "gait ends\n";
     {
-        std::lock_guard<std::mutex> curLock(*this->gaitEndLock);
+        std::lock_guard<std::mutex> curLock(this->gaitEndLock);
         this->gaitEnd = true;
     }
 }
@@ -1206,4 +1186,52 @@ void Controller::Stop()
         this->sw_conMain = false;
     }
     this->conMain_th.join();
+}
+
+void Controller::FSMLoop(){
+    while(true){
+
+        
+        bool curCond;
+        {
+            std::lock_guard<std::mutex> curLock(this->FSMLock);
+            curCond = this->sw_FSM;
+        }
+        if(!curCond){
+            break;
+        }
+        
+        bool curGaitEnd;
+        {
+            std::lock_guard<std::mutex> curLock(this->gaitEndLock);
+            curGaitEnd = this->gaitEnd;
+        }
+        if(curGaitEnd){
+            this->gaitEnd = false;
+            this->SingleGaitPeriod();
+        }
+    }
+}
+void Controller::FSM_start(){
+    bool curCond;
+    {
+        std::lock_guard<std::mutex> curLock(this->FSMLock);
+        curCond = this->sw_FSM;
+    }
+    if(!curCond){
+        this->sw_FSM = true;
+        this->FSMLoop_th.reset(new std::thread(&Controller::FSMLoop, this));
+    }
+    
+}
+void Controller::FSM_stop(){
+    {
+        std::lock_guard<std::mutex> curLock(this->FSMLock);
+        this->sw_FSM = false;
+    }
+    if(this->FSMLoop_th){
+        if(this->FSMLoop_th->joinable()){
+             this->FSMLoop_th->join();
+        }
+    }      
 }
