@@ -47,8 +47,12 @@ private:
 	//calculate on time
 	int onTime;
 	
-
+	//this is for experiment, for some reason function involves pid failed
+	// I suspected it is due to rapidly setting duty in pwm
+	// here I set a flag, if the duty changed, flag = true, only if it has been ran once it will be false
+	bool swDuty = false;
 	
+
 	std::shared_ptr<Recorder<int>> pwmRec;
 	std::shared_ptr<Recorder<int>> pwmOnOffRec;
 	//timer 

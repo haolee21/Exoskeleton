@@ -42,7 +42,11 @@ void PWMGen::SetDuty(int onDuty, int curTime)
 	this->duty.num = onDuty;
 	{
 		std::lock_guard<std::mutex> lock(*this->DutyLock);
-		this->CalTime(onDuty);
+		if(!this->swDuty){
+			this->CalTime(onDuty);
+			this->swDuty = false;
+		}
+		
 	}
 
 	std::vector<int> curDuty;
@@ -84,6 +88,7 @@ void PWMGen::Mainloop()
 		{
 			std::lock_guard<std::mutex> lock(*this->DutyLock);
 			curOnTime = this->onTime;
+			this->swDuty = false;
 		}
 		std::chrono::system_clock::time_point curT = std::chrono::system_clock::now();
 		microsecs_t start_time(std::chrono::duration_cast<microsecs_t>(curT - this->origin));

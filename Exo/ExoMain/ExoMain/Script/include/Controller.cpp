@@ -835,7 +835,7 @@ void Controller::Term_swing(char side)
     }
     else
     {
-        this->ValveOn(this->LKneVal);
+        this->ValveOn(this->LBalVal);
         {
             std::lock_guard<std::mutex> curLock(this->com->comLock);
             this->com->comArray[CON_LKNE_SUP] = true;
@@ -1034,13 +1034,15 @@ void Controller::SingleGaitPeriod()
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
     // this->Term_stance('l');
-    // this->Term_swing('r');
+
+    // this->Term_swing('r');//suspect1 pass
+
     std::cout << "pass phase 5\n";
     //phase 6
     this->gaitTimer.tv_nsec += this->p6_t;
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    // this->Load_resp('r');
+    this->Load_resp('r'); //suspect2 pass
     std::cout << "pass phase 6\n";
     //phase 7
     this->gaitTimer.tv_nsec += this->p7_t;
@@ -1079,7 +1081,7 @@ void Controller::SingleGaitPeriod()
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
     
-    // this->Load_resp('l');
+    this->Load_resp('l');
     std::cout << "pass phase 1\n";
     //phase 2
     this->gaitTimer.tv_nsec += this->p2_t;
@@ -1181,11 +1183,19 @@ void Controller::Start(int *senData, char *senRaw, std::mutex *senDataLock)
 }
 void Controller::Stop()
 {
+    bool conCond;
     {
         std::lock_guard<std::mutex> curLock(this->conSW_lock);
-        this->sw_conMain = false;
+        conCond = this->sw_conMain;
     }
-    this->conMain_th.join();
+    if(conCond){
+        {
+            std::lock_guard<std::mutex> curLock(this->conSW_lock);
+        this->sw_conMain = false;
+        }
+        this->conMain_th.join();
+    }
+    
 }
 
 void Controller::FSMLoop(){
