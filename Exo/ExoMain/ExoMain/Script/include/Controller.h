@@ -125,6 +125,7 @@ struct Com
 	bool comArray[NUMCOM];
 	mutex comLock;
     int comVal[NUMCOM];//if any value need to be passed
+    bool offArray[NUMCOM]; //If controller will self turn off the function, it will set the offArray as true, and required actions will be taken
 };
 // index of senData
 // #define NUMSEN 16
@@ -181,7 +182,7 @@ private:
 
     bool display=false;
     int preSend=0; //scale the sending freq since matplotlib cannot handle it
-    const int dispPreScale = 69; //determine how frequent we send data back to pc
+    const int dispPreScale = 31; //determine how frequent we send data back to pc, 800/70 Hz
     // Valve control
     void ValveOn(std::shared_ptr<Valve> val);
     void ValveOff(std::shared_ptr<Valve> val);
@@ -293,7 +294,7 @@ private:
     //PID controller test
     //=========================================================================================================================
     void PIDActTest(int joint);
-    void PIDRecTest(int desPre,int joint);
+    void PIDRecTest(int joint);
 
 
 
@@ -323,8 +324,8 @@ private:
     int ankActPre = 320;
     int kneSupPre = 350;
     int ankSupPre = 300;
-    int kneRecPre = 350;
-    int ankRecPre = 350;
+    int kneRecPre = 250;
+    int ankRecPre = 250;
 
     const int LHipMean = 410;
     const int RHipMean = 564;
@@ -344,11 +345,11 @@ private:
     
     
     float KnePreRecInput(int knePre,int tankPre);
-    void KnePreRec_main(std::shared_ptr<PWMGen> knePreVal,int knePre, int tankPre,int desPre);
+    bool CheckKnePreRec_main(std::shared_ptr<PWMGen> knePreVal,int knePre, int tankPre,int desPre);
 
    
     float AnkPreRecInput(int ankPre,int tankPre);
-    void AnkPreRec_main(std::shared_ptr<PWMGen> ankPreVal, int ankPre, int tankPre, std::shared_ptr<Valve> balVal,int desPre);
+    bool CheckAnkPreRec_main(std::shared_ptr<PWMGen> ankPreVal, int ankPre, int tankPre, std::shared_ptr<Valve> balVal,int desPre);
 
 
     
@@ -383,6 +384,7 @@ private:
     void SingleGaitPeriod();
     void FSM_start();
     bool sw_FSM = false;
+    bool FSM_flag = false;
     void FSM_stop();
     std::mutex FSMLock;
     bool gaitEnd; //this flag is set false when SingleGaitPeriod is called, and set true when it ends

@@ -84,7 +84,7 @@ int main(void)
 
 	for(int i = 0;i<com->comLen;i++){
 		com->comArray[i] = false;
-
+		com->offArray[i] = false;
 	}
 	
 	char portName[] = "/dev/ttyACM0";
@@ -98,7 +98,7 @@ int main(void)
 	
 	
 	while(true){
-		cout<<"Command: ";
+		std::cout<<"Command: ";
 		string command;
 		cin>>command;
 		{
@@ -199,6 +199,22 @@ int main(void)
 				com->comArray[PIDACTTEST]=true;
 				com->comVal[PIDACTTEST]=3;
 			}
+			else if(command =="pidreclk"){
+				com->comArray[PIDRECTEST] = true;
+				com->comVal[PIDRECTEST] = 0;
+			}
+			else if(command =="pidrecla"){
+				com->comArray[PIDRECTEST] = true;
+				com->comVal[PIDRECTEST] = 1;
+			}
+			else if(command=="pidrecrk"){
+				com->comArray[PIDRECTEST] = true;
+				com->comVal[PIDRECTEST] = 2;
+			}
+			else if(command=="pidrecra"){
+				com->comArray[PIDRECTEST] = true;
+				com->comVal[PIDRECTEST] = 3;
+			}
 			else if(command.substr(0,10)=="testonepwm"){
 				
 				com->comVal[TESTONEPWM]=std::stoi(command.substr(10,1));
@@ -208,7 +224,7 @@ int main(void)
 				com->comArray[CON_SET_INIT_POS] = true;
 			}
 			else
-				cout<<"not such command\n";	
+				std::cout<<"not such command\n";	
 		}
 	}
 	
@@ -219,7 +235,7 @@ int main(void)
 
 
 	DelaySys(5);
-	cout << "File save to: " << filePath << endl;
+	std::cout << "File save to: " << filePath << endl;
 	sensor.reset();
 	
 

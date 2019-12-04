@@ -65,12 +65,11 @@ public:
 	
 	// int oriData[NUMSEN]; //original data
 	// int senData[NUMSEN+1]; //data get from ADC after filter
-	std::shared_ptr<int[]> oriData;
+	std::shared_ptr<int[]> oriData; //the size of array seems important when ~Sensor() is called
 	std::shared_ptr<int[]> senData;
 	std::shared_ptr<char[]> senDataRaw;
-	// char senDataRaw[DATALEN];
-	std::shared_ptr<std::mutex> senDataLock;
-	
+	//std::shared_ptr<std::mutex> senDataLock;
+	std::mutex *senDataLock;
 	pthread_t th_SenUpdate;
 	pthread_attr_t attr;
 
@@ -101,8 +100,8 @@ private:
 	
 	std::shared_ptr<int> frontBuf_count;
 	std::shared_ptr<int> backBuf_count;
-	std::shared_ptr<char[]>frontBuf;
-	std::shared_ptr<char[]>backBuf;
+	std::shared_ptr<char[]> frontBuf;
+	std::shared_ptr<char[]> backBuf;
 	char *frontBuf_ptr;
 	char *backBuf_ptr;
 

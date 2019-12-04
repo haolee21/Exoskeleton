@@ -88,9 +88,9 @@ Recorder<T>::~Recorder()
     }
     
     
-    std::thread saveTh = std::thread(&Recorder::OutputCSV,this);
-    //this->OutputCSV();
-    saveTh.join();
+    // std::thread saveTh = std::thread(&Recorder::OutputCSV,this);
+    this->OutputCSV();
+    // saveTh.join();
 
     
     

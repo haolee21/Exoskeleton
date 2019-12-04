@@ -33,7 +33,8 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT,std::shared_ptr<
 		this->backBuf_count.reset(new int(0));
 		this->frontBuf.reset(new char[DATALEN]);
 		this->backBuf.reset(new char[DATALEN]);
-		this->senDataLock.reset(new std::mutex);
+		this->senDataLock = new std::mutex;
+		//this->senDataLock.reset(new std::mutex());
 
 		this->frontBuf_ptr = this->frontBuf.get();
 		this->backBuf_ptr = this->backBuf.get();
@@ -177,7 +178,7 @@ void *Sensor::senUpdate(void *_sen)
 		}
 		else{
 			conStart = true;
-			con->Start(sen->senData.get(), sen->senDataRaw.get(), sen->senDataLock.get());
+			con->Start(sen->senData.get(), sen->senDataRaw.get(), sen->senDataLock);
 		}
 		//conTh.reset(new std::thread(&Controller::ConMainLoop,con,sen->senData.get(),sen->senDataRaw.get()));
 		
@@ -352,7 +353,7 @@ void Sensor::readSerialPort(int serialPort)
 	microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->origin));
 	bool success = true; //due to serial port issue, sometime it will return wrong measurements, it is usually larger than 1024, if it happens, we just the old sen value for current time
 	{
-		std::lock_guard<std::mutex> lock(*this->senDataLock.get());
+		std::lock_guard<std::mutex> lock(*this->senDataLock);
 		this->senData[0] = sen_time.count();
 
 		int idx =0;
@@ -368,7 +369,7 @@ void Sensor::readSerialPort(int serialPort)
 			}
 			else{
 				success = false;
-				std::cout << "false sen:" << ++this->falseSenCount << std::endl;
+				// std::cout << "false sen:" << ++this->falseSenCount << std::endl;
 				break;
 			}
 
@@ -397,5 +398,7 @@ Sensor::~Sensor()
 	// if(this->saveData_th)
 	// 	this->saveData_th->join();
 	std::cout << "start to delete" << std::endl;
-
+	this->frontBuf_ptr = NULL;
+	this->backBuf_ptr =NULL;
+	// delete this->senDataLock;// I probably cannot delete a mutex element, not sure why
 }
