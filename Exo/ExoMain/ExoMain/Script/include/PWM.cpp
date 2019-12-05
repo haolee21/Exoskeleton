@@ -39,15 +39,21 @@ PWMGen::PWMGen(std::string valveName, std::string filePath, int pinId, int _samp
 }
 void PWMGen::SetDuty(int onDuty, int curTime)
 {
-	this->duty.num = onDuty;
+	
 	{
 		std::lock_guard<std::mutex> lock(*this->DutyLock);
-		this->CalTime(onDuty);
+		if(!this->swDuty){
+			this->duty.num = onDuty;
+			this->CalTime(onDuty);
+			this->swDuty = false;
+			std::vector<int> curDuty;
+			curDuty.push_back(onDuty);
+			this->pwmRec->PushData((unsigned long)curTime, curDuty);
+		}
+		
 	}
 
-	std::vector<int> curDuty;
-	curDuty.push_back(onDuty);
-	this->pwmRec->PushData((unsigned long)curTime, curDuty);
+	
 }
 void PWMGen::CalTime(int duty)
 {
@@ -84,6 +90,7 @@ void PWMGen::Mainloop()
 		{
 			std::lock_guard<std::mutex> lock(*this->DutyLock);
 			curOnTime = this->onTime;
+			this->swDuty = false;
 		}
 		std::chrono::system_clock::time_point curT = std::chrono::system_clock::now();
 		microsecs_t start_time(std::chrono::duration_cast<microsecs_t>(curT - this->origin));

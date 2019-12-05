@@ -19,7 +19,7 @@
 
 #include "RecData.hpp"
 
-#define MAXRECLENGTH 20000
+#define MAXRECLENGTH 10000
 
 
 template<class T>
@@ -30,7 +30,7 @@ private:
     // RecData<T> *curData;
     std::queue<std::string> dataTemps;
     int tempCount;
-    std::unique_ptr<RecData<T>> test;
+    
     // this is for creating temperary object for saving, I am not sure do I really need it
     std::unique_ptr<RecData<T>> tempData;
     // RecData<T> *tempData;
@@ -88,9 +88,9 @@ Recorder<T>::~Recorder()
     }
     
     
-    std::thread saveTh = std::thread(&Recorder::OutputCSV,this);
-    //this->OutputCSV();
-    saveTh.join();
+    // std::thread saveTh = std::thread(&Recorder::OutputCSV,this);
+    this->OutputCSV();
+    // saveTh.join();
 
     
     
@@ -126,7 +126,7 @@ void Recorder<T>::writeTemp()
         ar& (*this->tempData);
         
     }
-    
+    this->tempData.reset(); //this is important!!!! .reset(new sth) will not clear the original memory in this case, I am not sure because of the I/O or not
 }
 template<class T>
 void Recorder<T>::OutputCSV()
