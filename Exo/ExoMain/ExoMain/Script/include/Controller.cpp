@@ -1097,7 +1097,7 @@ void Controller::SingleGaitPeriod()
     this->gaitTimer.tv_nsec += this->p6_t;
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    // this->Load_resp('r'); //suspect2 pass
+    this->Load_resp('r'); //suspect2 pass
 
     //phase 7
     this->gaitTimer.tv_nsec += this->p7_t;
@@ -1136,7 +1136,7 @@ void Controller::SingleGaitPeriod()
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
 
-    // this->Load_resp('l');
+    this->Load_resp('l');
 
     //phase 2
     this->gaitTimer.tv_nsec += this->p2_t;
