@@ -75,7 +75,7 @@ Controller::Controller(std::string filePath, Com *_com, bool _display, std::chro
     this->gaitStart = false;
     this->gaitEnd = true;
     this->FSM.reset(new FSMachine(filePath));
-
+    this->swGaitRec.reset(new Recorder<bool>("gait_switch",filePath,"time,gaitSw"));
     // now we need to actuate some valves, since we prefer the system to isolate each chambers
     this->ValveOn(this->LKneVal);
     this->ValveOn(this->RKneVal);
@@ -780,8 +780,13 @@ float Controller::KnePreRecInput(int knePre, int tankPre)
 void Controller::BipedEngRec()
 {
 
-    // int curHipDiff = this->senData[LHIPPOS] + this->senData[RHIPPOS] - this->LHipMean - this->RHipMean;
-
+    int curHipDiff = this->mvf.DataFilt(this->senData[LHIPPOS] + this->senData[RHIPPOS] - this->LHipMean - this->RHipMean);
+    // std::cout << "hipdiff: " << curHipDiff << std::endl;
+    if ((curHipDiff < 0) && (this->preHipDiff > 0))
+    {
+        this->swGaitRec->PushData((unsigned long)this->senData[TIME], std::vector<bool>(true));
+        std::cout << "new step\n";
+    }
     // if (this->gaitStart)
     // {
     //     bool curGaitEnd =false;
@@ -819,7 +824,7 @@ void Controller::BipedEngRec()
     //     this->gaitStart = true; //this is for preHipDiff have initial value
     // }
 
-    // this->preHipDiff = curHipDiff;
+    this->preHipDiff = curHipDiff;
 
     //test, assume the function is trigger every time is is done
     if (!this->sw_FSM)
@@ -1097,7 +1102,7 @@ void Controller::SingleGaitPeriod()
     this->gaitTimer.tv_nsec += this->p6_t;
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    this->Load_resp('r'); //suspect2 pass
+    // this->Load_resp('r'); //suspect2 pass
 
     //phase 7
     this->gaitTimer.tv_nsec += this->p7_t;
@@ -1159,7 +1164,7 @@ void Controller::SingleGaitPeriod()
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
 
     this->Mid_swing('r');
-    std::cout << "gait ends\n";
+    
     {
         std::lock_guard<std::mutex> curLock(this->gaitEndLock);
         this->gaitEnd = true;

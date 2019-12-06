@@ -389,6 +389,9 @@ private:
     std::mutex FSMLock;
     bool gaitEnd; //this flag is set false when SingleGaitPeriod is called, and set true when it ends
     std::mutex gaitEndLock;
+    MovAvgFilt<4> mvf; //moving average filter for detecting leg switching
+    std::shared_ptr<Recorder<bool>> swGaitRec;
+
     //============================================================================================================================================
 
     //Test ankle actuation

@@ -260,8 +260,8 @@ int Sensor::serialPortConnect(char *portName)
 	tty.c_cc[VMIN] = 1;
 
 	// Set in/out baud rate to be 115200
-	cfsetispeed(&tty, B460800);
-	cfsetospeed(&tty, B460800);
+	cfsetispeed(&tty, B576000);
+	cfsetospeed(&tty, B576000);
 
 	// Save tty settings, also checking for error
 	if (tcsetattr(serial_port, TCSANOW, &tty) != 0)
