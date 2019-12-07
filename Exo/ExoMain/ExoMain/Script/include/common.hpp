@@ -1,7 +1,7 @@
 #ifndef COMMON_HPP
 #define COMMON_HPP
 #define NUMSEN 16
-#define SAMPTIME 2000 //this is in micro second
+#define SAMPTIME 1000 //this is in micro second
 
 #define DATALEN (NUMSEN*2+1)
 #define SIZEOFBUFFER  (DATALEN*10)

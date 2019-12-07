@@ -8,7 +8,7 @@
 */
 #define FASTADC 1
 
-// defines for setting and clearing register bits
+// defines for setting and clearing register bits (this is for setting prescaler)
 #ifndef cbi
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #endif
@@ -53,17 +53,17 @@ int testSent2;
 void setup()
 {
 	#if FASTADC
- 	// set prescale to 16
- 	sbi(ADCSRA,ADPS2) ;
+ 	// set prescale to 32 (default is 128)
+ 	sbi(ADCSRA,ADPS2) ;  //http://ee-classes.usc.edu/ee459/library/documents/ADC.pdf
  	cbi(ADCSRA,ADPS1) ;
- 	cbi(ADCSRA,ADPS0) ;
+ 	sbi(ADCSRA,ADPS0) ;
 	#endif
 
 	testSent1 = 97;
 	testSent2 = 65;
 	curIndex = 0;
 	bufferPointer = buffer;
-	Serial.begin(576000, SERIAL_8E1);
+	Serial.begin(921600, SERIAL_8E1);
 	// for (int i = 0; i < NUMSEN; i++)
 	// {
 	// 	for (int k = 0; k < NUMSAMP; k++)
@@ -71,17 +71,17 @@ void setup()
 	// }
 	readyToSend = false;
 	//I use this pin to test the frequency
-	// pinMode(50, OUTPUT);
+	pinMode(50, OUTPUT);
 	// pinMode(51,OUTPUT);
 	// Timer setting: http://www.8bit-era.cz/arduino-timer-interrupts-calculator.html
 
-// TIMER 1 for interrupt frequency 800 Hz:
+// TIMER 1 for interrupt frequency 1000 Hz:
 cli(); // stop interrupts
 TCCR1A = 0; // set entire TCCR1A register to 0
 TCCR1B = 0; // same for TCCR1B
 TCNT1  = 0; // initialize counter value to 0
-// set compare match register for 800 Hz increments
-OCR1A = 19999; // = 16000000 / (1 * 800) - 1 (must be <65536)
+// set compare match register for 1000 Hz increments
+OCR1A = 15999; // = 16000000 / (1 * 1000) - 1 (must be <65536)
 // turn on CTC mode
 TCCR1B |= (1 << WGM12);
 // Set CS12, CS11 and CS10 bits for 1 prescaler
@@ -122,16 +122,16 @@ void loop()
 		*bufferPointer++ = '\n';
 		//Create the output data
 		// digitalWrite(51,LOW);
-		// if (pinCond)
-		// {
-		// 	digitalWrite(50, HIGH);
-		// 	pinCond = false;
-		// }
-		// else
-		// {
-		// 	digitalWrite(50, LOW);
-		// 	pinCond = true;
-		// }
+		if (pinCond)
+		{
+			digitalWrite(50, HIGH);
+			pinCond = false;
+		}
+		else
+		{
+			digitalWrite(50, LOW);
+			pinCond = true;
+		}
 		
 		Serial.write(buffer,NUMSEN*2+1);
 		readyToSend = false;

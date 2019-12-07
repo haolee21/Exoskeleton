@@ -260,8 +260,8 @@ int Sensor::serialPortConnect(char *portName)
 	tty.c_cc[VMIN] = 1;
 
 	// Set in/out baud rate to be 115200
-	cfsetispeed(&tty, B576000);
-	cfsetospeed(&tty, B576000);
+	cfsetispeed(&tty, B921600);
+	cfsetospeed(&tty, B921600);
 
 	// Save tty settings, also checking for error
 	if (tcsetattr(serial_port, TCSANOW, &tty) != 0)
@@ -357,15 +357,16 @@ void Sensor::readSerialPort(int serialPort)
 		this->senData[0] = sen_time.count();
 
 		int idx =0;
-		std::vector<int> recSenData;
+		// std::vector<int> recSenData;
 		
 		for (int i = 0; i < NUMSEN; i++)
 		{
 			int curSen = (int)(this->backBuf[idx]) + (int)(this->backBuf[idx+1] << 8);
-			if(curSen<1024){
-				this->senData[i + 1] = curSen;
+			if(curSen<1024){//we storage the measurement in buffer first, and make sure none of them is larger than 1024
+				this->tempSenData[i] = curSen;
+				// this->senData[i + 1] = curSen;
 				idx += 2;
-				recSenData.push_back(this->senData[i+1]);
+				// recSenData.push_back(this->senData[i+1]);
 			}
 			else{
 				success = false;
@@ -378,9 +379,13 @@ void Sensor::readSerialPort(int serialPort)
 		
 		}
 		if(success){
-			this->senRec->PushData((unsigned long)this->senData[0],recSenData);
+			std::copy(this->tempSenData,this->tempSenData+NUMSEN,this->senData.get()+1);
+			// this->senRec->PushData((unsigned long)this->senData[0],recSenData);
 			
 		}
+		std::vector<int> recSenData;
+		recSenData.assign(this->senData.get() + 1, this->senData.get() + NUMSEN);
+		this->senRec->PushData((unsigned long)this->senData[0],recSenData);
 	}
 	//the wrong measurements will still get transfer to the pc
 	std::copy(this->backBuf.get(),this->backBuf.get()+DATALEN,this->senDataRaw.get());

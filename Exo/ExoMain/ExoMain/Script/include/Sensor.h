@@ -68,6 +68,7 @@ public:
 	std::shared_ptr<int[]> oriData; //the size of array seems important when ~Sensor() is called
 	std::shared_ptr<int[]> senData;
 	std::shared_ptr<char[]> senDataRaw;
+	int tempSenData[NUMSEN];//this is for checking the temp senData after we read it from arduino, if any of the senData>1024, all senData is waived
 	//std::shared_ptr<std::mutex> senDataLock;
 	std::mutex *senDataLock;
 	pthread_t th_SenUpdate;

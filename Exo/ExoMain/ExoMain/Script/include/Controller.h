@@ -182,7 +182,7 @@ private:
 
     bool display=false;
     int preSend=0; //scale the sending freq since matplotlib cannot handle it
-    const int dispPreScale = 31; //determine how frequent we send data back to pc, 800/70 Hz
+    const int dispPreScale = 39; //determine how frequent we send data back to pc, 1000/40=25 Hz
     // Valve control
     void ValveOn(std::shared_ptr<Valve> val);
     void ValveOff(std::shared_ptr<Valve> val);
