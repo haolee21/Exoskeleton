@@ -14,9 +14,9 @@ void PIDCon::UpDatePID(float _kp,float _kd,float _ki){
 PIDCon::~PIDCon()
 {
 }
-int PIDCon::GetDuty(float curMea,unsigned long curTime){
+int PIDCon::GetDuty(float curMea){
     int duty;
-    duty = this->kp*curMea + this->kd*(curMea - this->preMea)/(curTime - this->preTime)+this->ki*this->sumErr;
+    duty = this->kp*curMea + this->kd*(curMea - this->preMea)+this->ki*this->sumErr;
 
     this->preMea = curMea;
     this->sumErr+=curMea;

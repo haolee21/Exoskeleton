@@ -15,31 +15,39 @@ typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<unsigned long, std::micro> microsecs_ul;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
-Sensor::Sensor(std::string _filePath,char *portName, long sampT,Com *_com,bool _display)
+Sensor::Sensor(std::string _filePath,char *portName, long sampT,std::shared_ptr<Com> _com,bool _display)
 {
+	this->ResetPin.reset(new Pin(SYNCOUT));
 	this->display = _display;
 	std::cout << "creating" << endl;
+	
 	if (!this->is_create)
 	{
 		this->filePath = _filePath;
 		std::cout << "Create Sensor" << endl;
 		this->serialDevId = this->serialPortConnect(portName);
-		this->sampT = sampT;
+		this->sampT = sampT*USEC;
 		
 		//initialize data receiving buffer
 		this->frontBuf_count.reset(new int(0));
 		this->backBuf_count.reset(new int(0));
 		this->frontBuf.reset(new char[DATALEN]);
 		this->backBuf.reset(new char[DATALEN]);
-		this->senDataLock.reset(new std::mutex);
+		this->senDataLock = new std::mutex;
+		//this->senDataLock.reset(new std::mutex());
 
 		this->frontBuf_ptr = this->frontBuf.get();
 		this->backBuf_ptr = this->backBuf.get();
 		this->init = false;
+		this->falseSenCount = 0;
 
-		memset(&this->senData, 0, NUMSEN + 1);
-		memset(&this->serialBuf,'\0',SIZEOFBUFFER);	
+		this->senData.reset(new int[NUMSEN + 1]);
+		this->oriData.reset(new int[NUMSEN]);
+		this->senDataRaw.reset(new char[DATALEN]);
 
+		memset(this->senData.get(), 0, NUMSEN + 1);
+		memset(this->serialBuf,'\0',SIZEOFBUFFER);
+		memset(this->senDataRaw.get(), '\0', DATALEN);
 		if (this->serialDevId == -1)
 			std::cout << "Sensor init failed" << endl;
 
@@ -47,7 +55,8 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT,Com *_com,bool _
 		
 		this->senRec.reset(new Recorder<int>("sen",_filePath,"Time,LHipPos,LKnePos,LAnkPos,RHipPos,RKnePos,RAnkPos,sen7,sen8,TankPre,LKnePre,LAnkPre,RKnePre,RAnkPre,sen14,sen15,sen16"));
 		//Controller
-		this->com = _com;		
+		this->com = _com.get();
+		
 	}
 	else
 		std::cout << "Sensor already created" << endl;
@@ -55,6 +64,7 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT,Com *_com,bool _
 
 void Sensor::Start(std::chrono::system_clock::time_point startTime)
 {
+	this->ResetPin->On();
 	this->origin = startTime;
 	this->sw_senUpdate = true;
 	
@@ -80,7 +90,7 @@ void Sensor::Start(std::chrono::system_clock::time_point startTime)
 	Common::stack_prefault();
 
 
-
+	this->ResetPin->Off();
 	// if(pthread_attr_init(&this->attr))
 	// 	exo_error(1);
 	// if(pthread_attr_setstacksize(&this->attr,PTHREAD_STACK_MIN+MY_STACK_SIZE))
@@ -94,11 +104,19 @@ void Sensor::Start(std::chrono::system_clock::time_point startTime)
 }
 void Sensor::Stop()
 {
+	
 	std::cout << "get into stop" << endl;
-	this->sw_senUpdate = false;
+	{
+		std::lock_guard<mutex> lock(this->senUpdateLock);
+		this->sw_senUpdate = false;
+	}
+	std::cout << "sen stop flag on\n";
+	//this->sw_senUpdate = false;
+	pthread_join(this->th_SenUpdate,NULL);
+	std::cout << "sen loop joined\n";
 	this->serialPortClose(this->serialDevId);
 	//this->th_SenUpdate->join();
-	pthread_join(this->th_SenUpdate,NULL);
+	
 	std::cout<<"sensor fully stops\n";
 	
 }
@@ -115,14 +133,15 @@ void Sensor::Stop()
 void *Sensor::senUpdate(void *_sen)
 {
 	Sensor *sen = (Sensor*) _sen;
-	Controller con = Controller(sen->filePath,sen->com,sen->display,sen->origin);
+	std::shared_ptr<Controller> con;
+	con.reset(new Controller(sen->filePath, sen->com, sen->display, sen->origin, sen->sampT));
 	std::unique_ptr<std::thread> conTh;
 	bool conStart = false;
 
 	//for accurate timer
 	
     
-    long int interval = sen->sampT*USEC;
+    
     
 
 	struct timespec t;
@@ -130,9 +149,16 @@ void *Sensor::senUpdate(void *_sen)
 	
 
    
-	//tcflush(sen->serialDevId, TCIFLUSH); 
-	
-	while (sen->sw_senUpdate)
+	int flushVal = tcflush(sen->serialDevId, TCIFLUSH);
+	if(flushVal==0){
+		std::cout << "clear buffer\n";
+	}
+	else{
+		std::cout << "failed to clear the buffer\n";
+	}
+	sen->ResetPin->Off();
+	bool curSenCond = true;
+	while (true)
 	{	
 		//timer
 		if(sen->senNotInit){
@@ -142,29 +168,48 @@ void *Sensor::senUpdate(void *_sen)
 		//
 
 		sen->readSerialPort(sen->serialDevId);
-		if(conStart){ 
-			(*conTh).join();
+		
+		if (conStart)
+		{
+			// if(conTh->joinable()){ //I am not sure but the program stop to freeze after I put this 
+			// 	conTh->join();
+			// }
+			
 		}
-		else
+		else{
 			conStart = true;
-		conTh.reset(new std::thread(&Controller::ConMainLoop,&con,sen->senData,sen->senDataRaw));
+			con->Start(sen->senData.get(), sen->senDataRaw.get(), sen->senDataLock);
+		}
+		//conTh.reset(new std::thread(&Controller::ConMainLoop,con,sen->senData.get(),sen->senDataRaw.get()));
 		
+
+		{
+			std::lock_guard<std::mutex> lock(sen->senUpdateLock);
+			curSenCond = sen->sw_senUpdate;
+		}
+		if (!curSenCond)
+		{
+			break;
+		}
 		
-		
+
 		// timer
 		// calculate next shot
 		
 		
-        t.tv_nsec += interval;
+        t.tv_nsec += sen->sampT;
         Common::tsnorm(&t);
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
 		//clock_gettime(CLOCK_MONOTONIC, &t);
 	}
-	cout<<"end sampling\n";
-	(*conTh).join();
+	std::cout<<"end sampling\n";
+	con->Stop();
 	std::cout << "sensor ends" << endl;
 	sen->saveData_th.reset(new std::thread(&Sensor::SaveAllData,sen)); //original purpose is for some reason, sen is destoried before it went through this line
-	// sen->senRec.reset();
+	sen->saveData_th->join();
+	//sen->senRec.reset();
+	
+
 	return 0;
 }
 void Sensor::SaveAllData(){
@@ -215,8 +260,8 @@ int Sensor::serialPortConnect(char *portName)
 	tty.c_cc[VMIN] = 1;
 
 	// Set in/out baud rate to be 115200
-	cfsetispeed(&tty, B1000000);
-	cfsetospeed(&tty, B1000000);
+	cfsetispeed(&tty, B921600);
+	cfsetospeed(&tty, B921600);
 
 	// Save tty settings, also checking for error
 	if (tcsetattr(serial_port, TCSANOW, &tty) != 0)
@@ -227,8 +272,9 @@ int Sensor::serialPortConnect(char *portName)
 	//Allocate buffer for read buffer
 
 	
-	tcflush(serial_port, TCIFLUSH); 
-
+	//tcflush(serial_port, TCIFLUSH);
+	
+	
 	return serial_port;
 }
 
@@ -305,28 +351,44 @@ void Sensor::readSerialPort(int serialPort)
 	}
 	std::chrono::system_clock::time_point curTime= std::chrono::system_clock::now();
 	microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->origin));
-
+	bool success = true; //due to serial port issue, sometime it will return wrong measurements, it is usually larger than 1024, if it happens, we just the old sen value for current time
 	{
-		std::lock_guard<std::mutex> lock(*this->senDataLock.get());
+		std::lock_guard<std::mutex> lock(*this->senDataLock);
 		this->senData[0] = sen_time.count();
 
 		int idx =0;
-		std::vector<int> recSenData;
-	
-		for(int i=0;i<NUMSEN;i++){
-			this->senData[i+1] = (int)(this->backBuf[idx]) + (int)(this->backBuf[idx+1] << 8);
-			idx+=2;
-			recSenData.push_back(senData[i+1]);
+		// std::vector<int> recSenData;
+		
+		for (int i = 0; i < NUMSEN; i++)
+		{
+			int curSen = (int)(this->backBuf[idx]) + (int)(this->backBuf[idx+1] << 8);
+			if(curSen<1024){//we storage the measurement in buffer first, and make sure none of them is larger than 1024
+				this->tempSenData[i] = curSen;
+				// this->senData[i + 1] = curSen;
+				idx += 2;
+				// recSenData.push_back(this->senData[i+1]);
+			}
+			else{
+				success = false;
+				// std::cout << "false sen:" << ++this->falseSenCount << std::endl;
+				break;
+			}
+
+			
 		
 		
 		}
-	
-	
-
-	
-	this->senRec->PushData((unsigned long)this->senData[0],recSenData);
+		if(success){
+			std::copy(this->tempSenData,this->tempSenData+NUMSEN,this->senData.get()+1);
+			// this->senRec->PushData((unsigned long)this->senData[0],recSenData);
+			
+		}
+		std::vector<int> recSenData;
+		recSenData.assign(this->senData.get() + 1, this->senData.get() + NUMSEN);
+		this->senRec->PushData((unsigned long)this->senData[0],recSenData);
 	}
-	std::copy(this->backBuf.get(),this->backBuf.get()+DATALEN,this->senDataRaw);
+	//the wrong measurements will still get transfer to the pc
+	std::copy(this->backBuf.get(),this->backBuf.get()+DATALEN,this->senDataRaw.get());
 
 
 
@@ -338,8 +400,10 @@ void Sensor::serialPortClose(int serial_port)
 
 Sensor::~Sensor()
 {
-	
-	this->saveData_th->join();
+	// if(this->saveData_th)
+	// 	this->saveData_th->join();
 	std::cout << "start to delete" << std::endl;
-
+	this->frontBuf_ptr = NULL;
+	this->backBuf_ptr =NULL;
+	// delete this->senDataLock;// I probably cannot delete a mutex element, not sure why
 }

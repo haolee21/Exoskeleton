@@ -16,6 +16,7 @@
 #include "Displayer.hpp"
 #include <iostream>
 #include <queue>
+#include "MovAvgFilt.hpp"
 // new modification: After having issues with wiringPi, I no longer use this library (not compatiable with cross-compiler for no reason)
 // Now all the pin number is BCM, same as python
 
@@ -88,7 +89,7 @@
 #define SYNCOUT 4
 
 // index of command
-#define NUMCOM 16
+#define NUMCOM 27
 #define TESTVAL 0
 #define TESTPWM 1
 #define SHUTPWM 2
@@ -107,13 +108,24 @@
 #define PIDRECTEST 14
 #define TESTONEPWM 15
 
-
+#define CON_LANK_ACT 16
+#define CON_RANK_ACT 17
+#define CON_LKNE_REC 18
+#define CON_RKNE_REC 19
+#define CON_LANK_REC 20
+#define CON_RANK_REC 21
+#define CON_LKNE_SUP 22
+#define CON_RKNE_SUP 23
+#define CON_LANK_SUP 24
+#define CON_RANK_SUP 25
+#define CON_SET_INIT_POS 26
 struct Com
 {
 	const int comLen =NUMCOM;
 	bool comArray[NUMCOM];
 	mutex comLock;
     int comVal[NUMCOM];//if any value need to be passed
+    bool offArray[NUMCOM]; //If controller will self turn off the function, it will set the offArray as true, and required actions will be taken
 };
 // index of senData
 // #define NUMSEN 16
@@ -144,7 +156,10 @@ private:
     //Displayer *client;
     void SendToDisp(const char *senRaw);
 
-
+    std::mutex *senLock;
+    std::mutex conSW_lock;
+    bool sw_conMain = false;
+    std::thread conMain_th;
     //shared_ptr<int> senData;
     int senData[NUMSEN+1];
     int preSen[NUMSEN+1]; 
@@ -156,24 +171,27 @@ private:
     std::shared_ptr<PWMGen> RAnkPreVal;
     std::shared_ptr<PWMGen> PWMList[PWMNUM];
 
-
-   
-
+    long sampT;
     void WaitToSync();
     void Sleep(int sleepTime);
 
     //displayer
-    char *valveCond;
+    // char *valveCond;
+    std::mutex ValveCondLock; //protect pwmDuty and ValveCond since I will have to update it in FSMLoop
+    std::shared_ptr<char[]> valveCond;
+
     bool display=false;
     int preSend=0; //scale the sending freq since matplotlib cannot handle it
-    const int dispPreScale = 69; //determine how frequent we send data back to pc
+    const int dispPreScale = 39; //determine how frequent we send data back to pc, 1000/40=25 Hz
     // Valve control
     void ValveOn(std::shared_ptr<Valve> val);
     void ValveOff(std::shared_ptr<Valve> val);
     // PWM control
     void SetDuty(std::shared_ptr<PWMGen> pwmVal,int duty);
-    char *pwmDuty;
+    // char *pwmDuty;
+    std::shared_ptr<char[]> pwmDuty;
     //command
+
     Com *com;
 
     // valve control func and parameter
@@ -276,7 +294,7 @@ private:
     //PID controller test
     //=========================================================================================================================
     void PIDActTest(int joint);
-    void PIDRecTest(int desPre,int joint);
+    void PIDRecTest(int joint);
 
 
 
@@ -285,23 +303,33 @@ private:
 
     //=========================================================================================================================
     //PID Controllers
-    std::shared_ptr<PIDCon> kneRecPID;
-    std::shared_ptr<PIDCon> ankRecPID;
-    std::shared_ptr<PIDCon> kneSupPID; // we need to re-assign a PID controller everytime we went into that stage
-                                          // the controller are created when phase_pre => phase_next if it is going to be used in next phase
-                                          // we only need one since we will need to prepare for impact on one leg only
-    std::shared_ptr<PIDCon> ankActPID;
+    // std::shared_ptr<PIDCon> kneRecPID;
+    // std::shared_ptr<PIDCon> ankRecPID;
+    // std::shared_ptr<PIDCon> kneSupPID; // we need to re-assign a PID controller everytime we went into that stage
+    //                                       // the controller are created when phase_pre => phase_next if it is going to be used in next phase
+    //                                       // we only need one since we will need to prepare for impact on one leg only
+    // std::shared_ptr<PIDCon> ankActPID;
 
-
+    //flag for make sure we have update the pid controller parameters
+    bool kneRecPID_set = false;
+    bool ankRecPID_set = false;
+    bool kneSupPID_set = false;
+    bool ankActPID_set = false;
 
     //=========================================================================================================================
     //Biped walking energy recycle
     std::shared_ptr<FSMachine> FSM;
     // FSMachine FSM;
     char curState;
-    int ankActPre = 300;
-    int kneSupPre = 300;
-    
+    int ankActPre = 320;
+    int kneSupPre = 350;
+    int ankSupPre = 300;
+    int kneRecPre = 250;
+    int ankRecPre = 250;
+
+    const int LHipMean = 410;
+    const int RHipMean = 564;
+    void BipedEngRec();
     void Init_swing(char side);
     void Mid_swing(char side);
     void Term_swing(char side);
@@ -310,23 +338,59 @@ private:
     void Term_stance(char side);
     void Pre_swing(char side);
 
-
-
-
-    void BipedEngRec();
-    
-    void KnePreRec(std::shared_ptr<PWMGen> knePreVal,int knePre, int tankPre);
-    float KnePreRecInput(int knePre,int tankPre);
-    void AnkPreRec(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tankPre,std::shared_ptr<Valve> balVal);
-    float AnkPreRecInput(int ankPre,int tankPre);
-    bool CheckSupPre(std::shared_ptr<PWMGen> preVal,int knePre,int tankPre);
-
-    
-    float SupPreInput(int knePre,int tankPre);
-    
+    // since measurements will not be updated in FSM, we need to call a different function in controller's main loop
+    void AnkPushOff_main(std::shared_ptr<PWMGen> preVal, int ankPre, int tankPre);
     float AnkActInput(int ankPre,int tankPre);
-    void AnkPushOff(std::shared_ptr<PWMGen> ankPreVal,int ankPre,int tankPre);
+    
+    
+    
+    float KnePreRecInput(int knePre,int tankPre);
+    bool CheckKnePreRec_main(std::shared_ptr<PWMGen> knePreVal,int knePre, int tankPre,int desPre);
 
+   
+    float AnkPreRecInput(int ankPre,int tankPre);
+    bool CheckAnkPreRec_main(std::shared_ptr<PWMGen> ankPreVal, int ankPre, int tankPre, std::shared_ptr<Valve> balVal,int desPre);
+
+
+    
+    bool CheckSupPre_main(std::shared_ptr<PWMGen> preVal, int knePre, int tankPre, int supPre);
+    float SupPreInput(int knePre,int tankPre,int supPre);
+    
+    
+    //time based FSM
+    long p1_t;
+    long p2_t;
+    long p3_t;
+    long p4_t;
+    long p5_t;
+    long p6_t;
+    long p7_t;
+    long p8_t;
+    long p9_t;
+    long p10_t;
+    
+    
+
+    
+    bool gaitStart;
+    bool initGait;
+    bool leftFront;
+    int preHipDiff;
+    struct timespec gaitTimer;
+    
+
+    void FSMLoop();
+    std::shared_ptr<std::thread> FSMLoop_th;
+    void SingleGaitPeriod();
+    void FSM_start();
+    bool sw_FSM = false;
+    bool FSM_flag = false;
+    void FSM_stop();
+    std::mutex FSMLock;
+    bool gaitEnd; //this flag is set false when SingleGaitPeriod is called, and set true when it ends
+    std::mutex gaitEndLock;
+    MovAvgFilt<4> mvf; //moving average filter for detecting leg switching
+    std::shared_ptr<Recorder<bool>> swGaitRec;
 
     //============================================================================================================================================
 
@@ -343,11 +407,13 @@ public:
     // Valve* ValveList[VALNUM];
     std::shared_ptr<Valve> ValveList[VALNUM];
 
-    Controller(std::string _filePath,Com *_com,bool display,std::chrono::system_clock::time_point origin);
+    Controller(std::string _filePath,Com *_com,bool display,std::chrono::system_clock::time_point origin,long _sampT);
     ~Controller();
     void PreRel();
-    
-    void ConMainLoop(int *curSen,char* senRaw);
+
+    void Start(int *senData, char *senRaw, std::mutex *senDataLock);
+    void Stop();
+    void ConMainLoop(int *curSen, char *senRaw,std::mutex *senDataLock);
 };
 
 

@@ -12,7 +12,7 @@ private:
 public:
     PIDCon(float _kp,float _kd,float _ki,float firstMea);
     ~PIDCon();
-    int GetDuty(float curMea,unsigned long curTime);
+    int GetDuty(float curMea);
     void SetInit(float curMea);
     void UpDatePID(float _kp,float _ki, float _kd);
 };

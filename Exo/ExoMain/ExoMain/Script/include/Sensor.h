@@ -57,18 +57,20 @@ class Sensor
 {
 public:
 	
-	Sensor(string _filePath,char *port,long sampTmicro,Com *com,bool display); //sampT is in milli
+	Sensor(string _filePath,char *port,long sampTmicro,std::shared_ptr<Com> com,bool display); //sampT is in milli
 	~Sensor();
 	
 	void Start(std::chrono::system_clock::time_point startTime);
 	void Stop();
 	
-	int oriData[NUMSEN]; //original data
-	int senData[NUMSEN+1]; //data get from ADC after filter
-
-	char senDataRaw[DATALEN];
-	std::shared_ptr<std::mutex> senDataLock;
-
+	// int oriData[NUMSEN]; //original data
+	// int senData[NUMSEN+1]; //data get from ADC after filter
+	std::shared_ptr<int[]> oriData; //the size of array seems important when ~Sensor() is called
+	std::shared_ptr<int[]> senData;
+	std::shared_ptr<char[]> senDataRaw;
+	int tempSenData[NUMSEN];//this is for checking the temp senData after we read it from arduino, if any of the senData>1024, all senData is waived
+	//std::shared_ptr<std::mutex> senDataLock;
+	std::mutex *senDataLock;
 	pthread_t th_SenUpdate;
 	pthread_attr_t attr;
 
@@ -80,9 +82,11 @@ private:
 	bool is_create = false;
 	int serialDevId;
 	bool sw_senUpdate;
-	static void* senUpdate(void* sen);
-	long sampT;
 	
+	
+	static void *senUpdate(void *sen);
+	long sampT;
+	std::mutex senUpdateLock;
 	//variables for receiving data
 
 	// char senBuffer[SIZEOFBUFFER];
@@ -97,8 +101,8 @@ private:
 	
 	std::shared_ptr<int> frontBuf_count;
 	std::shared_ptr<int> backBuf_count;
-	std::shared_ptr<char[]>frontBuf;
-	std::shared_ptr<char[]>backBuf;
+	std::shared_ptr<char[]> frontBuf;
+	std::shared_ptr<char[]> backBuf;
 	char *frontBuf_ptr;
 	char *backBuf_ptr;
 
@@ -106,8 +110,7 @@ private:
 	bool init;
 
 	int dataNeedRead = DATALEN;
-
-
+	int falseSenCount;
 
 	bool senNotInit = true;
 
@@ -117,7 +120,8 @@ private:
 	int serialPortConnect(char *portName);
 	void readSerialPort(int serialPort);
 	void serialPortClose(int serial_port);
-	
+	std::shared_ptr<Pin> ResetPin;
+
 	//Lowpass butterworth filter, this can be implented to arduino if we replace arduino mega with better MCU chips
 	//BWFilter bFilter;
 	bool filterInit_flag = false;
@@ -131,6 +135,7 @@ private:
 	//Displayer
 	bool display;
 	//Controller
+	
 	Com *com;
 	std::thread *conTh;
 	void callCon();

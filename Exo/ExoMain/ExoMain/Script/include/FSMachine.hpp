@@ -2,6 +2,12 @@
 #define FSMACHINE_HPP
 #include "common.hpp"
 #include <memory>
+#include <algorithm>
+#include <mutex> 
+#include "MovAvgFilt.hpp"
+#include <vector>
+#include <Recorder.hpp>
+#include <string>
 // This is the finite state machine that used in the controller
 // There are 8 phases in each gait
 
@@ -30,49 +36,75 @@ FSM only tells what is the current state
 #define Phase8 7
 
 
+
 #define RHIP_PREP_POS 450
 
 #define POS_BUF_SIZE 5000  //this is the upper limit of each phase, if one phase last for more than 2 sec, we should stop
+#define MVFORDER 4//it has to be power of 2
 class FSMachine
 {
 private:
     //time based FSM
-    unsigned int p1_idx;
-    unsigned int p2_idx;
-    unsigned int p3_idx;
-    unsigned int p5_idx;
-    unsigned int p6_idx;
-    unsigned int p7_idx;
-    unsigned int p8_idx;
-    int curIdx1=0;
-    int curIdx2=0;
+    int p1_idx;
+    int p2_idx;
+    int p3_idx;
+    int p4_idx;
+    int p5_idx;
+    int p6_idx;
+    int p7_idx;
+    int p8_idx;
+    int p9_idx;
+    int p10_idx;
+    int swIdx;
+    int curIdx;
     // I know it looks redundant, but this makes searching minimal easier
 
-    std::unique_ptr<int[]> LHipBuf1;
-    std::unique_ptr<int[]> RHipBuf1;
-    std::unique_ptr<int[]> LKneBuf1;
-    std::unique_ptr<int[]> RKneBuf1;
-    std::unique_ptr<int[]> LAnkBuf1;
-    std::unique_ptr<int[]> RAnkBuf1;
+    std::unique_ptr<int[]> LHipBuf;
+    std::unique_ptr<int[]> RHipBuf;
+    std::unique_ptr<int[]> LKneBuf;
+    std::unique_ptr<int[]> RKneBuf;
+    std::unique_ptr<int[]> LAnkBuf;
+    std::unique_ptr<int[]> RAnkBuf;
 
-    std::unique_ptr<int[]> LHipBuf2;
-    std::unique_ptr<int[]> RHipBuf2;
-    std::unique_ptr<int[]> LKneBuf2;
-    std::unique_ptr<int[]> RKneBuf2;
-    std::unique_ptr<int[]> LAnkBuf2;
-    std::unique_ptr<int[]> RAnkBuf2;
-    void PushSen1(int *curMea);
-    void PushSen2(int *curMea);
-    bool reachP8 = false;
+
+
+
+    void CalPhaseTime();
+    void GetP1();
+    void GetP2();
+    void GetP3();
+    void GetP4();
+    void GetP5();
+    void GetP6();
+    void GetP7();
+    void GetP8();
+    void GetP9();
+    void GetP10();
+
+    //these values may not be constant 
+    int LHipMean = 410;
+    int RHipMean = 564;
+
+    int preHipDiff;
+    bool gaitStart;
+    bool halfGait;
+    bool timeReady;
+    std::mutex lock;
+
+    MovAvgFilt<MVFORDER> mvf;
+    std::shared_ptr<Recorder<int>> FSMRec;
 
 public:
-    FSMachine(/* args */);
+    FSMachine(std::string filePath);
     ~FSMachine();
     char CalState(int *curMea, char curState);
-    void GetPhaseTime(unsigned long &p1_t, unsigned long &p2_t, unsigned long &p3_t,
-                      unsigned long &p5_t, unsigned long &p6_t, unsigned long &p7_t, unsigned long &p8_t);
+    void GetPhaseTime(int curTime,long &p1_t,long &p2_t,long &p3_t,long &p4_t,long &p5_t,
+                      long &p6_t, long &p7_t, long &p8_t, long &p9_t,long &p10_t);
     
     void PushSen(int *curMea);
-    void ReachP8();
+    void LeftFront();
+    void Reset();
+    bool IsReady();
+    void SetInitPos(int curLHipPos,int curRHipPos);
 };
 #endif

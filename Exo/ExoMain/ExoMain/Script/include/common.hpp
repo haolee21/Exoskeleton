@@ -34,7 +34,7 @@
 #include <sys/time.h>
 
 #include <sys/ioctl.h>
-#define POOLSIZE (200 * 1024 * 1024) // 200MB
+#define POOLSIZE (200 * 1024 * 1024) // 500MB
 #define MAX_SAFE_STACK (100 * 1024)  /* The maximum stack size which is \
                                       guranteed safe to access without  \
                                       faulting */

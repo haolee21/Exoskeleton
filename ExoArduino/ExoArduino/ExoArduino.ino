@@ -8,7 +8,7 @@
 */
 #define FASTADC 1
 
-// defines for setting and clearing register bits
+// defines for setting and clearing register bits (this is for setting prescaler)
 #ifndef cbi
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #endif
@@ -53,17 +53,17 @@ int testSent2;
 void setup()
 {
 	#if FASTADC
- 	// set prescale to 16
- 	sbi(ADCSRA,ADPS2) ;
+ 	// set prescale to 32 (default is 128)
+ 	sbi(ADCSRA,ADPS2) ;  //http://ee-classes.usc.edu/ee459/library/documents/ADC.pdf
  	cbi(ADCSRA,ADPS1) ;
- 	cbi(ADCSRA,ADPS0) ;
+ 	sbi(ADCSRA,ADPS0) ;
 	#endif
 
 	testSent1 = 97;
 	testSent2 = 65;
 	curIndex = 0;
 	bufferPointer = buffer;
-	Serial.begin(1000000, SERIAL_8E1);
+	Serial.begin(921600, SERIAL_8E1);
 	// for (int i = 0; i < NUMSEN; i++)
 	// {
 	// 	for (int k = 0; k < NUMSAMP; k++)
@@ -72,7 +72,7 @@ void setup()
 	readyToSend = false;
 	//I use this pin to test the frequency
 	pinMode(50, OUTPUT);
-	pinMode(51,OUTPUT);
+	// pinMode(51,OUTPUT);
 	// Timer setting: http://www.8bit-era.cz/arduino-timer-interrupts-calculator.html
 
 // TIMER 1 for interrupt frequency 1000 Hz:
@@ -101,7 +101,7 @@ void loop()
 
 	if (readyToSend)
 	{
-		digitalWrite(51,HIGH);
+		// digitalWrite(51,HIGH);
 		// // testSent is for testing the receiving end got correct data
 		// testSent1++;
 		// testSent2++;
@@ -121,7 +121,7 @@ void loop()
 		}
 		*bufferPointer++ = '\n';
 		//Create the output data
-		digitalWrite(51,LOW);
+		// digitalWrite(51,LOW);
 		if (pinCond)
 		{
 			digitalWrite(50, HIGH);
