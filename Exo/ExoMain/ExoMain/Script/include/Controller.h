@@ -391,7 +391,7 @@ private:
     std::mutex gaitEndLock;
     MovAvgFilt<4> mvf; //moving average filter for detecting leg switching
     std::shared_ptr<Recorder<bool>> swGaitRec;
-
+    std::vector<bool> swTimeRecData;
     //============================================================================================================================================
 
     //Test ankle actuation

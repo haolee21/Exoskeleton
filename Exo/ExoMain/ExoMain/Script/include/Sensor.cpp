@@ -144,27 +144,27 @@ void *Sensor::senUpdate(void *_sen)
     
     
 
-	struct timespec t;
+	// struct timespec t;
 	
 	
 
    
-	int flushVal = tcflush(sen->serialDevId, TCIFLUSH);
-	if(flushVal==0){
-		std::cout << "clear buffer\n";
-	}
-	else{
-		std::cout << "failed to clear the buffer\n";
-	}
-	sen->ResetPin->Off();
+	// int flushVal = tcflush(sen->serialDevId, TCIFLUSH);
+	// if(flushVal==0){
+	// 	std::cout << "clear buffer\n";
+	// }
+	// else{
+	// 	std::cout << "failed to clear the buffer\n";
+	// }
+	// sen->ResetPin->Off();
 	bool curSenCond = true;
 	while (true)
 	{	
 		//timer
-		if(sen->senNotInit){
-			sen->senNotInit=false;
-			clock_gettime(CLOCK_MONOTONIC, &t);
-		}
+		// if(sen->senNotInit){
+		// 	sen->senNotInit=false;
+		// 	clock_gettime(CLOCK_MONOTONIC, &t);
+		// }
 		//
 
 		sen->readSerialPort(sen->serialDevId);
@@ -197,9 +197,9 @@ void *Sensor::senUpdate(void *_sen)
 		// calculate next shot
 		
 		
-        t.tv_nsec += sen->sampT;
-        Common::tsnorm(&t);
-		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+        // t.tv_nsec += sen->sampT;
+        // Common::tsnorm(&t);
+		// clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
 		//clock_gettime(CLOCK_MONOTONIC, &t);
 	}
 	std::cout<<"end sampling\n";
@@ -272,7 +272,7 @@ int Sensor::serialPortConnect(char *portName)
 	//Allocate buffer for read buffer
 
 	
-	//tcflush(serial_port, TCIFLUSH);
+	tcflush(serial_port, TCIFLUSH);
 	
 	
 	return serial_port;
@@ -384,7 +384,7 @@ void Sensor::readSerialPort(int serialPort)
 			
 		}
 		std::vector<int> recSenData;
-		recSenData.assign(this->senData.get() + 1, this->senData.get() + NUMSEN);
+		recSenData.assign(this->senData.get() + 1, this->senData.get() + NUMSEN+1);
 		this->senRec->PushData((unsigned long)this->senData[0],recSenData);
 	}
 	//the wrong measurements will still get transfer to the pc

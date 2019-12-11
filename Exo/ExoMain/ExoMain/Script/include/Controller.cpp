@@ -93,6 +93,8 @@ Controller::Controller(std::string filePath, Com *_com, bool _display, std::chro
     this->p8_t = 10000l;
     this->p9_t = 10000l;
     this->p10_t = 10000l;
+
+    this->swTimeRecData.push_back(true);
 }
 Controller::~Controller()
 {
@@ -784,45 +786,12 @@ void Controller::BipedEngRec()
     // std::cout << "hipdiff: " << curHipDiff << std::endl;
     if ((curHipDiff < 0) && (this->preHipDiff > 0))
     {
-        this->swGaitRec->PushData((unsigned long)this->senData[TIME], std::vector<bool>(true));
-        std::cout << "new step\n";
+        std::vector<bool> swTemp;
+        swTemp.push_back(true);
+        this->swGaitRec->PushData((unsigned long)this->senData[TIME], swTemp);
+        //std::cout << "new step\n";
     }
-    // if (this->gaitStart)
-    // {
-    //     bool curGaitEnd =false;
 
-    //     {
-    //         std::lock_guard<std::mutex> lock(*this->gaitEndLock);
-    //         curGaitEnd = this->gaitEnd;
-    //     }
-
-    //     this->FSM->PushSen(this->senData);
-
-    //     if ((this->FSM->IsReady() && curGaitEnd))
-    //     {
-    //         if(this->singleGaitJoin){
-    //             // this->SingleGait_th->join();
-    //             this->singleGaitJoin = false;
-    //             //this->SingleGait_th.reset();
-    //         }
-    //         std::cout << "start thread\n";
-    //         {
-    //             std::lock_guard<std::mutex> lock(*this->gaitEndLock);
-    //             this->gaitEnd = false;
-    //         }
-
-    //         this->SingleGait_th.reset(new std::thread(&Controller::SingleGaitPeriod, this));
-    //         this->SingleGait_th->detach();
-    //         this->singleGaitJoin = true;
-    //     }
-    //     else{
-    //         //std::cout << "not ready\n";
-    //     }
-    // }
-    // else
-    // {
-    //     this->gaitStart = true; //this is for preHipDiff have initial value
-    // }
 
     this->preHipDiff = curHipDiff;
 
