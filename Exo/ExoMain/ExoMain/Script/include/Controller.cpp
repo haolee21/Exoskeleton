@@ -73,9 +73,10 @@ Controller::Controller(std::string filePath, Com *_com, bool _display, std::chro
     this->curState = 0;
     this->initGait = false;
     this->gaitStart = false;
-    this->gaitEnd = true;
+ 
+    this->startNewGait = false;
     this->FSM.reset(new FSMachine(filePath));
-    this->swGaitRec.reset(new Recorder<bool>("gait_switch",filePath,"time,gaitSw"));
+    this->swGaitRec.reset(new Recorder<bool>("gait_switch", filePath, "time,gaitSw"));
     // now we need to actuate some valves, since we prefer the system to isolate each chambers
     this->ValveOn(this->LKneVal);
     this->ValveOn(this->RKneVal);
@@ -783,15 +784,34 @@ void Controller::BipedEngRec()
 {
 
     int curHipDiff = this->mvf.DataFilt(this->senData[LHIPPOS] + this->senData[RHIPPOS] - this->LHipMean - this->RHipMean);
-    // std::cout << "hipdiff: " << curHipDiff << std::endl;
+    //std::cout << "hipdiff: " << curHipDiff << std::endl;
     if ((curHipDiff < 0) && (this->preHipDiff > 0))
     {
-        std::vector<bool> swTemp;
-        swTemp.push_back(true);
-        this->swGaitRec->PushData((unsigned long)this->senData[TIME], swTemp);
-        //std::cout << "new step\n";
-    }
 
+        bool needStartNewGait;
+        {
+            std::lock_guard<std::mutex> curLock(this->gaitStartLock);
+            needStartNewGait = this->startNewGait;
+        }
+        if (!needStartNewGait)
+        {
+            std::vector<bool> swTemp;
+            swTemp.push_back(true);
+            this->FSM->GetPhaseTime(this->senData[TIME], this->p1_t, this->p2_t, this->p3_t, this->p4_t, this->p5_t, this->p6_t, this->p7_t, this->p8_t, this->p9_t, this->p10_t);
+            this->swGaitRec->PushData((unsigned long)this->senData[TIME], swTemp);
+            {
+                std::lock_guard<std::mutex> curLock(this->gaitStartLock);
+                this->startNewGait = true;
+                
+            }
+            std::cout << "new step\n";
+        }
+    }
+    else
+    {
+        //std::cout << "push data to fsm\n";
+        this->FSM->PushSen(this->senData);
+    }
 
     this->preHipDiff = curHipDiff;
 
@@ -1071,7 +1091,7 @@ void Controller::SingleGaitPeriod()
     this->gaitTimer.tv_nsec += this->p6_t;
     Common::tsnorm(&this->gaitTimer);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    // this->Load_resp('r'); //suspect2 pass
+    this->Load_resp('r'); //suspect2 pass
 
     //phase 7
     this->gaitTimer.tv_nsec += this->p7_t;
@@ -1133,11 +1153,11 @@ void Controller::SingleGaitPeriod()
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
 
     this->Mid_swing('r');
-    
-    {
-        std::lock_guard<std::mutex> curLock(this->gaitEndLock);
-        this->gaitEnd = true;
-    }
+
+    // {
+    //     std::lock_guard<std::mutex> curLock(this->gaitEndLock);
+    //     this->gaitEnd = true;
+    // }
 }
 
 // some test functions
@@ -1234,9 +1254,8 @@ void Controller::FSMLoop()
 {
     struct timespec t_FSM;
     clock_gettime(CLOCK_MONOTONIC, &t_FSM);
-    bool curGaitEnd = true;
-    std::thread gait_th;
-    bool needJoin = false;
+   
+
     while (true)
     {
 
@@ -1251,23 +1270,25 @@ void Controller::FSMLoop()
             break;
         }
 
-        if (curGaitEnd)
+        //check if we need to start new gait
+
+        bool needNewGait;
         {
-            if (needJoin)
+            std::lock_guard<std::mutex> curLock(this->gaitStartLock);
+            needNewGait = this->startNewGait;
+        }
+        if (needNewGait)
+        {
+
             {
-                gait_th.join();
-                needJoin = false;
+                std::lock_guard<std::mutex> curLock(this->gaitStartLock);
+                this->startNewGait = false;
             }
 
-            this->gaitEnd = false;
-            gait_th = std::thread(&Controller::SingleGaitPeriod, this);
-            needJoin = true;
-            clock_gettime(CLOCK_MONOTONIC, &t_FSM);
-        }
-
-        {
-            std::lock_guard<std::mutex> curLock(this->gaitEndLock);
-            curGaitEnd = this->gaitEnd;
+            //gait_th = std::thread(&Controller::SingleGaitPeriod, this);
+            this->SingleGaitPeriod(); //I don't understand why I originally need a seperate thread
+            // needJoin = true;
+            clock_gettime(CLOCK_MONOTONIC, &t_FSM); //re initialize the timer since it must passes many sampT after a gait ends
         }
 
         t_FSM.tv_nsec += this->sampT; //we need a waittime here, otherwise the program will iterate in max speed and result in deadlock
@@ -1275,10 +1296,7 @@ void Controller::FSMLoop()
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t_FSM, NULL);
         //std::cout << "fsm cond: " << curCond << std::endl;
     }
-    if (needJoin)
-    {
-        gait_th.join();
-    }
+
     std::cout << "end FSM Loop\n";
 }
 void Controller::FSM_start()
@@ -1318,7 +1336,8 @@ void Controller::FSM_stop()
         }
         std::cout << "FSM loop stops\n";
     }
-    else{
+    else
+    {
         std::cout << "FSM was not activated\n";
     }
 }

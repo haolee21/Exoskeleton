@@ -387,8 +387,10 @@ private:
     bool FSM_flag = false;
     void FSM_stop();
     std::mutex FSMLock;
-    bool gaitEnd; //this flag is set false when SingleGaitPeriod is called, and set true when it ends
-    std::mutex gaitEndLock;
+    
+    bool startNewGait; //this flag is set true when legs switch
+    
+    std::mutex gaitStartLock;
     MovAvgFilt<4> mvf; //moving average filter for detecting leg switching
     std::shared_ptr<Recorder<bool>> swGaitRec;
     std::vector<bool> swTimeRecData;
