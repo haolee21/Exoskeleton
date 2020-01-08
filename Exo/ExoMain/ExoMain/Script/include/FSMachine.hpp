@@ -59,12 +59,18 @@ private:
     int curIdx;
     // I know it looks redundant, but this makes searching minimal easier
 
-    std::unique_ptr<int[]> LHipBuf;
-    std::unique_ptr<int[]> RHipBuf;
-    std::unique_ptr<int[]> LKneBuf;
-    std::unique_ptr<int[]> RKneBuf;
-    std::unique_ptr<int[]> LAnkBuf;
-    std::unique_ptr<int[]> RAnkBuf;
+    int LHipBuf[POS_BUF_SIZE];
+    int RHipBuf[POS_BUF_SIZE];
+    int LKneBuf[POS_BUF_SIZE];
+    int RKneBuf[POS_BUF_SIZE];
+    int LAnkBuf[POS_BUF_SIZE];
+    int RAnkBuf[POS_BUF_SIZE];
+    // std::unique_ptr<int[]> LHipBuf;
+    // std::unique_ptr<int[]> RHipBuf;
+    // std::unique_ptr<int[]> LKneBuf;
+    // std::unique_ptr<int[]> RKneBuf;
+    // std::unique_ptr<int[]> LAnkBuf;
+    // std::unique_ptr<int[]> RAnkBuf;
 
 
 

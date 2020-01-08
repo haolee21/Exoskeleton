@@ -1,12 +1,12 @@
 #include "FSMachine.hpp"
 FSMachine::FSMachine(std::string filePath)
 {
-    this->LHipBuf.reset(new int[POS_BUF_SIZE]);
-    this->RHipBuf.reset(new int[POS_BUF_SIZE]);
-    this->LKneBuf.reset(new int[POS_BUF_SIZE]);
-    this->RKneBuf.reset(new int[POS_BUF_SIZE]);
-    this->LAnkBuf.reset(new int[POS_BUF_SIZE]);
-    this->RAnkBuf.reset(new int[POS_BUF_SIZE]);
+    // this->LHipBuf.reset(new int[POS_BUF_SIZE]);
+    // this->RHipBuf.reset(new int[POS_BUF_SIZE]);
+    // this->LKneBuf.reset(new int[POS_BUF_SIZE]);
+    // this->RKneBuf.reset(new int[POS_BUF_SIZE]);
+    // this->LAnkBuf.reset(new int[POS_BUF_SIZE]);
+    // this->RAnkBuf.reset(new int[POS_BUF_SIZE]);
 
     this->p1_idx = 0;
     this->p2_idx = 0;
@@ -234,24 +234,24 @@ void FSMachine::GetPhaseTime(int curTime, long &p1_t, long &p2_t, long &p3_t, lo
         }
         
     }
-    p1_t = (long)10*MSEC;
-    p2_t = (long)10*MSEC;
-    p3_t = (long)10*MSEC;
-    p4_t = (long)10*MSEC;
-    p5_t = (long)10*MSEC;
-    p6_t = (long)10*MSEC;
-    p7_t = (long)10*MSEC;
-    p8_t = (long)10*MSEC;
-    p9_t = (long)10*MSEC;
-    p10_t = (long)10*MSEC;
+    p1_t = (long)100*USEC;
+    p2_t = (long)100*USEC;
+    p3_t = (long)100*USEC;
+    p4_t = (long)100*USEC;
+    p5_t = (long)100*USEC;
+    p6_t = (long)100*USEC;
+    p7_t = (long)100*USEC;
+    p8_t = (long)100*USEC;
+    p9_t = (long)100*USEC;
+    p10_t = (long)100*USEC;
     std::vector<int> data = std::vector<int>{this->p1_idx, this->p2_idx, this->p3_idx, this->p4_idx, this->p5_idx, this->p6_idx, this->p7_idx, this->p8_idx, this->p9_idx, this->p10_idx};
     this->FSMRec->PushData((unsigned long)curTime, data);
     // std::cout << p1_idx << ',' << p2_idx << ',' << p3_idx << ',' << p4_idx << ',' << p5_idx << ',' << p6_idx << ',' << p7_idx << ',' << p8_idx << ',' << p9_idx << ',' << p10_idx << std::endl;
 }
 void FSMachine::GetP1()
 {
-    int *swPoint = std::min_element(this->LAnkBuf.get() + this->swIdx, this->LAnkBuf.get() + this->curIdx - 1);
-    this->p1_idx = swPoint - this->LAnkBuf.get();
+    int *swPoint = std::min_element(this->LAnkBuf + this->swIdx, this->LAnkBuf + this->curIdx - 1);
+    this->p1_idx = swPoint - this->LAnkBuf;
 }
 void FSMachine::GetP2()
 {
@@ -259,23 +259,23 @@ void FSMachine::GetP2()
 }
 void FSMachine::GetP3()
 {
-    int *swPoint = std::min_element(this->LKneBuf.get() + this->swIdx, this->LKneBuf.get() + this->curIdx - 1);
-    this->p3_idx = swPoint - this->LKneBuf.get();
+    int *swPoint = std::min_element(this->LKneBuf + this->swIdx, this->LKneBuf + this->curIdx - 1);
+    this->p3_idx = swPoint - this->LKneBuf;
 }
 void FSMachine::GetP4()
 {
-    int *swPoint = std::max_element(this->RKneBuf.get() + this->swIdx, this->RKneBuf.get() + this->curIdx - 1);
-    this->p4_idx = swPoint - this->RKneBuf.get();
+    int *swPoint = std::max_element(this->RKneBuf + this->swIdx, this->RKneBuf + this->curIdx - 1);
+    this->p4_idx = swPoint - this->RKneBuf;
 }
 void FSMachine::GetP5()
 {
-    int *swPoint = std::min_element(this->RAnkBuf.get(), this->RAnkBuf.get() + this->swIdx);
-    this->p5_idx = swPoint - this->RAnkBuf.get();
+    int *swPoint = std::min_element(this->RAnkBuf, this->RAnkBuf + this->swIdx);
+    this->p5_idx = swPoint - this->RAnkBuf;
 }
 void FSMachine::GetP6()
 {
-    int *swPoint = std::max_element(this->RAnkBuf.get(), this->RAnkBuf.get() + this->swIdx);
-    this->p6_idx = swPoint - this->RAnkBuf.get();
+    int *swPoint = std::max_element(this->RAnkBuf, this->RAnkBuf + this->swIdx);
+    this->p6_idx = swPoint - this->RAnkBuf;
 }
 void FSMachine::GetP7()
 {
@@ -283,18 +283,18 @@ void FSMachine::GetP7()
 }
 void FSMachine::GetP8()
 {
-    int *swPoint = std::max_element(this->RKneBuf.get(), this->RKneBuf.get() + this->swIdx);
-    this->p8_idx = swPoint - this->RKneBuf.get();
+    int *swPoint = std::max_element(this->RKneBuf, this->RKneBuf + this->swIdx);
+    this->p8_idx = swPoint - this->RKneBuf;
 }
 void FSMachine::GetP9()
 {
-    int *swPoint = std::min_element(this->LKneBuf.get(), this->LKneBuf.get() + this->swIdx);
-    this->p9_idx = swPoint - this->LKneBuf.get();
+    int *swPoint = std::min_element(this->LKneBuf, this->LKneBuf + this->swIdx);
+    this->p9_idx = swPoint - this->LKneBuf;
 }
 void FSMachine::GetP10()
 {
-    int *swPoint = std::max_element(this->LKneBuf.get() + this->swIdx, this->LKneBuf.get() + this->curIdx - 1);
-    this->p10_idx = swPoint - this->LKneBuf.get();
+    int *swPoint = std::max_element(this->LKneBuf + this->swIdx, this->LKneBuf + this->curIdx - 1);
+    this->p10_idx = swPoint - this->LKneBuf;
 }
 void FSMachine::CalPhaseTime()
 {
