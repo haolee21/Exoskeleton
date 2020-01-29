@@ -133,7 +133,7 @@ void Sensor::Stop()
 void *Sensor::senUpdate(void *_sen)
 {
 	Sensor *sen = (Sensor*) _sen;
-	std::shared_ptr<Controller> con;
+	std::unique_ptr<Controller> con;
 	con.reset(new Controller(sen->filePath, sen->com, sen->display, sen->origin, sen->sampT));
 	std::unique_ptr<std::thread> conTh;
 	bool conStart = false;

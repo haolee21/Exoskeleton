@@ -790,7 +790,8 @@ void Controller::BipedEngRec()
 
         bool needStartNewGait;
         {
-            std::lock_guard<std::mutex> curLock(this->gaitStartLock);
+            std::scoped_lock<std::mutex> curLock(this->gaitStartLock);
+            //std::lock_guard<std::mutex> curLock(this->gaitStartLock);
             needStartNewGait = this->startNewGait;
         }
         if (!needStartNewGait)
@@ -800,7 +801,7 @@ void Controller::BipedEngRec()
             this->FSM->GetPhaseTime(this->senData[TIME], this->p1_t, this->p2_t, this->p3_t, this->p4_t, this->p5_t, this->p6_t, this->p7_t, this->p8_t, this->p9_t, this->p10_t);
             this->swGaitRec->PushData((unsigned long)this->senData[TIME], swTemp);
             {
-                std::lock_guard<std::mutex> curLock(this->gaitStartLock);
+                std::scoped_lock<std::mutex> curLock(this->gaitStartLock);
                 this->startNewGait = true;
                 
             }
@@ -831,7 +832,7 @@ void Controller::Init_swing(char side)
 
         // this->SetDuty(this->RAnkPreVal, 0);
         {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
+            std::scoped_lock<std::mutex> curLock(this->com->comLock);
             this->com->comArray[CON_RANK_ACT] = false;
         }
         this->RAnkPreVal->PushMea(this->senData[TIME], -500.0f);
@@ -842,7 +843,7 @@ void Controller::Init_swing(char side)
         this->ValveOff(this->LKneVal);
         // this->SetDuty(this->LAnkPreVal, 0);
         {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
+            std::scoped_lock<std::mutex> curLock(this->com->comLock);
             this->com->comArray[CON_LANK_ACT] = false;
         }
         this->LAnkPreVal->PushMea(this->senData[TIME], -500.0f);

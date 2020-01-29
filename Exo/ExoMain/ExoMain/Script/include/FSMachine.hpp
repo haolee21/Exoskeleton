@@ -8,6 +8,8 @@
 #include <vector>
 #include <Recorder.hpp>
 #include <string>
+
+#include <bits/stdc++.h> 
 // This is the finite state machine that used in the controller
 // There are 8 phases in each gait
 
@@ -45,6 +47,8 @@ class FSMachine
 {
 private:
     //time based FSM
+    int time;
+
     int p1_idx;
     int p2_idx;
     int p3_idx;
@@ -65,16 +69,16 @@ private:
     int RKneBuf[POS_BUF_SIZE];
     int LAnkBuf[POS_BUF_SIZE];
     int RAnkBuf[POS_BUF_SIZE];
-    // std::unique_ptr<int[]> LHipBuf;
-    // std::unique_ptr<int[]> RHipBuf;
-    // std::unique_ptr<int[]> LKneBuf;
-    // std::unique_ptr<int[]> RKneBuf;
-    // std::unique_ptr<int[]> LAnkBuf;
-    // std::unique_ptr<int[]> RAnkBuf;
 
-
-
-
+    // ============ this is for verify the correctness of FSM phase time calculation ===============
+    std::unique_ptr<Recorder<int>> LHipRec;
+    std::unique_ptr<Recorder<int>> RHipRec;
+    std::unique_ptr<Recorder<int>> LKneRec;
+    std::unique_ptr<Recorder<int>> RKneRec;
+    std::unique_ptr<Recorder<int>> LAnkRec;
+    std::unique_ptr<Recorder<int>> RAnkRec;
+    bool recInGait=false; //this flag is for making all measurements into one vector for each gait
+    // =============================================================================================
     void CalPhaseTime();
     void GetP1();
     void GetP2();

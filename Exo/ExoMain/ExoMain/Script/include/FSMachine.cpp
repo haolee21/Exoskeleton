@@ -25,6 +25,15 @@ FSMachine::FSMachine(std::string filePath)
     this->halfGait = false;
     this->gaitStart = false;
     this->FSMRec.reset(new Recorder<int>("FSM", filePath, "time,phase1,phase2,phase3,phase4,phase5,phase6,phase7,phase8,phase9,phase10"));
+
+    
+
+    this->LHipRec.reset(new Recorder<int>("LHipFSM_rec", filePath, "time,data")); //the format of these recorder are wrong since I only need them for recording raw data
+    this->RHipRec.reset(new Recorder<int>("RHipFSM_rec", filePath, "time,data"));
+    this->RHipRec.reset(new Recorder<int>("LKneFSM_rec", filePath, "time,data"));
+    this->RHipRec.reset(new Recorder<int>("RKneFSM_rec", filePath, "time,data"));
+    this->RHipRec.reset(new Recorder<int>("LAnkFSM_rec", filePath, "time,data"));
+    this->RHipRec.reset(new Recorder<int>("RAnkFSM_rec", filePath, "time,data"));
 }
 
 FSMachine::~FSMachine()
@@ -141,7 +150,7 @@ char FSMachine::CalState(int *curMea, char curState)
 void FSMachine::PushSen(int *curMea)
 {
     int hipDiff = this->mvf.DataFilt(curMea[LHIPPOS] + curMea[RHIPPOS] - this->LHipMean - this->RHipMean);
-
+    this->time = curMea[TIME];
     if ((this->preHipDiff > 0) && (hipDiff < 0))
     {
         // before the first step, we have to wait for the starting point
@@ -153,11 +162,23 @@ void FSMachine::PushSen(int *curMea)
         else
         {
             this->CalPhaseTime();
+            std::cout << "curIdx " << this->curIdx << std::endl;
+            std::vector<int> test(this->LHipBuf, this->LHipBuf + this->curIdx);
+            this->LHipRec->PushData(this->time, std::vector<int>(this->LHipBuf, this->LHipBuf + this->curIdx));
+            this->RHipRec->PushData(this->time, std::vector<int>(this->RHipBuf, this->RHipBuf + this->curIdx));
+            this->LKneRec->PushData(this->time, std::vector<int>(this->LKneBuf, this->LKneBuf + this->curIdx));
+            this->RKneRec->PushData(this->time, std::vector<int>(this->RKneBuf, this->RKneBuf + this->curIdx));
+            this->LAnkRec->PushData(this->time, std::vector<int>(this->LAnkBuf, this->LAnkBuf + this->curIdx));
+            this->RAnkRec->PushData(this->time, std::vector<int>(this->RKneBuf, this->RKneBuf + this->curIdx));
+            std::cout << "done saving within gait\n";
             this->Reset();
         }
     }
     if (this->gaitStart)
     {
+
+      
+
         if (this->curIdx < POS_BUF_SIZE)
         {
             // std::cout << this->curIdx << std::endl;
@@ -168,9 +189,12 @@ void FSMachine::PushSen(int *curMea)
             this->LAnkBuf[this->curIdx] = curMea[LANKPOS];
             this->RAnkBuf[this->curIdx] = curMea[RANKPOS];
             this->curIdx++;
+
+        
         }
         else
         {
+            
             //std::cout << "buffer is full\n";
             // std::lock_guard<std::mutex> lock(this->lock);
             //this->timeReady = true;
@@ -189,6 +213,7 @@ void FSMachine::PushSen(int *curMea)
 }
 void FSMachine::Reset()
 {
+    
     this->swIdx = 0;
     this->curIdx = 0;
     // this->p1_idx = 0;
