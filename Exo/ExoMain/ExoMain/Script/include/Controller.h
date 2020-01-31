@@ -327,8 +327,9 @@ private:
     int kneRecPre = 250;
     int ankRecPre = 250;
 
-    const int LHipMean = 410;
-    const int RHipMean = 564;
+    int LHipMean = 410;
+    int RHipMean = 564;
+
     void BipedEngRec();
     void Init_swing(char side);
     void Mid_swing(char side);

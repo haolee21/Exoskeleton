@@ -96,7 +96,7 @@ void Controller::FSM_stop()
 void Controller::BipedEngRec()
 {
 
-    int curHipDiff = this->mvf.DataFilt(this->senData[LHIPPOS] + this->senData[RHIPPOS] - this->LHipMean - this->RHipMean);
+    int curHipDiff = this->mvf.DataFilt(this->senData[LANKPOS] + this->senData[RANKPOS] - this->LHipMean - this->RHipMean);
     //std::cout << "hipdiff: " << curHipDiff << std::endl;
     if ((curHipDiff < 0) && (this->preHipDiff > 0))
     {
