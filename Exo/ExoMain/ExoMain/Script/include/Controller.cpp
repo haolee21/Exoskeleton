@@ -71,31 +71,53 @@ Controller::Controller(std::string filePath, Com *_com, bool _display, std::chro
     // this->trParam.testOut.reset(new Valve("TestMea", filePath, 8, 6)); //this uses gpio2
     // this->ValveOff(this->trParam.testOut);
     this->curState = 0;
-    this->initGait = false;
-    this->gaitStart = false;
- 
-    this->startNewGait = false;
-    this->FSM.reset(new FSMachine(filePath));
-    this->swGaitRec.reset(new Recorder<bool>("gait_switch", filePath, "time,gaitSw"));
+
+
+    auto p1_fun = [this]() {
+        this->Load_resp('l');
+    };
+    auto p2_fun = [this]() {
+        this->Mid_stance('l');
+        this->Pre_swing('r');
+    };
+    auto p3_fun = [this]() {
+        this->Init_swing('r');
+    };
+    auto p4_fun = [this]() {
+        this->Mid_swing('r');
+    };
+    auto p5_fun = [this]() {
+        this->Term_stance('l');
+        this->Term_swing('r');
+    };
+    auto p6_fun = [this]() {
+        this->Load_resp('r'); 
+    };
+    auto p7_fun = [this]() {
+        this->Pre_swing('l');
+        this->Mid_stance('r');
+    };
+    auto p8_fun = [this]() {
+        this->Init_swing('l');
+    };
+    auto p9_fun = [this]() {
+        this->Mid_swing('l');
+    };
+    auto p10_fun = [this]() {
+        this->Term_swing('l');
+        this->Term_stance('r');
+    };
+
+    this->FSM.reset(new FSMachine(filePath,p1_fun,p2_fun,p3_fun,p4_fun,p5_fun,p6_fun,p7_fun,p8_fun,p9_fun,p10_fun));
     // now we need to actuate some valves, since we prefer the system to isolate each chambers
     this->ValveOn(this->LKneVal);
     this->ValveOn(this->RKneVal);
     this->ValveOn(this->LBalVal);
     this->ValveOn(this->RBalVal);
 
-    //FSM init
-    this->p1_t = 10000l;
-    this->p2_t = 10000l;
-    this->p3_t = 10000l;
-    this->p4_t = 10000l;
-    this->p5_t = 10000l;
-    this->p6_t = 10000l;
-    this->p7_t = 10000l;
-    this->p8_t = 10000l;
-    this->p9_t = 10000l;
-    this->p10_t = 10000l;
 
-    this->swTimeRecData.push_back(true);
+
+    
 }
 Controller::~Controller()
 {
@@ -672,6 +694,6 @@ void Controller::Stop()
         this->conMain_th.join();
     }
     std::cout << "Controller stop\n";
-    this->FSM_stop();
+   
 }
 

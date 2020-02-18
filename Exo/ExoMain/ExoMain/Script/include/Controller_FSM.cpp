@@ -1,139 +1,47 @@
 #include "Controller.h"
-void Controller::FSMLoop()
-{
-    struct timespec t_FSM;
-    clock_gettime(CLOCK_MONOTONIC, &t_FSM);
-   
 
-    while (true)
-    {
 
-        bool curCond;
-        {
-            std::lock_guard<std::mutex> curLock(this->FSMLock);
-            curCond = this->sw_FSM;
-        }
-        if (!curCond)
-        {
-            std::cout << "FSM should stop\n";
-            break;
-        }
-
-        //check if we need to start new gait
-
-        bool needNewGait;
-        {
-            std::lock_guard<std::mutex> curLock(this->gaitStartLock);
-            needNewGait = this->startNewGait;
-        }
-        if (needNewGait)
-        {
-
-            {
-                std::lock_guard<std::mutex> curLock(this->gaitStartLock);
-                this->startNewGait = false;
-            }
-
-            //gait_th = std::thread(&Controller::SingleGaitPeriod, this);
-            this->SingleGaitPeriod(); //I don't understand why I originally need a seperate thread
-            // needJoin = true;
-            clock_gettime(CLOCK_MONOTONIC, &t_FSM); //re initialize the timer since it must passes many sampT after a gait ends
-        }
-
-        t_FSM.tv_nsec += this->sampT; //we need a waittime here, otherwise the program will iterate in max speed and result in deadlock
-        Common::tsnorm(&t_FSM);
-        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t_FSM, NULL);
-        //std::cout << "fsm cond: " << curCond << std::endl;
-    }
-
-    std::cout << "end FSM Loop\n";
-}
-void Controller::FSM_start()
-{
-    bool curCond;
-    {
-        std::lock_guard<std::mutex> curLock(this->FSMLock);
-        curCond = this->sw_FSM;
-    }
-    if (!curCond)
-    {
-        this->sw_FSM = true;
-        this->FSMLoop_th.reset(new std::thread(&Controller::FSMLoop, this));
-        this->FSM_flag = true;
-    }
-}
-void Controller::FSM_stop()
-{
-    if (this->FSM_flag)
-    {
-        bool curFSM_sw;
-        {
-            std::lock_guard<std::mutex> curLock(this->FSMLock);
-            curFSM_sw = this->sw_FSM;
-        }
-        if (curFSM_sw)
-        {
-            {
-                std::lock_guard<std::mutex> curLock(this->FSMLock);
-                this->sw_FSM = false;
-            }
-
-            if (this->FSMLoop_th->joinable())
-            {
-                this->FSMLoop_th->join();
-            }
-        }
-        std::cout << "FSM loop stops\n";
-    }
-    else
-    {
-        std::cout << "FSM was not activated\n";
-    }
-}
 // Finite state machine
 //===================================================================================================================
 
 void Controller::BipedEngRec()
 {
+    this->FSM->PushSen(this->senData);
+    
+    // int curHipDiff = this->mvf.DataFilt(this->senData[LANKPOS] + this->senData[RANKPOS] - this->LHipMean - this->RHipMean);
+    // //std::cout << "hipdiff: " << curHipDiff << std::endl;
+    // if ((curHipDiff < 0) && (this->preHipDiff > 0))
+    // {
 
-    int curHipDiff = this->mvf.DataFilt(this->senData[LANKPOS] + this->senData[RANKPOS] - this->LHipMean - this->RHipMean);
-    //std::cout << "hipdiff: " << curHipDiff << std::endl;
-    if ((curHipDiff < 0) && (this->preHipDiff > 0))
-    {
-
-        bool needStartNewGait;
-        {
-            std::scoped_lock<std::mutex> curLock(this->gaitStartLock);
-            //std::lock_guard<std::mutex> curLock(this->gaitStartLock);
-            needStartNewGait = this->startNewGait;
-        }
-        if (!needStartNewGait)
-        {
-            std::vector<bool> swTemp;
-            swTemp.push_back(true);
-            this->FSM->GetPhaseTime(this->senData[TIME], this->p1_t, this->p2_t, this->p3_t, this->p4_t, this->p5_t, this->p6_t, this->p7_t, this->p8_t, this->p9_t, this->p10_t);
-            this->swGaitRec->PushData((unsigned long)this->senData[TIME], swTemp);
-            {
-                std::scoped_lock<std::mutex> curLock(this->gaitStartLock);
-                this->startNewGait = true;
+    //     bool needStartNewGait;
+    //     {
+    //         std::scoped_lock<std::mutex> curLock(this->gaitStartLock);
+    //         //std::lock_guard<std::mutex> curLock(this->gaitStartLock);
+    //         needStartNewGait = this->startNewGait;
+    //     }
+    //     if (!needStartNewGait)
+    //     {
+    //         std::vector<bool> swTemp;
+    //         swTemp.push_back(true);
+    //         this->FSM->GetPhaseTime(this->senData[TIME], this->p1_t, this->p2_t, this->p3_t, this->p4_t, this->p5_t, this->p6_t, this->p7_t, this->p8_t, this->p9_t, this->p10_t);
+    //         this->swGaitRec->PushData((unsigned long)this->senData[TIME], swTemp);
+    //         {
+    //             std::scoped_lock<std::mutex> curLock(this->gaitStartLock);
+    //             this->startNewGait = true;
                 
-            }
-            std::cout << "new step\n";
-        }
-    }
-    else
-    {
-        //std::cout << "push data to fsm\n";
-        this->FSM->PushSen(this->senData);
-    }
+    //         }
+    //         std::cout << "new step\n";
+    //     }
+    // }
+    // else
+    // {
+    //     //std::cout << "push data to fsm\n";
+        
+    // }
 
-    this->preHipDiff = curHipDiff;
+    // this->preHipDiff = curHipDiff;
 
-    //test, assume the function is trigger every time is is done
-    if (!this->sw_FSM)
-    {
-        this->FSM_start();
-    }
+
 }
 
 // 7 Phases of single leg's walking gait
@@ -275,94 +183,4 @@ void Controller::Pre_swing(char side)
     }
 }
 //Time based FSM
-void Controller::SingleGaitPeriod()
-{
 
-    clock_gettime(CLOCK_MONOTONIC, &this->gaitTimer);
-    this->FSM->GetPhaseTime(this->senData[TIME], this->p1_t, this->p2_t, this->p3_t, this->p4_t, this->p5_t, this->p6_t, this->p7_t, this->p8_t, this->p9_t, this->p10_t);
-    //std::cout << "total wait time= " << (long long)this->p1_t + this->p2_t + this->p3_t + this->p4_t + this->p5_t + this->p6_t + this->p7_t + this->p8_t + this->p9_t + this->p10_t << "ns" << std::endl;
-    // this->gaitTimer.tv_nsec += (10*this->p1_t);
-    // Common::tsnorm(&this->gaitTimer);
-    // clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-
-    //phase 5
-    this->gaitTimer.tv_nsec += this->p5_t;
-
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    this->Term_stance('l');
-
-    this->Term_swing('r'); //suspect1 pass
-
-    //phase 6
-    this->gaitTimer.tv_nsec += this->p6_t;
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    this->Load_resp('r'); //suspect2 pass
-
-    //phase 7
-    this->gaitTimer.tv_nsec += this->p7_t;
-
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    this->Pre_swing('l');
-    this->Mid_stance('r');
-    //phase 8
-    this->gaitTimer.tv_nsec += this->p8_t;
-
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-
-    this->Init_swing('l');
-
-    //phase 9
-    this->gaitTimer.tv_nsec += this->p9_t;
-
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    this->Mid_swing('l');
-
-    //phase 10
-    this->gaitTimer.tv_nsec += this->p10_t;
-
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-
-    this->Term_swing('l');
-    this->Term_stance('r');
-
-    //phase 1
-
-    this->gaitTimer.tv_nsec += this->p1_t;
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-
-    this->Load_resp('l');
-
-    //phase 2
-    this->gaitTimer.tv_nsec += this->p2_t;
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-
-    this->Mid_stance('l');
-    this->Pre_swing('r');
-
-    //phase 3
-    this->gaitTimer.tv_nsec += this->p3_t;
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-
-    this->Init_swing('r');
-
-    //phase 4
-    this->gaitTimer.tv_nsec += this->p4_t;
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-
-    this->Mid_swing('r');
-
-    // {
-    //     std::lock_guard<std::mutex> curLock(this->gaitEndLock);
-    //     this->gaitEnd = true;
-    // }
-}

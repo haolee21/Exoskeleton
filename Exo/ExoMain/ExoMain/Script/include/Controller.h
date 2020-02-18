@@ -359,42 +359,7 @@ private:
     
     
     //time based FSM
-    long p1_t;
-    long p2_t;
-    long p3_t;
-    long p4_t;
-    long p5_t;
-    long p6_t;
-    long p7_t;
-    long p8_t;
-    long p9_t;
-    long p10_t;
     
-    
-
-    
-    bool gaitStart;
-    bool initGait;
-    bool leftFront;
-    int preHipDiff;
-    struct timespec gaitTimer;
-    
-
-    void FSMLoop();
-    std::shared_ptr<std::thread> FSMLoop_th;
-    void SingleGaitPeriod();
-    void FSM_start();
-    bool sw_FSM = false;
-    bool FSM_flag = false;
-    void FSM_stop();
-    std::mutex FSMLock;
-    
-    bool startNewGait; //this flag is set true when legs switch
-    
-    std::mutex gaitStartLock;
-    MovAvgFilt<4> mvf; //moving average filter for detecting leg switching
-    std::shared_ptr<Recorder<bool>> swGaitRec;
-    std::vector<bool> swTimeRecData;
     //============================================================================================================================================
 
     //Test ankle actuation
