@@ -20,11 +20,25 @@ FSMachine::FSMachine(std::string filePath, actFun _p1_act,actFun _p2_act,actFun 
     this->p8_idx = 0;
     this->p9_idx = 0;
     this->p10_idx = 0;
-    this->swIdx = 0;
+    
 
     this->curIdx = 0;
     this->gaitStart = false;
-    this->FSMRec.reset(new Recorder<int>("FSM", filePath, "time,phase1,phase2,phase3,phase4,phase5,phase6,phase7,phase8,phase9,phase10"));
+    //init buffer
+    this->LHipBuf = this->LHipBuf_array;
+    this->LHipBuf_pre = this->LHipBuf_pre_array;
+    this->RHipBuf = this->RHipBuf_array;
+    this->RHipBuf_pre = this->RHipBuf_pre_array;
+    this->LKneBuf = this->LKneBuf_array;
+    this->LKneBuf_pre = this->LKneBuf_pre_array;
+    this->RKneBuf = this->RKneBuf_array;
+    this->RKneBuf_pre = this->RKneBuf_pre_array;
+    this->LAnkBuf = this->LAnkBuf_array;
+    this->LAnkBuf_pre = this->LAnkBuf_pre_array;
+    this->RAnkBuf = this->RAnkBuf_array;
+    this->RAnkBuf_pre = this->RAnkBuf_pre_array;
+
+    this->FSMRec.reset(new Recorder<int>("FSM", filePath, "time,phase1,phase2,phase3,phase4,phase5,phase6,phase7,phase8,phase9,phase10,period,sw"));
     this->InitPosRec.reset(new Recorder<int>("FSMInitPos", filePath, "time,LHipPos,RHipPos"));
     //define the FSM act function
     this->p1_act = _p1_act;
@@ -51,43 +65,83 @@ FSMachine::~FSMachine()
 void FSMachine::PushSen(int *curMea)
 {
     int hipDiff = this->mvf.DataFilt(curMea[LANKPOS] + curMea[RANKPOS] - this->LHipMean - this->RHipMean);
-    if (this->curIdx < POS_BUF_SIZE)
-    {
-        // std::cout << this->curIdx << std::endl;
-        this->LHipBuf[this->curIdx] = curMea[LHIPPOS];
-        this->RHipBuf[this->curIdx] = curMea[RHIPPOS];
-        this->LKneBuf[this->curIdx] = curMea[LKNEPOS];
-        this->RKneBuf[this->curIdx] = curMea[RKNEPOS];
-        this->LAnkBuf[this->curIdx] = curMea[LANKPOS];
-        this->RAnkBuf[this->curIdx] = curMea[RANKPOS];
-        this->curIdx++;
-
-         //determine should we start the new gait
-        
-        this->time = curMea[TIME];
-        if ((this->preHipDiff > 0) && (hipDiff < 0)) //need more criterion, need threshold
+    
+    this->time = curMea[TIME];
+    if(!this->gaitStart){
+        if((this->preHipDiff>0)&&(hipDiff<0)){
+            std::cout << "gait started\n";
+            this->gaitStart = true;
+            this->findSw = false;
+            // this->LHipBuf[this->curIdx] = curMea[LHIPPOS];
+            // this->RHipBuf[this->curIdx] = curMea[RHIPPOS];
+            // this->LKneBuf[this->curIdx] = curMea[LKNEPOS];
+            // this->RKneBuf[this->curIdx] = curMea[RKNEPOS];
+            // this->LAnkBuf[this->curIdx] = curMea[LANKPOS];
+            // this->RAnkBuf[this->curIdx] = curMea[RANKPOS];
+            // this->curIdx++;
+        }
+    }
+    else{
+        if (this->curIdx < POS_BUF_SIZE)
         {
+            
+
+            this->LHipBuf[this->curIdx] = curMea[LHIPPOS];
+            this->RHipBuf[this->curIdx] = curMea[RHIPPOS];
+            this->LKneBuf[this->curIdx] = curMea[LKNEPOS];
+            this->RKneBuf[this->curIdx] = curMea[RKNEPOS];
+            this->LAnkBuf[this->curIdx] = curMea[LANKPOS];
+            this->RAnkBuf[this->curIdx] = curMea[RANKPOS];
+            this->curIdx++;
+        
+            //determine should we start the new gait
+
+        
+            if ((this->preHipDiff > 0) && (hipDiff < 0)) //I believe with moving average filter, I do not need threshold
+            {
             //if we found the legs switch (left leg is at the front again), 
             //if the previous gait hasn't end, we will just wait
             //reset is not the option since it is common to have previous gait longer then the current one. 
             //yet, we set it to default time if the buffer overflow
-            std::scoped_lock<std::mutex> curLock(this->gaitLock);
-            if(!this->isWalkFlag){
-                this->isWalkFlag = true;
-                this->curGait = std::async(&FSMachine::_OneGait,this);
-            }
-            else{
-                std::cout<<"gait has not ended\n";
-            }
+
+                if(this->findSw){
+                    this->findSw = false;
+                    std::scoped_lock<std::mutex> curLock(this->gaitLock);
+                    if(!this->isWalkFlag){
+                        this->isWalkFlag = true;
+                        this->period = curIdx;
+                        this->swIdx_pre = this->swIdx;
+                        std::cout << "run task\n";
+                        this->curGait = std::async(&FSMachine::_OneGait, this, this->curIdx);
+                    }
+                    else{
+                        std::cout<<"gait has not ended\n";
+                    }
+
+                }
+                else{
+                    this->gaitStart = false; //if we end a gait but cannot find switch point
+                    std::cout << "cannot find switch point\n";
+                }
+
+                this->Reset();
         
+            }
+            else if ((this->preHipDiff<0) && (hipDiff>0)){//when another leg is front (we should have 2 hipDiff=0 point in one gait)
+                this->swIdx = this->curIdx;
+                this->findSw = true;
+                std::cout << "switching point\n";
+            }
         }
-        
+        else{
+            //if it overflow, we need to reset
+            this->Reset();
+            this->gaitStart = false;
+            std::cout << "FSM overflow\n";
+        }
+
     }
-    else{
-        //if it overflow, we need to reset
-        this->Reset();
-        std::cout << "FSM overflow\n";
-    }
+    
     this->preHipDiff = hipDiff;   
     
 
@@ -95,84 +149,125 @@ void FSMachine::PushSen(int *curMea)
 }
 void FSMachine::Reset()
 {
-    
-    this->swIdx = 0;
     this->curIdx = 0;
-    
 }
 
 void FSMachine::GetP1()
 {
-    // int *swPoint = std::min_element(this->LAnkBuf + this->swIdx, this->LAnkBuf + this->curIdx - 1);
-    // this->p1_idx = swPoint - this->LAnkBuf;
-    this->p1_idx = 60;
+    int *swPoint = std::min_element(this->LAnkBuf_pre + this->p3_idx-(this->period>>2), this->LAnkBuf_pre+this->p3_idx);
+    std::cout << "p1 search range: " << this->p3_idx - (this->period >> 2) << ',' << this->p3_idx << std::endl;
+    this->p1_idx = swPoint - this->LAnkBuf_pre;
+    if(this->p1_idx<0)
+        this->idx_less_0 = true;
 }
 void FSMachine::GetP2()
 {
-    // this->p2_idx = this->p1_idx + 80;
-    this->p2_idx = 60;
+    
+    this->p2_idx = (this->p1_idx+this->p3_idx)>>1;
+    if(this->p2_idx<0)
+        this->idx_less_0 = true;
 }
 void FSMachine::GetP3()
 {
-    // int *swPoint = std::min_element(this->LKneBuf + this->swIdx, this->LKneBuf + this->curIdx - 1);
-    // this->p3_idx = swPoint - this->LKneBuf;
-    this->p3_idx = 60;
+    int *minPoint = std::min_element(this->LKneBuf_pre+this->swIdx_pre-(this->period>>2),this->LKneBuf_pre+this->swIdx_pre);
+    std::cout << "p3 search range: " << this->swIdx_pre - (this->period >> 2) << ',' << this->swIdx_pre << std::endl;
+
+    this->p3_idx = minPoint - this->LKneBuf_pre;
+    if(this->p3_idx<0){
+        this->idx_less_0 = true;
+    }
 }
 void FSMachine::GetP4()
 {
-    // int *swPoint = std::max_element(this->RKneBuf + this->swIdx, this->RKneBuf + this->curIdx - 1);
-    // this->p4_idx = swPoint - this->RKneBuf;
-    this->p4_idx = 0;
+    int *minPoint = std::max_element(this->RKneBuf_pre+this->swIdx_pre-(this->period>>2),this->RKneBuf_pre+this->swIdx_pre);
+    this->p4_idx = minPoint - this->RKneBuf_pre;
+    if(this->p4_idx<0){
+        this->idx_less_0 = true;
+    }
 }
 void FSMachine::GetP5()
 {
-    // int *swPoint = std::min_element(this->RAnkBuf, this->RAnkBuf + this->swIdx);
-    // this->p5_idx = swPoint - this->RAnkBuf;
-    this->p5_idx = 60;
+    int *swPoint = std::min_element(this->RKneBuf_pre+this->p4_idx, this->RKneBuf_pre + this->p4_idx+(this->period>>2));
+    this->p5_idx = swPoint - this->RKneBuf_pre;
+    if(this->p5_idx<0){
+        this->idx_less_0 = true;
+    }
 }
 void FSMachine::GetP6()
 {
-    // int *swPoint = std::max_element(this->RAnkBuf, this->RAnkBuf + this->swIdx);
-    // this->p6_idx = swPoint - this->RAnkBuf;
-    this->p6_idx = 60;
+    int *swPoint = std::max_element(this->RAnkBuf_pre+this->p8_idx-(this->period>>2), this->RAnkBuf_pre + this->p8_idx);
+    this->p6_idx = swPoint - this->RAnkBuf_pre;
+    if(this->p6_idx<0){
+        this->idx_less_0 = true;
+    }
 }
 void FSMachine::GetP7()
 {
-    // this->p7_idx = this->p6_idx + 80;
-    this->p7_idx = 60;
+    
+    this->p7_idx = (this->p6_idx+this->p8_idx)>>1;
+    if(this->p7_idx<0){
+        this->idx_less_0 = true;
+    }
 }
 void FSMachine::GetP8()
 {
-    // int *swPoint = std::max_element(this->RKneBuf, this->RKneBuf + this->swIdx);
-    // this->p8_idx = swPoint - this->RKneBuf;
-    this->p8_idx = 60;
+    int *maxPoint = std::max_element(this->RKneBuf_pre+this->period-(this->period>>2), this->RKneBuf_pre +this->period);
+    this->p8_idx = maxPoint - this->RKneBuf_pre;
+    if(this->p8_idx<0){
+        this->idx_less_0 = true;
+    }
 }
 void FSMachine::GetP9()
 {
-    // int *swPoint = std::min_element(this->LKneBuf, this->LKneBuf + this->swIdx);
-    // this->p9_idx = swPoint - this->LKneBuf;
-    this->p9_idx = 60;
+    int *minPoint = std::min_element(this->LKneBuf_pre+this->period-(this->period>>2), this->LKneBuf_pre +this->period);
+    this->p9_idx = minPoint - this->LKneBuf_pre;
+    if(this->p9_idx<0){
+        this->idx_less_0 = true;
+    }
+    
 }
 void FSMachine::GetP10()
 {
-    // int *swPoint = std::max_element(this->LKneBuf + this->swIdx, this->LKneBuf + this->curIdx - 1);
-    // this->p10_idx = swPoint - this->LKneBuf;
-    this->p10_idx = 60;
+    int *swPoint = std::max_element(this->LKneBuf_pre, this->LKneBuf_pre+(this->period>>2));
+    this->p10_idx = swPoint - this->LKneBuf_pre;
+    if(this->p10_idx<0){
+        this->idx_less_0 = true;
+    }
 }
 void FSMachine::CalPhaseTime()
 {
-   
-    this->GetP1();
-    this->GetP2();
+    this->idx_less_0 = false;
+    this->_swapBuf(&this->LHipBuf, &this->LHipBuf_pre);
+    this->_swapBuf(&this->RHipBuf, &this->RHipBuf_pre);
+    this->_swapBuf(&this->LKneBuf, &this->LKneBuf_pre);
+    this->_swapBuf(&this->RKneBuf, &this->RKneBuf_pre);
+    this->_swapBuf(&this->LAnkBuf, &this->LAnkBuf_pre);
+    this->_swapBuf(&this->RAnkBuf, &this->RAnkBuf_pre);
     this->GetP3();
     this->GetP4();
-    this->GetP5();
-    this->GetP6();
-    this->GetP7();
     this->GetP8();
     this->GetP9();
+    this->GetP1();
+    this->GetP6();
+    this->GetP2();
+    this->GetP7();
+    this->GetP5();
     this->GetP10();
-    
+
+    this->FSMRec->PushData(this->time, std::vector<int>{this->p1_idx, this->p2_idx, this->p3_idx, this->p4_idx, this->p5_idx, this->p6_idx, this->p7_idx, this->p8_idx, this->p9_idx, this->p10_idx,this->period,this->swIdx});
+    if(this->idx_less_0){
+        std::cout << "false time\n";
+        this->p5_idx = 1;
+        this->p6_idx = 2;
+        this->p7_idx = 3;
+        this->p8_idx = 4;
+        this->p9_idx = 5;
+        this->p10_idx = 6;
+        this->p1_idx = 7;
+        this->p2_idx = 8;
+        this->p3_idx = 9;
+        this->p4_idx = 10;
+    }
 }
 
 void FSMachine::SetInitPos(int curLHip, int curRHip)
@@ -180,31 +275,51 @@ void FSMachine::SetInitPos(int curLHip, int curRHip)
     this->RHipMean = curRHip;
     this->LHipMean = curLHip;
     std::cout << "set init pos, LHip:" << curLHip << ", RHip:" << curRHip << std::endl;
-    this->InitPosRec->PushData(this->initPosSetTime++,std::vector<int>(curLHip,curRHip));
+    this->InitPosRec->PushData(this->initPosSetTime++,std::vector<int>{curLHip,curRHip});
 }
 void FSMachine::_OnePhase(std::function<void()> *actFun, int *time_idx){
     this->gaitTime.tv_nsec += *time_idx*USEC*SAMPTIME;
-    (*actFun)();
     Common::tsnorm(&this->gaitTime);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTime, NULL);
-}
-void FSMachine::_OneGait(){
-    this->CalPhaseTime(); //this may have problem since it will probably take some time
-    clock_gettime(CLOCK_MONOTONIC, &this->gaitTime);
-    this->_OnePhase(&this->p5_act, &this->p5_idx);
-    this->_OnePhase(&this->p6_act, &this->p6_idx);
-    this->_OnePhase(&this->p7_act, &this->p7_idx);
-    this->_OnePhase(&this->p8_act, &this->p8_idx);
-    this->_OnePhase(&this->p9_act, &this->p9_idx);
-    this->_OnePhase(&this->p10_act, &this->p10_idx);
-    this->_OnePhase(&this->p1_act, &this->p1_idx);
-    this->_OnePhase(&this->p2_act, &this->p2_idx);
-    this->_OnePhase(&this->p3_act, &this->p3_idx);
-    this->_OnePhase(&this->p4_act, &this->p4_idx); //we don't need to have operating time since it should end when new gait starts
-    std::cout << "gait end\n";
-    {
-        std::scoped_lock<std::mutex> curLock(this->gaitLock);
-        this->isWalkFlag = false;
-    }
+    (*actFun)();
     
+}
+void FSMachine::_OneGait(int curIdx){
+    
+    //two criteria need to be satisfied, we need to make sure the switch point does not happen at the beginning or very end of each gait
+    //criterion 1: still have 1/4 period before swIdx1
+    //criterion 2: still have 1/4 period after swIdx2
+    if((this->swIdx-(this->period>>2)>0) && (this->swIdx+(this->period>>2)<this->period)){
+        this->CalPhaseTime(); //this may have problem since it will probably take some time
+        clock_gettime(CLOCK_MONOTONIC, &this->gaitTime);
+        this->_OnePhase(&this->p10_act, &this->p10_idx);
+        this->_OnePhase(&this->p1_act, &this->p1_idx);
+        this->_OnePhase(&this->p2_act, &this->p2_idx);
+        this->_OnePhase(&this->p3_act, &this->p3_idx);
+        this->_OnePhase(&this->p4_act, &this->p4_idx); //we don't need to have operating time since it should end when new gait starts
+        this->_OnePhase(&this->p5_act, &this->p5_idx);
+        this->_OnePhase(&this->p6_act, &this->p6_idx);
+        this->_OnePhase(&this->p7_act, &this->p7_idx);
+        this->_OnePhase(&this->p8_act, &this->p8_idx);
+        this->_OnePhase(&this->p9_act, &this->p9_idx);
+        
+        
+        std::cout << "gait end\n";
+        {
+            std::scoped_lock<std::mutex> curLock(this->gaitLock);
+            this->isWalkFlag = false;
+        }
+
+    }
+    else{
+        std::cout<<"not a complete gait\n";
+        std::cout << "swIdx=" << this->swIdx << ",period: "<<this->period<<std::endl;
+    }
+}
+
+void FSMachine::_swapBuf(int **buf, int **pre_buf){
+    int *curBuf = *buf;
+    *buf = *pre_buf;
+    *pre_buf = curBuf;
+    return;
 }

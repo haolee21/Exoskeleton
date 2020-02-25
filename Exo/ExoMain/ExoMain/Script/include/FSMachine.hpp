@@ -43,7 +43,7 @@ FSM only tells what is the current state
 
 #define RHIP_PREP_POS 450
 
-#define POS_BUF_SIZE 5000  //this is the upper limit of each phase, if one phase last for more than 2 sec, we should stop
+#define POS_BUF_SIZE 4800  //this is the upper limit of each phase, if one phase last for more than 2 sec, we should stop
 #define MVFORDER 4//it has to be power of 2
 typedef std::function<void()> actFun;
 class FSMachine
@@ -53,18 +53,28 @@ private:
     int time;
 
     int p1_idx,p2_idx,p3_idx,p4_idx,p5_idx,p6_idx,p7_idx,p8_idx,p9_idx,p10_idx;
-    int swIdx;
-    int curIdx;
 
+    int swIdx,swIdx_pre; //left front, right back ->right front, left back, pre is for calculating period since when calculating, FSM is also recording
+    bool findSw=false;
+    int curIdx; //the beginning is always right front, left back-> left front, right back
+    int period;
+    bool idx_less_0;
 
-    int LHipBuf[POS_BUF_SIZE];
-    int RHipBuf[POS_BUF_SIZE];
-    int LKneBuf[POS_BUF_SIZE];
-    int RKneBuf[POS_BUF_SIZE];
-    int LAnkBuf[POS_BUF_SIZE];
-    int RAnkBuf[POS_BUF_SIZE];
-
-
+    int LHipBuf_array[POS_BUF_SIZE];
+    int RHipBuf_array[POS_BUF_SIZE];
+    int LKneBuf_array[POS_BUF_SIZE];
+    int RKneBuf_array[POS_BUF_SIZE];
+    int LAnkBuf_array[POS_BUF_SIZE];
+    int RAnkBuf_array[POS_BUF_SIZE];
+    int LHipBuf_pre_array[POS_BUF_SIZE];
+    int RHipBuf_pre_array[POS_BUF_SIZE];
+    int LKneBuf_pre_array[POS_BUF_SIZE];
+    int RKneBuf_pre_array[POS_BUF_SIZE];
+    int LAnkBuf_pre_array[POS_BUF_SIZE];
+    int RAnkBuf_pre_array[POS_BUF_SIZE];
+    int *LHipBuf,*RHipBuf,*LKneBuf,*RKneBuf,*LAnkBuf,*RAnkBuf;
+    int* LHipBuf_pre,*RHipBuf_pre,*LKneBuf_pre,*RKneBuf_pre,*LAnkBuf_pre,*RAnkBuf_pre;
+    void _swapBuf(int **buf, int **pre_buf);
 
 
     // =============================================================================================
@@ -96,7 +106,7 @@ private:
     //create the controller action when we reach each phase, these are lambda function passed down from the Controller
     std::function<void()> p1_act,p2_act,p3_act,p4_act,p5_act,p6_act,p7_act,p8_act,p9_act,p10_act;
 
-    void _OneGait(); //this need to be fired in seperate thread
+    void _OneGait(int curIdx); //this need to be fired in seperate thread
     void _OnePhase(std::function<void()> *actFun, int *time);
     struct timespec gaitTime;
     std::mutex gaitLock;
