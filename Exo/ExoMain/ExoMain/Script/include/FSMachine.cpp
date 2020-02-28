@@ -64,82 +64,76 @@ FSMachine::~FSMachine()
 
 void FSMachine::PushSen(int *curMea)
 {
-    int hipDiff = this->mvf.DataFilt(curMea[LANKPOS] + curMea[RANKPOS] - this->LHipMean - this->RHipMean);
-    
+    int hipDiff = this->mvf.DataFilt(curMea[LHIPPOS] + curMea[RHIPPOS] - this->LHipMean - this->RHipMean);
     this->time = curMea[TIME];
-    if(!this->gaitStart){
-        if((this->preHipDiff>0)&&(hipDiff<0)){
-            std::cout << "gait started\n";
-            this->gaitStart = true;
-            this->findSw = false;
-            // this->LHipBuf[this->curIdx] = curMea[LHIPPOS];
-            // this->RHipBuf[this->curIdx] = curMea[RHIPPOS];
-            // this->LKneBuf[this->curIdx] = curMea[LKNEPOS];
-            // this->RKneBuf[this->curIdx] = curMea[RKNEPOS];
-            // this->LAnkBuf[this->curIdx] = curMea[LANKPOS];
-            // this->RAnkBuf[this->curIdx] = curMea[RANKPOS];
-            // this->curIdx++;
-        }
-    }
-    else{
-        if (this->curIdx < POS_BUF_SIZE)
-        {
-            
-
-            this->LHipBuf[this->curIdx] = curMea[LHIPPOS];
-            this->RHipBuf[this->curIdx] = curMea[RHIPPOS];
-            this->LKneBuf[this->curIdx] = curMea[LKNEPOS];
-            this->RKneBuf[this->curIdx] = curMea[RKNEPOS];
-            this->LAnkBuf[this->curIdx] = curMea[LANKPOS];
-            this->RAnkBuf[this->curIdx] = curMea[RANKPOS];
-            this->curIdx++;
-        
-            //determine should we start the new gait
-
-        
-            if ((this->preHipDiff > 0) && (hipDiff < 0)) //I believe with moving average filter, I do not need threshold
-            {
-            //if we found the legs switch (left leg is at the front again), 
-            //if the previous gait hasn't end, we will just wait
-            //reset is not the option since it is common to have previous gait longer then the current one. 
-            //yet, we set it to default time if the buffer overflow
-
-                if(this->findSw){
-                    this->findSw = false;
-                    std::scoped_lock<std::mutex> curLock(this->gaitLock);
-                    if(!this->isWalkFlag){
-                        this->isWalkFlag = true;
-                        this->period = curIdx;
-                        this->swIdx_pre = this->swIdx;
-                        std::cout << "run task\n";
-                        this->curGait = std::async(&FSMachine::_OneGait, this, this->curIdx);
-                    }
-                    else{
-                        std::cout<<"gait has not ended\n";
-                    }
-
+    if (this->curIdx < POS_BUF_SIZE){
+        this->LHipBuf[this->curIdx] = curMea[LHIPPOS];
+        this->RHipBuf[this->curIdx] = curMea[RHIPPOS];
+        this->LKneBuf[this->curIdx] = curMea[LKNEPOS];
+        this->RKneBuf[this->curIdx] = curMea[RKNEPOS];
+        this->LAnkBuf[this->curIdx] = curMea[LANKPOS];
+        this->RAnkBuf[this->curIdx] = curMea[RANKPOS];
+        this->curIdx++;
+        //std::cout << "prediff: " << this->preHipDiff << ", curDiff: " << hipDiff << std::endl;
+        if (((this->preHipDiff > 0) && (hipDiff <= 0)))        {
+            if(!this->gaitStart){
+                this->Reset();//this order matters, this is why I cannot have reset in the outside scope
+                // std::cout << "gait started\n";
+                this->gaitStart = true;
+                this->findSw = false;
+                
+            }
+            else if(this->findSw){
+                this->findSw = false;
+                std::scoped_lock<std::mutex> curLock(this->gaitLock);
+                if(!this->isWalkFlag){
+                    this->isWalkFlag = true;
+                    
+                    
+                    
+                    this->curGait = std::async(&FSMachine::_OneGait, this, this->curIdx,this->swIdx);
+                    this->Reset();
+                    this->gaitStart = true;
                 }
                 else{
-                    this->gaitStart = false; //if we end a gait but cannot find switch point
-                    std::cout << "cannot find switch point\n";
+                    // std::cout<<"gait has not ended\n";
+                    this->Reset();
+                    this->gaitStart = true;
                 }
-
+            }
+            else{
+                
+                // std::cout << "cannot find switch point\n";
                 this->Reset();
-        
             }
-            else if ((this->preHipDiff<0) && (hipDiff>0)){//when another leg is front (we should have 2 hipDiff=0 point in one gait)
-                this->swIdx = this->curIdx;
-                this->findSw = true;
-                std::cout << "switching point\n";
-            }
-        }
-        else{
-            //if it overflow, we need to reset
-            this->Reset();
-            this->gaitStart = false;
-            std::cout << "FSM overflow\n";
         }
 
+        
+        else if ((this->preHipDiff<0) && (hipDiff>=0)){//when another leg is front (we should have 2 hipDiff=0 point in one gait)
+            if(this->gaitStart){
+                if(!this->findSw){
+                    this->findSw = true;
+                    this->swIdx = this->curIdx;
+                    // std::cout << "switching point\n";
+                }
+                else{
+                    // std::cout << "task did not activate\n";
+                    this->Reset();
+                }    
+            }
+            
+            else{
+                
+                // std::cout << "cannot find init point\n";
+                this->Reset();
+            }
+        }
+        
+    }
+    else{
+        //if it overflow, we need to reset
+        this->Reset();
+        // std::cout << "FSM overflow\n";
     }
     
     this->preHipDiff = hipDiff;   
@@ -149,13 +143,16 @@ void FSMachine::PushSen(int *curMea)
 }
 void FSMachine::Reset()
 {
+    // std::cout << "reset FSM\n";
+    this->gaitStart = false;
+    this->findSw = false;
     this->curIdx = 0;
 }
 
 void FSMachine::GetP1()
 {
     int *swPoint = std::min_element(this->LAnkBuf_pre + this->p3_idx-(this->period>>2), this->LAnkBuf_pre+this->p3_idx);
-    std::cout << "p1 search range: " << this->p3_idx - (this->period >> 2) << ',' << this->p3_idx << std::endl;
+    // std::cout << "p1 search range: " << this->p3_idx - (this->period >> 2) << ',' << this->p3_idx << std::endl;
     this->p1_idx = swPoint - this->LAnkBuf_pre;
     if(this->p1_idx<0)
         this->idx_less_0 = true;
@@ -170,7 +167,7 @@ void FSMachine::GetP2()
 void FSMachine::GetP3()
 {
     int *minPoint = std::min_element(this->LKneBuf_pre+this->swIdx_pre-(this->period>>2),this->LKneBuf_pre+this->swIdx_pre);
-    std::cout << "p3 search range: " << this->swIdx_pre - (this->period >> 2) << ',' << this->swIdx_pre << std::endl;
+    // std::cout << "p3 search range: " << this->swIdx_pre - (this->period >> 2) << ',' << this->swIdx_pre << std::endl;
 
     this->p3_idx = minPoint - this->LKneBuf_pre;
     if(this->p3_idx<0){
@@ -284,12 +281,17 @@ void FSMachine::_OnePhase(std::function<void()> *actFun, int *time_idx){
     (*actFun)();
     
 }
-void FSMachine::_OneGait(int curIdx){
+void FSMachine::_OneGait(int period,int swIdx){
     
     //two criteria need to be satisfied, we need to make sure the switch point does not happen at the beginning or very end of each gait
     //criterion 1: still have 1/4 period before swIdx1
     //criterion 2: still have 1/4 period after swIdx2
-    if((this->swIdx-(this->period>>2)>0) && (this->swIdx+(this->period>>2)<this->period)){
+    std::cout << "current period: " << period <<", current sw: "<<swIdx << std::endl;
+    
+    if ((swIdx - (period >> 2) > 0) && (swIdx + (period >> 2) < period))
+    {
+        this->swIdx_pre = swIdx;
+        this->period = period;
         this->CalPhaseTime(); //this may have problem since it will probably take some time
         clock_gettime(CLOCK_MONOTONIC, &this->gaitTime);
         this->_OnePhase(&this->p10_act, &this->p10_idx);
@@ -305,15 +307,16 @@ void FSMachine::_OneGait(int curIdx){
         
         
         std::cout << "gait end\n";
-        {
-            std::scoped_lock<std::mutex> curLock(this->gaitLock);
-            this->isWalkFlag = false;
-        }
+        
 
     }
     else{
-        std::cout<<"not a complete gait\n";
-        std::cout << "swIdx=" << this->swIdx << ",period: "<<this->period<<std::endl;
+        // std::cout<<"not a complete gait\n";
+        //std::cout << "swIdx=" << this->swIdx << ",period: "<<this->period<<std::endl;
+    }
+    {
+        std::scoped_lock<std::mutex> curLock(this->gaitLock);
+        this->isWalkFlag = false;
     }
 }
 

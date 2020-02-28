@@ -106,7 +106,7 @@ private:
     //create the controller action when we reach each phase, these are lambda function passed down from the Controller
     std::function<void()> p1_act,p2_act,p3_act,p4_act,p5_act,p6_act,p7_act,p8_act,p9_act,p10_act;
 
-    void _OneGait(int curIdx); //this need to be fired in seperate thread
+    void _OneGait(int curIdx,int swIdx); //this need to be fired in seperate thread
     void _OnePhase(std::function<void()> *actFun, int *time);
     struct timespec gaitTime;
     std::mutex gaitLock;
