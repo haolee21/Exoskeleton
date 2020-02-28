@@ -141,7 +141,7 @@ void Controller::ConMainLoop(int *_senData, char *senRaw, std::mutex *senDataLoc
             if (this->com->comArray[CON_SET_INIT_POS])
             {
                 this->com->comArray[CON_SET_INIT_POS] = false;
-                taskQue.push(std::thread(&FSMachine::SetInitPos, this->FSM.get(), this->senData[LHIPPOS], this->senData[RHIPPOS]));
+                taskQue.push(std::thread(&FSMachine::SetInitPos, this->FSM.get(), this->senData[LANKPOS], this->senData[RANKPOS]));
             }
         }
         if (this->display)

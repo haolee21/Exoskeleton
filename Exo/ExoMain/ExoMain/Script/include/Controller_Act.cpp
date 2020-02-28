@@ -12,7 +12,7 @@ bool Controller::CheckKnePreRec_main(std::shared_ptr<PWMGen> knePreVal, int kneP
         if (!this->kneRecPID_set)
         {
             this->kneRecPID_set = true;
-            knePreVal->SetPID_const(150, 0.01, 0.001, curMea);
+            knePreVal->SetPID_const(150, 0.1, 0.001, curMea);
         }
         else
         {
@@ -65,7 +65,7 @@ bool Controller::CheckSupPre_main(std::shared_ptr<PWMGen> preVal, int knePre, in
         if (!this->kneSupPID_set)
         {
             this->kneSupPID_set = true;
-            preVal->SetPID_const(100, 0.1, 0.01, this->SupPreInput(knePre, tankPre, desPre));
+            preVal->SetPID_const(100, 0.5, 0.01, this->SupPreInput(knePre, tankPre, desPre));
         }
         else
         {

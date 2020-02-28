@@ -13,6 +13,7 @@
 #include<pthread.h>
 #include "common.hpp"
 #include <time.h>
+#include <vector>
 union Duty
 {
     int num;

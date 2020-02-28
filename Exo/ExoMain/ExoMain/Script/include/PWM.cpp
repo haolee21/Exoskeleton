@@ -1,6 +1,6 @@
 #include "PWM.h"
 
-#include <vector>
+
 
 // #define MY_PRIORITY (49)             /* we use 49 as the PRREMPT_RT use 50 \
 //                                         as the priority of kernel tasklets \
