@@ -18,8 +18,11 @@ void Controller::ConMainLoop(int *_senData, char *senRaw, std::mutex *senDataLoc
 
         {
             std::lock_guard<std::mutex> lock(this->com->comLock);
-            if (this->com->comArray[TESTVAL])
+            if (this->com->comArray[TESTVAL]){
                 taskQue.push(std::thread(&Controller::TestValve, this));
+            }
+                
+                
             if (this->com->comArray[TESTPWM])
                 taskQue.push(std::thread(&Controller::TestPWM, this));
             if (this->com->comArray[SHUTPWM])

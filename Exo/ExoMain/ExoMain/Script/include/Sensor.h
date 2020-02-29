@@ -146,8 +146,8 @@ private:
 	void SaveAllData();
 	
 	shared_ptr<Recorder<int>> senRec; //smart pointer test, failed, don't know why since it works in simpler cases
-	
-	
+
+	unique_ptr<Recorder<int>> SampTimeRec;
 };
 
 

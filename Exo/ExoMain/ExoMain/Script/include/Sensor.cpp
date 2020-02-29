@@ -56,7 +56,8 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT,std::shared_ptr<
 		this->senRec.reset(new Recorder<int>("sen",_filePath,"Time,LHipPos,LKnePos,LAnkPos,RHipPos,RKnePos,RAnkPos,sen7,sen8,TankPre,LKnePre,LAnkPre,RKnePre,RAnkPre,sen14,sen15,sen16"));
 		//Controller
 		this->com = _com.get();
-		
+
+		this->SampTimeRec.reset(new Recorder<int>("sampTime", _filePath, "duration"));
 	}
 	else
 		std::cout << "Sensor already created" << endl;
@@ -284,8 +285,13 @@ void Sensor::readSerialPort(int serialPort)
 	bool notReceived=true; //we won't exit the function if not received a whole data
 	while(notReceived){
 		int alreadyRead = 0;
+		
 		while(true){
+			std::chrono::system_clock::time_point startGet= std::chrono::system_clock::now();
 			alreadyRead += read(serialPort, this->serialBuf+alreadyRead, this->dataNeedRead);
+			std::chrono::system_clock::time_point endGet= std::chrono::system_clock::now();
+			microsecs_t get_time(std::chrono::duration_cast<microsecs_t>(endGet-startGet));
+			this->SampTimeRec->PushData(get_time.count(), std::vector<int>{alreadyRead,this->dataNeedRead});
 			if(alreadyRead!=DATALEN){
 				this->dataNeedRead = DATALEN-alreadyRead;
 				// cout<<"new data need to read: "<<this->dataNeedRead<<endl;
@@ -296,6 +302,7 @@ void Sensor::readSerialPort(int serialPort)
 				break;
 			}
 		}
+		
 		// std::chrono::system_clock::time_point endGet= std::chrono::system_clock::now();
 		// microsecs_t get_time(std::chrono::duration_cast<microsecs_t>(endGet-startGet));
 		// cout<<"spned "<<get_time.count()<<endl;
