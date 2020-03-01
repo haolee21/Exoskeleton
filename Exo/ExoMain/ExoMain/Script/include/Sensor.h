@@ -3,7 +3,7 @@
 #include "common.hpp"
 #include "Controller.h"
 #include "BWFilter.hpp"
-
+#include "SenBuffer.hpp"
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -98,13 +98,10 @@ private:
 	// int dataCollect;
 
 	char serialBuf[SIZEOFBUFFER];
-	
-	std::shared_ptr<int> frontBuf_count;
-	std::shared_ptr<int> backBuf_count;
-	std::shared_ptr<char[]> frontBuf;
-	std::shared_ptr<char[]> backBuf;
-	char *frontBuf_ptr;
-	char *backBuf_ptr;
+	char senTempBuf[SIZEOFBUFFER];
+	SenBuffer senBuff;
+	char outBuff[DATALEN];
+
 
 	char *tempSen;
 	bool init;

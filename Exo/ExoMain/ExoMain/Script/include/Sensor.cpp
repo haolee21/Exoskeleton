@@ -29,15 +29,13 @@ Sensor::Sensor(std::string _filePath,char *portName, long sampT,std::shared_ptr<
 		this->sampT = sampT*USEC;
 		
 		//initialize data receiving buffer
-		this->frontBuf_count.reset(new int(0));
-		this->backBuf_count.reset(new int(0));
-		this->frontBuf.reset(new char[DATALEN]);
-		this->backBuf.reset(new char[DATALEN]);
+		this->senBuff = SenBuffer();
+
+		
 		this->senDataLock = new std::mutex;
 		//this->senDataLock.reset(new std::mutex());
 
-		this->frontBuf_ptr = this->frontBuf.get();
-		this->backBuf_ptr = this->backBuf.get();
+
 		this->init = false;
 		this->falseSenCount = 0;
 
@@ -146,7 +144,7 @@ void *Sensor::senUpdate(void *_sen)
     
 
 	// struct timespec t;
-	
+	// clock_gettime(CLOCK_MONOTONIC, &t);
 	
 
    
@@ -161,14 +159,7 @@ void *Sensor::senUpdate(void *_sen)
 	bool curSenCond = true;
 	while (true)
 	{	
-		//timer
-		// if(sen->senNotInit){
-		// 	sen->senNotInit=false;
-		// 	clock_gettime(CLOCK_MONOTONIC, &t);
-		// }
-		//
-
-		sen->readSerialPort(sen->serialDevId);
+		
 		
 		if (conStart)
 		{
@@ -181,7 +172,7 @@ void *Sensor::senUpdate(void *_sen)
 			conStart = true;
 			con->Start(sen->senData.get(), sen->senDataRaw.get(), sen->senDataLock);
 		}
-		//conTh.reset(new std::thread(&Controller::ConMainLoop,con,sen->senData.get(),sen->senDataRaw.get()));
+		sen->readSerialPort(sen->serialDevId);
 		
 
 		{
@@ -281,80 +272,10 @@ int Sensor::serialPortConnect(char *portName)
 
 void Sensor::readSerialPort(int serialPort)
 {
-	// std::chrono::system_clock::time_point startGet= std::chrono::system_clock::now();
-	bool notReceived=true; //we won't exit the function if not received a whole data
-	while(notReceived){
-		int alreadyRead = 0;
-		
-		while(true){
-			std::chrono::system_clock::time_point startGet= std::chrono::system_clock::now();
-			alreadyRead += read(serialPort, this->serialBuf+alreadyRead, this->dataNeedRead);
-			std::chrono::system_clock::time_point endGet= std::chrono::system_clock::now();
-			microsecs_t get_time(std::chrono::duration_cast<microsecs_t>(endGet-startGet));
-			this->SampTimeRec->PushData(get_time.count(), std::vector<int>{alreadyRead,this->dataNeedRead});
-			if(alreadyRead!=DATALEN){
-				this->dataNeedRead = DATALEN-alreadyRead;
-				// cout<<"new data need to read: "<<this->dataNeedRead<<endl;
-			}
-			else{
-				this->dataNeedRead = DATALEN;
-				
-				break;
-			}
-		}
-		
-		// std::chrono::system_clock::time_point endGet= std::chrono::system_clock::now();
-		// microsecs_t get_time(std::chrono::duration_cast<microsecs_t>(endGet-startGet));
-		// cout<<"spned "<<get_time.count()<<endl;
-		int curBufIdx = 0;
 
-		//find '\n'
-		
-		for(int i=0;i<DATALEN;i++){
-			if(this->serialBuf[i]=='\n'){
-				curBufIdx++;
-				
-				break;
-			}
-			else{
-				curBufIdx++;
-
-			}
-		}
-		
-		if(this->init){
-			
-			std::copy(this->serialBuf,this->serialBuf+curBufIdx,this->frontBuf_ptr);
-			std::copy(this->serialBuf+curBufIdx,this->serialBuf+DATALEN,this->backBuf_ptr);
-			*this->frontBuf_count+=curBufIdx;
-			*this->backBuf_count+=(DATALEN-curBufIdx);
-			this->backBuf_ptr +=(DATALEN-curBufIdx);
-		}
-		else{
-			std::copy(this->serialBuf+curBufIdx,this->serialBuf+DATALEN,this->frontBuf_ptr);
-			
-			this->frontBuf_ptr += curBufIdx;
-			*(this->frontBuf_count) +=curBufIdx;
-			this->init = true;
-		}
-		
-		if(*this->frontBuf_count == DATALEN){
-			this->tempSen = this->frontBuf.get();
-			
-			notReceived = false;
-			
-		}
-		
-
-
-		this->frontBuf.swap(this->backBuf);
-		this->frontBuf_ptr = this->backBuf_ptr;
-		this->frontBuf_count.swap(this->backBuf_count);
-		*this->backBuf_count=0;
-		
-		this->backBuf_ptr = this->backBuf.get();
-
-		
+	while(!this->senBuff.GetData(this->outBuff)){
+		int currentRead = read(serialPort, this->senTempBuf, DATALEN);
+		this->senBuff.PushData(this->senTempBuf, currentRead);
 	}
 	std::chrono::system_clock::time_point curTime= std::chrono::system_clock::now();
 	microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->origin));
@@ -368,7 +289,7 @@ void Sensor::readSerialPort(int serialPort)
 		
 		for (int i = 0; i < NUMSEN; i++)
 		{
-			int curSen = (int)(this->backBuf[idx]) + (int)(this->backBuf[idx+1] << 8);
+			int curSen = (int)(this->outBuff[idx]) + (int)(this->outBuff[idx+1] << 8);
 			if(curSen<1024){//we storage the measurement in buffer first, and make sure none of them is larger than 1024
 				this->tempSenData[i] = curSen;
 				// this->senData[i + 1] = curSen;
@@ -395,7 +316,7 @@ void Sensor::readSerialPort(int serialPort)
 		this->senRec->PushData((unsigned long)this->senData[0],recSenData);
 	}
 	//the wrong measurements will still get transfer to the pc
-	std::copy(this->backBuf.get(),this->backBuf.get()+DATALEN,this->senDataRaw.get());
+	std::copy(this->outBuff,this->outBuff+DATALEN,this->senDataRaw.get());
 
 
 
@@ -410,7 +331,6 @@ Sensor::~Sensor()
 	// if(this->saveData_th)
 	// 	this->saveData_th->join();
 	std::cout << "start to delete" << std::endl;
-	this->frontBuf_ptr = NULL;
-	this->backBuf_ptr =NULL;
+	
 	// delete this->senDataLock;// I probably cannot delete a mutex element, not sure why
 }

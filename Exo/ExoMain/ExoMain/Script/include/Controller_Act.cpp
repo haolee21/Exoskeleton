@@ -12,7 +12,7 @@ bool Controller::CheckKnePreRec_main(std::shared_ptr<PWMGen> knePreVal, int kneP
         if (!this->kneRecPID_set)
         {
             this->kneRecPID_set = true;
-            knePreVal->SetPID_const(150, 0.1, 0.001, curMea);
+            knePreVal->SetPID_const(150, 0.5, 0.001, curMea);
         }
         else
         {
@@ -38,7 +38,7 @@ bool Controller::CheckAnkPreRec_main(std::shared_ptr<PWMGen> ankPreVal, int ankP
         if (!this->ankRecPID_set)
         {
             this->ankRecPID_set = true;
-            ankPreVal->SetPID_const(100, 0.01, 0.001, this->AnkPreRecInput(ankPre, tankPre));
+            ankPreVal->SetPID_const(150, 0.01, 0.001, this->AnkPreRecInput(ankPre, tankPre));
             // this->ankRecPID.reset(new PIDCon(100, 0.1, 0.001, this->AnkPreRecInput(ankPre, tankPre)));
             this->ValveOn(balVal);
         }
