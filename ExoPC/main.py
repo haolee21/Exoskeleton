@@ -78,12 +78,12 @@ def main():
                 # senP.join()
                 # valP.join()
                 # pwmP.join()
-                # start = time.time()
+            # start = time.time()
             UpdateGraph(graph_sen,data,SenHandle)
             UpdateGraph(graph_val,data,ValveHandle)
             UpdateGraph(graph_pwm,data,PWMHandle)
-                # end = time.time()
-                # print(end-start)
+            # end = time.time()
+            # print(end-start)
             
                 # print("graph time: ",g_end-g_start)
         except IndexError:

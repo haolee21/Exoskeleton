@@ -71,28 +71,53 @@ Controller::Controller(std::string filePath, Com *_com, bool _display, std::chro
     // this->trParam.testOut.reset(new Valve("TestMea", filePath, 8, 6)); //this uses gpio2
     // this->ValveOff(this->trParam.testOut);
     this->curState = 0;
-    this->initGait = false;
-    this->gaitStart = false;
-    this->gaitEnd = true;
-    this->FSM.reset(new FSMachine(filePath));
-    this->swGaitRec.reset(new Recorder<bool>("gait_switch",filePath,"time,gaitSw"));
+
+
+    auto p1_fun = [this]() {
+        this->Load_resp('l');
+    };
+    auto p2_fun = [this]() {
+        this->Mid_stance('l');
+        this->Pre_swing('r');
+    };
+    auto p3_fun = [this]() {
+        this->Init_swing('r');
+    };
+    auto p4_fun = [this]() {
+        this->Mid_swing('r');
+    };
+    auto p5_fun = [this]() {
+        this->Term_stance('l');
+        this->Term_swing('r');
+    };
+    auto p6_fun = [this]() {
+        this->Load_resp('r'); 
+    };
+    auto p7_fun = [this]() {
+        this->Pre_swing('l');
+        this->Mid_stance('r');
+    };
+    auto p8_fun = [this]() {
+        this->Init_swing('l');
+    };
+    auto p9_fun = [this]() {
+        this->Mid_swing('l');
+    };
+    auto p10_fun = [this]() {
+        this->Term_swing('l');
+        this->Term_stance('r');
+    };
+
+    this->FSM.reset(new FSMachine(filePath,p1_fun,p2_fun,p3_fun,p4_fun,p5_fun,p6_fun,p7_fun,p8_fun,p9_fun,p10_fun));
     // now we need to actuate some valves, since we prefer the system to isolate each chambers
     this->ValveOn(this->LKneVal);
     this->ValveOn(this->RKneVal);
     this->ValveOn(this->LBalVal);
     this->ValveOn(this->RBalVal);
 
-    //FSM init
-    this->p1_t = 10000l;
-    this->p2_t = 10000l;
-    this->p3_t = 10000l;
-    this->p4_t = 10000l;
-    this->p5_t = 10000l;
-    this->p6_t = 10000l;
-    this->p7_t = 10000l;
-    this->p8_t = 10000l;
-    this->p9_t = 10000l;
-    this->p10_t = 10000l;
+
+
+    
 }
 Controller::~Controller()
 {
@@ -150,178 +175,7 @@ void Controller::ShutDownPWM()
         (*begPWM)->Start();
     } while (++begPWM != std::end(this->PWMList));
 }
-// main loop
-// =================================================================================================================
-void Controller::ConMainLoop(int *_senData, char *senRaw, std::mutex *senDataLock)
-{
 
-    struct timespec conTimer;
-    clock_gettime(CLOCK_MONOTONIC, &conTimer);
-    while (true)
-    {
-
-        queue<thread> taskQue;
-        // this->senData = senData;
-        {
-            std::lock_guard<std::mutex> curLock(*senDataLock);
-            std::memcpy(this->senData, _senData, std::size_t((NUMSEN + 1) * sizeof(int)));
-        }
-
-        {
-            std::lock_guard<std::mutex> lock(this->com->comLock);
-            if (this->com->comArray[TESTVAL])
-                taskQue.push(std::thread(&Controller::TestValve, this));
-            if (this->com->comArray[TESTPWM])
-                taskQue.push(std::thread(&Controller::TestPWM, this));
-            if (this->com->comArray[SHUTPWM])
-            {
-                taskQue.push(std::thread(&Controller::ShutDownPWM, this));
-                this->com->comArray[SHUTPWM] = false;
-            }
-
-            if (this->com->comArray[KNEMODSAMP])
-            {
-                taskQue.push(std::thread(&Controller::SampKneMod, this, com->comVal[KNEMODSAMP]));
-            }
-            if (this->com->comArray[KNEPREREL])
-            {
-                taskQue.push(std::thread(&Controller::KneRel, this));
-            }
-            if (this->com->comArray[TESTALLLEAK])
-            {
-                taskQue.push(std::thread(&Controller::TestAllLeak, this));
-                this->com->comArray[TESTALLLEAK] = false;
-            }
-            if (this->com->comArray[FREEWALK])
-            {
-                taskQue.push(std::thread(&Controller::FreeWalk, this));
-                this->com->comArray[FREEWALK] = false;
-            }
-            if (this->com->comArray[TESTLEAK])
-            {
-                taskQue.push(std::thread(&Controller::TestLeak, this, com->comVal[TESTLEAK]));
-                this->com->comArray[TESTLEAK] = false;
-            }
-            if (this->com->comArray[TESTLANK])
-            {
-                taskQue.push(std::thread(&Controller::TestLAnk, this));
-                this->com->comArray[TESTLANK] = false;
-            }
-            if (this->com->comArray[TESTRANK])
-            {
-                taskQue.push(std::thread(&Controller::TestRAnk, this));
-                this->com->comArray[TESTRANK] = false;
-            }
-            if (this->com->comArray[SHOWSEN])
-            {
-                taskQue.push(std::thread(&Controller::ShowSen, this));
-                this->com->comArray[SHOWSEN] = false;
-            }
-            if (this->com->comArray[BIPEDREC])
-            {
-                taskQue.push(std::thread(&Controller::BipedEngRec, this));
-            }
-            if (this->com->comArray[TESTSYNC])
-            {
-                taskQue.push(std::thread(&Controller::TestReactingTime, this));
-            }
-            if (this->com->comArray[PIDACTTEST])
-            {
-                taskQue.push(std::thread(&Controller::PIDActTest, this, this->com->comVal[PIDACTTEST]));
-            }
-            if (this->com->comArray[PIDRECTEST])
-            {
-                taskQue.push(std::thread(&Controller::PIDRecTest, this, this->com->comVal[PIDRECTEST]));
-            }
-            if (this->com->comArray[TESTONEPWM])
-            {
-                if (this->testOnePWM_flag)
-                {
-                    this->SetDuty(this->PWMList[com->comVal[TESTONEPWM]], 0); //this is a bit hack, I need to turn off pwm valves
-                    cout << "turn off\n";
-
-                    this->testOnePWM_flag = false;
-                }
-                else
-                {
-                    taskQue.push(std::thread(&Controller::TestOnePWM, this, this->com->comVal[TESTONEPWM]));
-                    this->testOnePWM_flag = true;
-                }
-                this->com->comArray[TESTONEPWM] = false;
-            }
-            if (this->com->comArray[CON_LANK_ACT])
-            {
-                taskQue.push(std::thread(&Controller::AnkPushOff_main, this, this->LAnkPreVal, this->senData[LANKPRE], this->senData[TANKPRE]));
-            }
-            if (this->com->comArray[CON_RANK_ACT])
-            {
-                taskQue.push(std::thread(&Controller::AnkPushOff_main, this, this->RAnkPreVal, this->senData[RANKPRE], this->senData[TANKPRE]));
-            }
-            if (this->com->comArray[CON_LKNE_REC])
-            {
-                taskQue.push(std::thread(&Controller::CheckKnePreRec_main, this, this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE], this->kneRecPre));
-            }
-            if (this->com->comArray[CON_RKNE_REC])
-            {
-                taskQue.push(std::thread(&Controller::CheckKnePreRec_main, this, this->RKnePreVal, this->senData[RKNEPRE], this->senData[TANKPRE], this->kneRecPre));
-            }
-            if (this->com->comArray[CON_LANK_REC])
-            {
-                taskQue.push(std::thread(&Controller::CheckAnkPreRec_main, this, this->LAnkPreVal, this->senData[LANKPRE], this->senData[TANKPRE], this->LBalVal, this->ankRecPre));
-            }
-            if (this->com->comArray[CON_RANK_REC])
-            {
-                taskQue.push(std::thread(&Controller::CheckAnkPreRec_main, this, this->RAnkPreVal, this->senData[RANKPRE], this->senData[TANKPRE], this->RBalVal, this->ankRecPre));
-            }
-            if (this->com->comArray[CON_LKNE_SUP])
-            {
-                taskQue.push(std::thread(&Controller::CheckSupPre_main, this, this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE], this->kneSupPre));
-            }
-            if (this->com->comArray[CON_RKNE_SUP])
-            {
-                taskQue.push(std::thread(&Controller::CheckSupPre_main, this, this->RKnePreVal, this->senData[RKNEPRE], this->senData[TANKPRE], this->kneSupPre));
-            }
-            if (this->com->comArray[CON_LANK_SUP])
-            {
-                taskQue.push(std::thread(&Controller::CheckSupPre_main, this, this->LAnkPreVal, this->senData[LANKPRE], this->senData[TANKPRE], this->ankSupPre));
-            }
-            if (this->com->comArray[CON_RANK_SUP])
-            {
-                taskQue.push(std::thread(&Controller::CheckSupPre_main, this, this->RAnkPreVal, this->senData[RANKPRE], this->senData[TANKPRE], this->ankSupPre));
-            }
-            if (this->com->comArray[CON_SET_INIT_POS])
-            {
-                this->com->comArray[CON_SET_INIT_POS] = false;
-                taskQue.push(std::thread(&FSMachine::SetInitPos, this->FSM.get(), this->senData[LHIPPOS], this->senData[RHIPPOS]));
-            }
-        }
-        if (this->display)
-        {
-
-            taskQue.push(std::thread(&Controller::SendToDisp, this, senRaw));
-        }
-        while (!taskQue.empty())
-        {
-            taskQue.front().join();
-            taskQue.pop();
-        }
-
-        std::memcpy(this->preSen, this->senData, std::size_t((NUMSEN + 1) * sizeof(int)));
-        bool cond;
-        {
-            std::lock_guard<std::mutex> curLock(this->conSW_lock);
-            cond = this->sw_conMain;
-        }
-        if (!cond)
-        {
-            break;
-        }
-
-        conTimer.tv_nsec += this->sampT;
-        Common::tsnorm(&conTimer);
-        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &conTimer, NULL);
-    }
-}
 void Controller::SendToDisp(const char *senRaw)
 {
 
@@ -749,427 +603,9 @@ void Controller::PIDRecTest(int joint)
     }
 }
 
-// Data pre-process for the PID controller (feedback linearization?)
-//===========================================================================================
-float Controller::SupPreInput(int knePre, int tankPre, int desPre)
-{
 
-    return (float)(desPre - knePre) / (tankPre - knePre);
-}
-float Controller::AnkActInput(int ankPre, int tankPre)
-{
 
-    return (float)(this->ankActPre - ankPre) / (tankPre - ankPre);
-}
-float Controller::AnkPreRecInput(int ankPre, int tankPre)
-{
-    float curMea = (float)(ankPre - this->ankRecPre) / (ankPre - tankPre);
-    std::cout << "ank rec input: " << curMea << std::endl;
-    return curMea;
-}
-float Controller::KnePreRecInput(int knePre, int tankPre)
-{
-    float curMea = (float)(knePre - this->kneRecPre) / (knePre - tankPre);
-    std::cout << "kne rec input: " << curMea << std::endl;
-    return curMea;
-}
 
-// Finite state machine
-//===================================================================================================================
-
-void Controller::BipedEngRec()
-{
-
-    int curHipDiff = this->mvf.DataFilt(this->senData[LHIPPOS] + this->senData[RHIPPOS] - this->LHipMean - this->RHipMean);
-    // std::cout << "hipdiff: " << curHipDiff << std::endl;
-    if ((curHipDiff < 0) && (this->preHipDiff > 0))
-    {
-        this->swGaitRec->PushData((unsigned long)this->senData[TIME], std::vector<bool>(true));
-        std::cout << "new step\n";
-    }
-    // if (this->gaitStart)
-    // {
-    //     bool curGaitEnd =false;
-
-    //     {
-    //         std::lock_guard<std::mutex> lock(*this->gaitEndLock);
-    //         curGaitEnd = this->gaitEnd;
-    //     }
-
-    //     this->FSM->PushSen(this->senData);
-
-    //     if ((this->FSM->IsReady() && curGaitEnd))
-    //     {
-    //         if(this->singleGaitJoin){
-    //             // this->SingleGait_th->join();
-    //             this->singleGaitJoin = false;
-    //             //this->SingleGait_th.reset();
-    //         }
-    //         std::cout << "start thread\n";
-    //         {
-    //             std::lock_guard<std::mutex> lock(*this->gaitEndLock);
-    //             this->gaitEnd = false;
-    //         }
-
-    //         this->SingleGait_th.reset(new std::thread(&Controller::SingleGaitPeriod, this));
-    //         this->SingleGait_th->detach();
-    //         this->singleGaitJoin = true;
-    //     }
-    //     else{
-    //         //std::cout << "not ready\n";
-    //     }
-    // }
-    // else
-    // {
-    //     this->gaitStart = true; //this is for preHipDiff have initial value
-    // }
-
-    this->preHipDiff = curHipDiff;
-
-    //test, assume the function is trigger every time is is done
-    if (!this->sw_FSM)
-    {
-        this->FSM_start();
-    }
-}
-
-// 7 Phases of single leg's walking gait
-void Controller::Init_swing(char side)
-{
-    if (side == 'r')
-    {
-        this->ValveOff(this->RKneVal);
-
-        // this->SetDuty(this->RAnkPreVal, 0);
-        {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
-            this->com->comArray[CON_RANK_ACT] = false;
-        }
-        this->RAnkPreVal->PushMea(this->senData[TIME], -500.0f);
-        this->pwmDuty[this->RAnkPreVal->GetIdx()] = this->RAnkPreVal->duty.byte[0];
-    }
-    else
-    {
-        this->ValveOff(this->LKneVal);
-        // this->SetDuty(this->LAnkPreVal, 0);
-        {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
-            this->com->comArray[CON_LANK_ACT] = false;
-        }
-        this->LAnkPreVal->PushMea(this->senData[TIME], -500.0f);
-        this->pwmDuty[this->LAnkPreVal->GetIdx()] = this->LAnkPreVal->duty.byte[0];
-    }
-}
-void Controller::Mid_swing(char side)
-{
-    if (side == 'r')
-    {
-        this->ValveOff(this->RBalVal);
-        this->ValveOn(this->RKneVal);
-    }
-    else
-    {
-        this->ValveOff(this->LBalVal);
-        this->ValveOn(this->LKneVal);
-    }
-}
-void Controller::Term_swing(char side)
-{
-    if (side == 'r')
-    {
-        this->ValveOn(this->RBalVal);
-        {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
-            this->com->comArray[CON_RKNE_SUP] = true;
-        }
-    }
-    else
-    {
-        this->ValveOn(this->LBalVal);
-        {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
-            this->com->comArray[CON_LKNE_SUP] = true;
-        }
-
-        // this->CheckSupPre(this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE]);
-    }
-}
-void Controller::Load_resp(char side)
-{
-    if (side == 'r')
-    {
-        std::lock_guard<std::mutex> curLock(this->com->comLock);
-        this->com->comArray[CON_RKNE_SUP] = false;
-
-        this->com->comArray[CON_RKNE_REC] = true;
-        //this->com->comArray[CON_RANK_REC] = true;
-    }
-    else
-    {
-        std::lock_guard<std::mutex> curLock(this->com->comLock);
-        this->com->comArray[CON_LKNE_SUP] = false;
-        this->com->comArray[CON_LKNE_REC] = true;
-        //this->com->comArray[CON_LANK_REC] = true;
-        // this->KnePreRec(this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE]);
-        // this->AnkPreRec(this->LAnkPreVal,this->senData[LANKPRE],this->senData[TANKPRE],this->LBalVal);
-    }
-}
-void Controller::Mid_stance(char side)
-{
-    this->ankRecPID_set = false;
-    this->kneRecPID_set = false;
-    // make sure the pressure valves stops
-    if (side == 'r')
-    {
-        //this is needed since the previous stage is load response
-        {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
-            this->com->comArray[CON_RKNE_REC] = false;
-            this->com->comArray[CON_RANK_REC] = false;
-        }
-        this->RKnePreVal->PushMea(this->senData[TIME], -500.0f);
-        this->RAnkPreVal->PushMea(this->senData[TIME], -500.0f);
-        this->pwmDuty[RKnePreVal->GetIdx()] = RKnePreVal->duty.byte[0];
-        this->pwmDuty[RAnkPreVal->GetIdx()] = RAnkPreVal->duty.byte[0];
-        this->ValveOff(this->RBalVal);
-    }
-    else
-    {
-        {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
-            this->com->comArray[CON_LKNE_REC] = false;
-            this->com->comArray[CON_LANK_REC] = false;
-        }
-        this->LKnePreVal->PushMea(this->senData[TIME], -500.0f);
-        this->LAnkPreVal->PushMea(this->senData[TIME], -500.0f);
-        this->pwmDuty[LKnePreVal->GetIdx()] = LKnePreVal->duty.byte[0];
-        this->pwmDuty[LAnkPreVal->GetIdx()] = LAnkPreVal->duty.byte[0];
-        this->ValveOff(this->LBalVal);
-    }
-}
-void Controller::Term_stance(char side)
-{
-    if (side == 'r')
-    {
-        this->ValveOn(this->RBalVal);
-    }
-    else
-    {
-        this->ValveOn(this->LBalVal);
-    }
-}
-void Controller::Pre_swing(char side)
-{
-    if (side == 'r')
-    {
-        std::lock_guard<std::mutex> curLock(this->com->comLock);
-        this->com->comArray[CON_RANK_ACT] = true;
-    }
-    else
-    {
-        std::lock_guard<std::mutex> curLock(this->com->comLock);
-        this->com->comArray[CON_LANK_ACT] = true;
-    }
-}
-
-// Actions
-// detail of how pressure valve will operate is defined here
-//===========================================================================================
-
-bool Controller::CheckKnePreRec_main(std::shared_ptr<PWMGen> knePreVal, int knePre, int tankPre, int desPre)
-{
-
-    if ((knePre - tankPre > 10) && (knePre > desPre))
-    {
-        float curMea = this->KnePreRecInput(knePre, tankPre);
-        if (!this->kneRecPID_set)
-        {
-            this->kneRecPID_set = true;
-            knePreVal->SetPID_const(150, 0.01, 0.001, curMea);
-        }
-        else
-        {
-            knePreVal->PushMea(this->senData[TIME], curMea);
-            this->pwmDuty[knePreVal->GetIdx()] = knePreVal->duty.byte[0];
-        }
-        return false;
-    }
-    else
-    {
-        this->kneRecPID_set = false;
-        knePreVal->PushMea(this->senData[TIME], -500.0f);
-        this->pwmDuty[knePreVal->GetIdx()] = knePreVal->duty.byte[0];
-        return true;
-    }
-}
-
-bool Controller::CheckAnkPreRec_main(std::shared_ptr<PWMGen> ankPreVal, int ankPre, int tankPre, std::shared_ptr<Valve> balVal, int desPre)
-{
-    //When recycle ankle pressure, if the pressure is too high, we direct the ankle pressure to the knee joint
-    if ((ankPre - tankPre > 10) && (ankPre > desPre))
-    {
-        if (!this->ankRecPID_set)
-        {
-            this->ankRecPID_set = true;
-            ankPreVal->SetPID_const(100, 0.01, 0.001, this->AnkPreRecInput(ankPre, tankPre));
-            // this->ankRecPID.reset(new PIDCon(100, 0.1, 0.001, this->AnkPreRecInput(ankPre, tankPre)));
-            this->ValveOn(balVal);
-        }
-        else
-        {
-            ankPreVal->PushMea(this->senData[TIME], this->AnkPreRecInput(ankPre, tankPre));
-            this->pwmDuty[ankPreVal->GetIdx()] = ankPreVal->duty.byte[0];
-        }
-        return false;
-    }
-    else
-    {
-        this->ankRecPID_set = false;
-        ankPreVal->PushMea(this->senData[TIME], -500.0f);
-        this->pwmDuty[ankPreVal->GetIdx()] = ankPreVal->duty.byte[0];
-        return true;
-    }
-}
-
-bool Controller::CheckSupPre_main(std::shared_ptr<PWMGen> preVal, int knePre, int tankPre, int desPre)
-{
-    if (knePre - desPre < 10)
-    {
-        if (!this->kneSupPID_set)
-        {
-            this->kneSupPID_set = true;
-            preVal->SetPID_const(100, 0.1, 0.01, this->SupPreInput(knePre, tankPre, desPre));
-        }
-        else
-        {
-            preVal->PushMea(this->senData[TIME], this->SupPreInput(knePre, tankPre, desPre));
-            this->pwmDuty[preVal->GetIdx()] = preVal->duty.byte[0];
-        }
-        return false;
-    }
-    else
-    {
-        preVal->PushMea(this->senData[TIME], -500.0f);
-        this->pwmDuty[preVal->GetIdx()] = preVal->duty.byte[0];
-        this->kneSupPID_set = false;
-        return true;
-    }
-}
-void Controller::AnkPushOff_main(std::shared_ptr<PWMGen> ankPreVal, int ankPre, int tankPre)
-{
-    //std::cout << "running valves" << ankPreVal->GetIdx() << std::endl;
-    if (this->ankActPre - ankPre < 10)
-    {
-        if (!this->ankActPID_set)
-        {
-            ankActPID_set = true;
-            ankPreVal->SetPID_const(800, 0.01, 0.001, this->AnkActInput(ankPre, tankPre));
-            // this->ankActPID.reset(new PIDCon(800, 0.01, 0.001, this->AnkActInput(ankPre, tankPre)));
-        }
-        else
-        {
-            ankPreVal->PushMea(this->senData[TIME], this->AnkActInput(ankPre, tankPre));
-            this->pwmDuty[ankPreVal->GetIdx()] = ankPreVal->duty.byte[0];
-        }
-    }
-    else
-    {
-        ankPreVal->PushMea(this->senData[TIME], -500.0f);
-        this->pwmDuty[ankPreVal->GetIdx()] = ankPreVal->duty.byte[0];
-    }
-}
-//Time based FSM
-void Controller::SingleGaitPeriod()
-{
-
-    clock_gettime(CLOCK_MONOTONIC, &this->gaitTimer);
-    this->FSM->GetPhaseTime(this->senData[TIME], this->p1_t, this->p2_t, this->p3_t, this->p4_t, this->p5_t, this->p6_t, this->p7_t, this->p8_t, this->p9_t, this->p10_t);
-    //std::cout << "total wait time= " << (long long)this->p1_t + this->p2_t + this->p3_t + this->p4_t + this->p5_t + this->p6_t + this->p7_t + this->p8_t + this->p9_t + this->p10_t << "ns" << std::endl;
-    // this->gaitTimer.tv_nsec += (10*this->p1_t);
-    // Common::tsnorm(&this->gaitTimer);
-    // clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-
-    //phase 5
-    this->gaitTimer.tv_nsec += this->p5_t;
-
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    this->Term_stance('l');
-
-    this->Term_swing('r'); //suspect1 pass
-
-    //phase 6
-    this->gaitTimer.tv_nsec += this->p6_t;
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    // this->Load_resp('r'); //suspect2 pass
-
-    //phase 7
-    this->gaitTimer.tv_nsec += this->p7_t;
-
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    this->Pre_swing('l');
-    this->Mid_stance('r');
-    //phase 8
-    this->gaitTimer.tv_nsec += this->p8_t;
-
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-
-    this->Init_swing('l');
-
-    //phase 9
-    this->gaitTimer.tv_nsec += this->p9_t;
-
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-    this->Mid_swing('l');
-
-    //phase 10
-    this->gaitTimer.tv_nsec += this->p10_t;
-
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-
-    this->Term_swing('l');
-    this->Term_stance('r');
-
-    //phase 1
-
-    this->gaitTimer.tv_nsec += this->p1_t;
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-
-    this->Load_resp('l');
-
-    //phase 2
-    this->gaitTimer.tv_nsec += this->p2_t;
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-
-    this->Mid_stance('l');
-    this->Pre_swing('r');
-
-    //phase 3
-    this->gaitTimer.tv_nsec += this->p3_t;
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-
-    this->Init_swing('r');
-
-    //phase 4
-    this->gaitTimer.tv_nsec += this->p4_t;
-    Common::tsnorm(&this->gaitTimer);
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &this->gaitTimer, NULL);
-
-    this->Mid_swing('r');
-    
-    {
-        std::lock_guard<std::mutex> curLock(this->gaitEndLock);
-        this->gaitEnd = true;
-    }
-}
 
 // some test functions
 //=======================================================================================
@@ -1258,98 +694,6 @@ void Controller::Stop()
         this->conMain_th.join();
     }
     std::cout << "Controller stop\n";
-    this->FSM_stop();
+   
 }
 
-void Controller::FSMLoop()
-{
-    struct timespec t_FSM;
-    clock_gettime(CLOCK_MONOTONIC, &t_FSM);
-    bool curGaitEnd = true;
-    std::thread gait_th;
-    bool needJoin = false;
-    while (true)
-    {
-
-        bool curCond;
-        {
-            std::lock_guard<std::mutex> curLock(this->FSMLock);
-            curCond = this->sw_FSM;
-        }
-        if (!curCond)
-        {
-            std::cout << "FSM should stop\n";
-            break;
-        }
-
-        if (curGaitEnd)
-        {
-            if (needJoin)
-            {
-                gait_th.join();
-                needJoin = false;
-            }
-
-            this->gaitEnd = false;
-            gait_th = std::thread(&Controller::SingleGaitPeriod, this);
-            needJoin = true;
-            clock_gettime(CLOCK_MONOTONIC, &t_FSM);
-        }
-
-        {
-            std::lock_guard<std::mutex> curLock(this->gaitEndLock);
-            curGaitEnd = this->gaitEnd;
-        }
-
-        t_FSM.tv_nsec += this->sampT; //we need a waittime here, otherwise the program will iterate in max speed and result in deadlock
-        Common::tsnorm(&t_FSM);
-        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t_FSM, NULL);
-        //std::cout << "fsm cond: " << curCond << std::endl;
-    }
-    if (needJoin)
-    {
-        gait_th.join();
-    }
-    std::cout << "end FSM Loop\n";
-}
-void Controller::FSM_start()
-{
-    bool curCond;
-    {
-        std::lock_guard<std::mutex> curLock(this->FSMLock);
-        curCond = this->sw_FSM;
-    }
-    if (!curCond)
-    {
-        this->sw_FSM = true;
-        this->FSMLoop_th.reset(new std::thread(&Controller::FSMLoop, this));
-        this->FSM_flag = true;
-    }
-}
-void Controller::FSM_stop()
-{
-    if (this->FSM_flag)
-    {
-        bool curFSM_sw;
-        {
-            std::lock_guard<std::mutex> curLock(this->FSMLock);
-            curFSM_sw = this->sw_FSM;
-        }
-        if (curFSM_sw)
-        {
-            {
-                std::lock_guard<std::mutex> curLock(this->FSMLock);
-                this->sw_FSM = false;
-            }
-
-            if (this->FSMLoop_th->joinable())
-            {
-                this->FSMLoop_th->join();
-            }
-        }
-        std::cout << "FSM loop stops\n";
-    }
-    else{
-        std::cout << "FSM was not activated\n";
-    }
-}

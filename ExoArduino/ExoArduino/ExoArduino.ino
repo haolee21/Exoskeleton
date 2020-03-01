@@ -16,19 +16,14 @@
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 #endif
 
-
-
-
 //This is for the test pin
 bool pinCond = true;
 //
 
-
 const int NUMSEN = 16;
 
-int sensorArray[] = {0, 1, 2, 3, 4, 5, 6,7,8,9,10,11,12,13,14,15};
+int sensorArray[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 int curIndex;
-
 
 char buffer[100];
 char *bufferPointer;
@@ -52,12 +47,12 @@ int testSent2;
 // the setup function runs once when you press reset or power the board
 void setup()
 {
-	#if FASTADC
- 	// set prescale to 32 (default is 128)
- 	sbi(ADCSRA,ADPS2) ;  //http://ee-classes.usc.edu/ee459/library/documents/ADC.pdf
- 	cbi(ADCSRA,ADPS1) ;
- 	sbi(ADCSRA,ADPS0) ;
-	#endif
+#if FASTADC
+	// set prescale to 32 (default is 128)
+	sbi(ADCSRA, ADPS2); //http://ee-classes.usc.edu/ee459/library/documents/ADC.pdf
+	cbi(ADCSRA, ADPS1);
+	sbi(ADCSRA, ADPS0);
+#endif
 
 	testSent1 = 97;
 	testSent2 = 65;
@@ -75,20 +70,20 @@ void setup()
 	// pinMode(51,OUTPUT);
 	// Timer setting: http://www.8bit-era.cz/arduino-timer-interrupts-calculator.html
 
-// TIMER 1 for interrupt frequency 1000 Hz:
-cli(); // stop interrupts
-TCCR1A = 0; // set entire TCCR1A register to 0
-TCCR1B = 0; // same for TCCR1B
-TCNT1  = 0; // initialize counter value to 0
-// set compare match register for 1000 Hz increments
-OCR1A = 15999; // = 16000000 / (1 * 1000) - 1 (must be <65536)
-// turn on CTC mode
-TCCR1B |= (1 << WGM12);
-// Set CS12, CS11 and CS10 bits for 1 prescaler
-TCCR1B |= (0 << CS12) | (0 << CS11) | (1 << CS10);
-// enable timer compare interrupt
-TIMSK1 |= (1 << OCIE1A);
-sei(); // allow interrupts
+	// TIMER 1 for interrupt frequency 800 Hz:
+	cli();		// stop interrupts
+	TCCR1A = 0; // set entire TCCR1A register to 0
+	TCCR1B = 0; // same for TCCR1B
+	TCNT1 = 0;  // initialize counter value to 0
+	// set compare match register for 800 Hz increments
+	OCR1A = 19999; // = 16000000 / (1 * 800) - 1 (must be <65536)
+	// turn on CTC mode
+	TCCR1B |= (1 << WGM12);
+	// Set CS12, CS11 and CS10 bits for 1 prescaler
+	TCCR1B |= (0 << CS12) | (0 << CS11) | (1 << CS10);
+	// enable timer compare interrupt
+	TIMSK1 |= (1 << OCIE1A);
+	sei(); // allow interrupts
 }
 
 // the loop function runs over and over again until power down or reset
@@ -110,14 +105,11 @@ void loop()
 		// if (testSent2 > 90)
 		// 	testSent2 = 65;
 
-		
-
 		for (int senIndex = 0; senIndex < NUMSEN; senIndex++)
 		{
 			curSen.senVal = analogRead(sensorArray[senIndex]);
 			*bufferPointer++ = curSen.senByte[0];
 			*bufferPointer++ = curSen.senByte[1];
-
 		}
 		*bufferPointer++ = '\n';
 		//Create the output data
@@ -132,8 +124,8 @@ void loop()
 			digitalWrite(50, LOW);
 			pinCond = true;
 		}
-		
-		Serial.write(buffer,NUMSEN*2+1);
+
+		Serial.write(buffer, NUMSEN * 2 + 1);
 		readyToSend = false;
 		bufferPointer = buffer;
 	}
