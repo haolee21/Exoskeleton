@@ -8,7 +8,7 @@ void Controller::ConMainLoop(int *_senData, char *senRaw, std::mutex *senDataLoc
     clock_gettime(CLOCK_MONOTONIC, &conTimer);
     while (true)
     {
-
+        // std::lock_guard<std::mutex> lock(this->com->comLock);
         queue<thread> taskQue;
         // this->senData = senData;
         {
@@ -17,7 +17,7 @@ void Controller::ConMainLoop(int *_senData, char *senRaw, std::mutex *senDataLoc
         }
 
         {
-            std::lock_guard<std::mutex> lock(this->com->comLock);
+            // std::lock_guard<std::mutex> lock(this->com->comLock);
             if (this->com->comArray[TESTVAL]){
                 this->TestValve();
                 //taskQue.push(std::thread(&Controller::TestValve, this));

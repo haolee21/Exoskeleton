@@ -139,6 +139,7 @@ struct Com
 class Controller
 {
 private:
+    bool curComArray[NUMCOM];
     int testSendCount; //test sending data, need to be removed
 
     std::shared_ptr<Valve> LKneVal; 
@@ -321,11 +322,11 @@ private:
     std::shared_ptr<FSMachine> FSM;
     // FSMachine FSM;
     char curState;
-    int ankActPre = 320;
-    int kneSupPre = 350;
+    int ankActPre = 350;
+    int kneSupPre = 300;
     int ankSupPre = 300;
     int kneRecPre = 250;
-    int ankRecPre = 250;
+    int ankRecPre = 350;
 
     int LHipMean = 410;
     int RHipMean = 564;

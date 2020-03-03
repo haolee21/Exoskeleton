@@ -7,6 +7,8 @@ typedef std::chrono::duration<int, std::milli> millisecs_t;
 //==================================================================================================================
 Controller::Controller(std::string filePath, Com *_com, bool _display, std::chrono::system_clock::time_point _origin, long _sampT)
 {
+    memset(this->curComArray, false, sizeof(bool) * NUMCOM);
+
     this->sampT = _sampT;
     this->senData[0] = 0;
     this->preSen[0] = 0;
@@ -142,18 +144,20 @@ Controller::~Controller()
 void Controller::PreRel()
 {
     std::cout << "Pressure Release\n";
+    this->ValveOn(this->RelVal);
+    sleep(RELTIME / 2);
     this->ValveOff(this->LKneVal);
     this->ValveOff(this->RKneVal);
     this->SetDuty(this->LKnePreVal, 100);
     this->SetDuty(this->RKnePreVal, 100);
-    this->ValveOn(this->RelVal);
+    // this->ValveOn(this->RelVal);
     this->ValveOff(this->LAnkVal);
     this->ValveOff(this->RAnkVal);
 
     this->SetDuty(this->LAnkPreVal, 100);
     this->SetDuty(this->RAnkPreVal, 100);
 
-    sleep(RELTIME);
+    sleep(RELTIME/2);
 
     this->SetDuty(this->LKnePreVal, 0);
     this->SetDuty(this->LAnkPreVal, 0);
