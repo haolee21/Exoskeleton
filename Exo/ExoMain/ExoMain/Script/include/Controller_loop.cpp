@@ -97,7 +97,8 @@ void Controller::ConMainLoop(int *_senData, char *senRaw, std::mutex *senDataLoc
             }
             if (this->com->comArray[PIDRECTEST])
             {
-                taskQue.push(std::thread(&Controller::PIDRecTest, this, this->com->comVal[PIDRECTEST]));
+                // taskQue.push(std::thread(&Controller::
+                this->PIDRecTest(this->com->comVal[PIDRECTEST]);
                 this->PIDRecTest(this->com->comVal[PIDRECTEST]);
             }
             if (this->com->comArray[TESTONEPWM])
@@ -172,6 +173,10 @@ void Controller::ConMainLoop(int *_senData, char *senRaw, std::mutex *senDataLoc
                 this->com->comArray[CON_SET_INIT_POS] = false;
                 // taskQue.push(std::thread(&FSMachine::SetInitPos, this->FSM.get(), this->senData[LANKPOS], this->senData[RANKPOS]));
                 this->FSM->SetInitPos(this->senData[LHIPPOS],this->senData[RHIPPOS]);
+            }
+            if(this->com->comArray[FSM_ADV]){
+                this->FSM->ManualAdv();
+                this->com->comArray[FSM_ADV]=false;
             }
         }
         if (this->display)

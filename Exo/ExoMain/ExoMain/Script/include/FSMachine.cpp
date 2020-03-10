@@ -51,6 +51,8 @@ FSMachine::FSMachine(std::string filePath, actFun _p1_act,actFun _p2_act,actFun 
     this->p8_act = _p8_act;
     this->p9_act = _p9_act;
     this->p10_act = _p10_act;
+
+    this->curState = 9;
 }
 
 FSMachine::~FSMachine()
@@ -325,4 +327,47 @@ void FSMachine::_swapBuf(int **buf, int **pre_buf){
     *buf = *pre_buf;
     *pre_buf = curBuf;
     return;
+}
+
+void FSMachine::ManualAdv(){
+
+    switch (this->curState++)
+    {
+    case 1:
+        this->p2_act();
+        break;
+    case 2:
+        this->p3_act();
+        break;
+    case 3:
+        this->p4_act();
+        break;
+    case 4:
+        this->p5_act();
+        break;
+    case 5:
+        this->p6_act();
+        break;
+    case 6:
+        this->p7_act();
+        break;
+    case 7:
+        this->p8_act();
+        break;
+    case 8:
+        this->p9_act();
+        break;
+    case 9:
+        this->p10_act();
+        break;
+    case 10:
+        this->p1_act();
+        break;
+
+    default:
+        break;
+    }
+    if(this->curState==11){
+        this->curState = 1;
+    }
 }

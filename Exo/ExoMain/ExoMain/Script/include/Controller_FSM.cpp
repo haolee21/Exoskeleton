@@ -52,10 +52,8 @@ void Controller::Init_swing(char side)
         this->ValveOff(this->RKneVal);
 
         // this->SetDuty(this->RAnkPreVal, 0);
-        {
-            std::scoped_lock<std::mutex> curLock(this->com->comLock);
-            this->com->comArray[CON_RANK_ACT] = false;
-        }
+        this->com->comArray[CON_RANK_ACT] = false;
+        
         this->RAnkPreVal->PushMea(this->senData[TIME], -500.0f);
         this->pwmDuty[this->RAnkPreVal->GetIdx()] = this->RAnkPreVal->duty.byte[0];
     }
@@ -63,10 +61,7 @@ void Controller::Init_swing(char side)
     {
         this->ValveOff(this->LKneVal);
         // this->SetDuty(this->LAnkPreVal, 0);
-        {
-            std::scoped_lock<std::mutex> curLock(this->com->comLock);
-            this->com->comArray[CON_LANK_ACT] = false;
-        }
+        this->com->comArray[CON_LANK_ACT] = false;
         this->LAnkPreVal->PushMea(this->senData[TIME], -500.0f);
         this->pwmDuty[this->LAnkPreVal->GetIdx()] = this->LAnkPreVal->duty.byte[0];
     }
@@ -89,18 +84,14 @@ void Controller::Term_swing(char side)
     if (side == 'r')
     {
         this->ValveOn(this->RBalVal);
-        {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
-            this->com->comArray[CON_RKNE_SUP] = true;
-        }
+        this->com->comArray[CON_RKNE_SUP] = true;
+        
     }
     else
     {
-        this->ValveOn(this->LBalVal);
-        {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
-            this->com->comArray[CON_LKNE_SUP] = true;
-        }
+        this->ValveOn(this->LBalVal);  
+        this->com->comArray[CON_LKNE_SUP] = true;
+        
 
         // this->CheckSupPre(this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE]);
     }
@@ -109,7 +100,7 @@ void Controller::Load_resp(char side)
 {
     if (side == 'r')
     {
-        std::lock_guard<std::mutex> curLock(this->com->comLock);
+        
         this->com->comArray[CON_RKNE_SUP] = false;
 
         this->com->comArray[CON_RKNE_REC] = true;
@@ -117,7 +108,7 @@ void Controller::Load_resp(char side)
     }
     else
     {
-        std::lock_guard<std::mutex> curLock(this->com->comLock);
+        
         this->com->comArray[CON_LKNE_SUP] = false;
         this->com->comArray[CON_LKNE_REC] = true;
         //this->com->comArray[CON_LANK_REC] = true;
@@ -133,11 +124,11 @@ void Controller::Mid_stance(char side)
     if (side == 'r')
     {
         //this is needed since the previous stage is load response
-        {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
-            this->com->comArray[CON_RKNE_REC] = false;
-            this->com->comArray[CON_RANK_REC] = false;
-        }
+        
+            
+        this->com->comArray[CON_RKNE_REC] = false;
+        this->com->comArray[CON_RANK_REC] = false;
+    
         this->RKnePreVal->PushMea(this->senData[TIME], -500.0f);
         this->RAnkPreVal->PushMea(this->senData[TIME], -500.0f);
         this->pwmDuty[RKnePreVal->GetIdx()] = RKnePreVal->duty.byte[0];
@@ -146,11 +137,11 @@ void Controller::Mid_stance(char side)
     }
     else
     {
-        {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
-            this->com->comArray[CON_LKNE_REC] = false;
-            this->com->comArray[CON_LANK_REC] = false;
-        }
+        
+            
+        this->com->comArray[CON_LKNE_REC] = false;
+        this->com->comArray[CON_LANK_REC] = false;
+        
         this->LKnePreVal->PushMea(this->senData[TIME], -500.0f);
         this->LAnkPreVal->PushMea(this->senData[TIME], -500.0f);
         this->pwmDuty[LKnePreVal->GetIdx()] = LKnePreVal->duty.byte[0];
@@ -173,12 +164,12 @@ void Controller::Pre_swing(char side)
 {
     if (side == 'r')
     {
-        std::lock_guard<std::mutex> curLock(this->com->comLock);
+        
         this->com->comArray[CON_RANK_ACT] = true;
     }
     else
     {
-        std::lock_guard<std::mutex> curLock(this->com->comLock);
+        
         this->com->comArray[CON_LANK_ACT] = true;
     }
 }

@@ -102,7 +102,7 @@ int main(void)
 		string command;
 		cin>>command;
 		{
-			lock_guard<mutex> lock(com->comLock);
+			// lock_guard<mutex> lock(com->comLock);
 			if(command=="testpwm"){
 				if (com->comArray[TESTPWM]==false)
 					com->comArray[TESTPWM]=true;
@@ -222,6 +222,9 @@ int main(void)
 			}
 			else if(command == "setinit"){
 				com->comArray[CON_SET_INIT_POS] = true;
+			}
+			else if(command =="c"){
+				com->comArray[FSM_ADV]=true;
 			}
 			else
 				std::cout<<"not such command\n";	

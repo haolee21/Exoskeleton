@@ -120,6 +120,11 @@ private:
 
     std::unique_ptr<Recorder<int>> InitPosRec;
     int initPosSetTime=0;
+
+
+    //the following functions are for manual advance state
+    int curState;
+
 public:
     FSMachine(std::string filePath,actFun,actFun,actFun,actFun,actFun,actFun,actFun,actFun,actFun,actFun);
     ~FSMachine();
@@ -128,7 +133,6 @@ public:
     void Reset();
    
     void SetInitPos(int curLHipPos,int curRHipPos);
-
-
+    void ManualAdv();
 };
 #endif

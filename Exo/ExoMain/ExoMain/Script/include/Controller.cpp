@@ -7,12 +7,12 @@ typedef std::chrono::duration<int, std::milli> millisecs_t;
 //==================================================================================================================
 Controller::Controller(std::string filePath, Com *_com, bool _display, std::chrono::system_clock::time_point _origin, long _sampT)
 {
-    memset(this->curComArray, false, sizeof(bool) * NUMCOM);
+    
 
     this->sampT = _sampT;
     this->senData[0] = 0;
     this->preSen[0] = 0;
-    this->testSendCount = 0;
+    
     this->preSend = true;
     this->display = _display;
     if (_display)
@@ -74,40 +74,50 @@ Controller::Controller(std::string filePath, Com *_com, bool _display, std::chro
     // this->ValveOff(this->trParam.testOut);
     this->curState = 0;
 
-
     auto p1_fun = [this]() {
         this->Load_resp('l');
+        std::cout << "P1: left load resp\n";
     };
     auto p2_fun = [this]() {
         this->Mid_stance('l');
         this->Pre_swing('r');
+        std::cout << "P2: left mid_stance, right pre_swing\n";
     };
     auto p3_fun = [this]() {
         this->Init_swing('r');
+        std::cout << "P3: right init swing\n";
     };
     auto p4_fun = [this]() {
         this->Mid_swing('r');
+        std::cout << "P4: right mid swing\n";
     };
     auto p5_fun = [this]() {
         this->Term_stance('l');
         this->Term_swing('r');
+        std::cout << "P5: left terminal stance, right terminal swing\n";
     };
     auto p6_fun = [this]() {
-        this->Load_resp('r'); 
+        this->Load_resp('r');
+        std::cout << "P6: right load resp\n";
     };
     auto p7_fun = [this]() {
         this->Pre_swing('l');
         this->Mid_stance('r');
+        std::cout << "P7: left pre_swing, right mid_stance\n";
+
     };
     auto p8_fun = [this]() {
         this->Init_swing('l');
+        std::cout<<"P8: left init_swing\n";
     };
     auto p9_fun = [this]() {
         this->Mid_swing('l');
+        std::cout<<"P9: left mid_swing\n";
     };
     auto p10_fun = [this]() {
         this->Term_swing('l');
         this->Term_stance('r');
+        std::cout<<"P10: left term_swing, right term_stance\n";
     };
 
     this->FSM.reset(new FSMachine(filePath,p1_fun,p2_fun,p3_fun,p4_fun,p5_fun,p6_fun,p7_fun,p8_fun,p9_fun,p10_fun));
@@ -518,46 +528,46 @@ void Controller::PIDActTest(int joint)
         this->ValveOn(this->LKneVal);
         if (this->CheckSupPre_main(this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE], this->kneSupPre))
         {
-            std::lock_guard<std::mutex> curLock(this->com->comLock); //not necessary, but who knows one day I may use it in different thread
+            
             this->com->comArray[PIDACTTEST] = false;
             std::cout << "done rec\n";
         }
     }
-    else if (joint == 1)
+    if (joint == 1)
     {
         this->ValveOn(this->LBalVal);
         if (this->CheckSupPre_main(this->LAnkPreVal, this->senData[LANKPRE], this->senData[TANKPRE], this->ankSupPre))
         {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
+            
             this->com->comArray[PIDACTTEST] = false;
             std::cout << "done rec\n";
         }
     }
-    else if (joint == 2)
+    if (joint == 2)
     {
         this->ValveOn(this->RBalVal);
         this->ValveOn(this->RKneVal);
         if (this->CheckSupPre_main(this->RKnePreVal, this->senData[RKNEPRE], this->senData[TANKPRE], this->kneSupPre))
         {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
+            
             this->com->comArray[PIDACTTEST] = false;
             std::cout << "done rec\n";
         }
     }
-    else if (joint == 3)
+    if (joint == 3)
     {
         this->ValveOn(this->RBalVal);
         if (this->CheckSupPre_main(this->RAnkPreVal, this->senData[RANKPRE], this->senData[TANKPRE], this->ankSupPre))
         {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
+            
             this->com->comArray[PIDACTTEST] = false;
             std::cout << "done rec\n";
         }
     }
-    else
-    {
-        std::cout << "wrong command value\n";
-    }
+    // else
+    // {
+    //     std::cout << "wrong command value\n";
+    // }
 }
 void Controller::PIDRecTest(int joint)
 {
@@ -568,43 +578,43 @@ void Controller::PIDRecTest(int joint)
         this->ValveOn(this->LKneVal);
         if (this->CheckKnePreRec_main(this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE], this->kneRecPre))
         {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
+            
             this->com->comArray[CON_LKNE_REC] = false;
         }
     }
-    else if (joint == 1)
+    if (joint == 1)
     {
         this->ValveOn(this->LBalVal);
         if (this->CheckAnkPreRec_main(this->LAnkPreVal, this->senData[LANKPRE], this->senData[TANKPRE], this->LBalVal, this->ankRecPre))
         {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
+            
             this->com->comArray[CON_LANK_REC] = false;
         }
     }
-    else if (joint == 2)
+    if (joint == 2)
     {
 
         this->ValveOn(this->RBalVal);
         this->ValveOn(this->RKneVal);
         if (this->CheckKnePreRec_main(this->RKnePreVal, this->senData[RKNEPRE], this->senData[TANKPRE], this->kneRecPre))
         {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
+            
             this->com->comArray[CON_RKNE_REC] = false;
         }
     }
-    else if (joint == 3)
+    if (joint == 3)
     {
         this->ValveOn(this->RBalVal);
         if (this->CheckAnkPreRec_main(this->RAnkPreVal, this->senData[RANKPRE], this->senData[TANKPRE], this->RBalVal, this->ankRecPre))
         {
-            std::lock_guard<std::mutex> curLock(this->com->comLock);
+            
             this->com->comArray[CON_RANK_REC] = false;
         }
     }
-    else
-    {
-        std::cout << "wrong command value\n";
-    }
+    // else
+    // {
+    //     std::cout << joint<<" wrong command value\n";
+    // }
 }
 
 

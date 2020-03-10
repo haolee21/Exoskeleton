@@ -89,7 +89,7 @@
 #define SYNCOUT 4
 
 // index of command
-#define NUMCOM 27
+#define NUMCOM 28
 #define TESTVAL 0
 #define TESTPWM 1
 #define SHUTPWM 2
@@ -119,11 +119,13 @@
 #define CON_LANK_SUP 24
 #define CON_RANK_SUP 25
 #define CON_SET_INIT_POS 26
+
+#define FSM_ADV 27
 struct Com
 {
 	const int comLen =NUMCOM;
 	bool comArray[NUMCOM];
-	mutex comLock;
+	
     int comVal[NUMCOM];//if any value need to be passed
     bool offArray[NUMCOM]; //If controller will self turn off the function, it will set the offArray as true, and required actions will be taken
 };
@@ -139,8 +141,8 @@ struct Com
 class Controller
 {
 private:
-    bool curComArray[NUMCOM];
-    int testSendCount; //test sending data, need to be removed
+    
+    
 
     std::shared_ptr<Valve> LKneVal; 
     std::shared_ptr<Valve> RKneVal;
@@ -322,7 +324,7 @@ private:
     std::shared_ptr<FSMachine> FSM;
     // FSMachine FSM;
     char curState;
-    int ankActPre = 350;
+    int ankActPre = 300;
     int kneSupPre = 300;
     int ankSupPre = 300;
     int kneRecPre = 250;
@@ -339,7 +341,7 @@ private:
     void Mid_stance(char side);
     void Term_stance(char side);
     void Pre_swing(char side);
-
+    
     // since measurements will not be updated in FSM, we need to call a different function in controller's main loop
     void AnkPushOff_main(std::shared_ptr<PWMGen> preVal, int ankPre, int tankPre);
     float AnkActInput(int ankPre,int tankPre);
