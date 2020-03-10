@@ -11,6 +11,7 @@ bool Controller::CheckKnePreRec_main(std::shared_ptr<PWMGen> knePreVal, int kneP
         float curMea = this->KnePreRecInput(knePre, tankPre);
         if (!this->kneRecPID_set)
         {
+            std::cout << "knee rec\n";
             this->kneRecPID_set = true;
             knePreVal->SetPID_const(150, 0.5, 0.001, curMea);
         }
@@ -37,6 +38,7 @@ bool Controller::CheckAnkPreRec_main(std::shared_ptr<PWMGen> ankPreVal, int ankP
     {
         if (!this->ankRecPID_set)
         {
+            std::cout << "ank rec\n";
             this->ankRecPID_set = true;
             ankPreVal->SetPID_const(150, 0.01, 0.001, this->AnkPreRecInput(ankPre, tankPre));
             // this->ankRecPID.reset(new PIDCon(100, 0.1, 0.001, this->AnkPreRecInput(ankPre, tankPre)));
@@ -60,10 +62,11 @@ bool Controller::CheckAnkPreRec_main(std::shared_ptr<PWMGen> ankPreVal, int ankP
 
 bool Controller::CheckSupPre_main(std::shared_ptr<PWMGen> preVal, int knePre, int tankPre, int desPre)
 {
-    if (knePre - desPre < 10)
+    if ((knePre - desPre) < 10)
     {
         if (!this->kneSupPID_set)
         {
+            std::cout << "Knee act\n";
             this->kneSupPID_set = true;
             preVal->SetPID_const(100, 0.5, 0.01, this->SupPreInput(knePre, tankPre, desPre));
         }
@@ -84,13 +87,15 @@ bool Controller::CheckSupPre_main(std::shared_ptr<PWMGen> preVal, int knePre, in
 }
 void Controller::AnkPushOff_main(std::shared_ptr<PWMGen> ankPreVal, int ankPre, int tankPre)
 {
-    //std::cout << "running valves" << ankPreVal->GetIdx() << std::endl;
-    if (this->ankActPre - ankPre < 10)
+    // std::cout << "running valves" << ankPreVal->GetIdx() << std::endl;
+    if (ankPre-this->ankActPre< 10)
     {
+        
         if (!this->ankActPID_set)
         {
+            std::cout << "ank act\n";
             ankActPID_set = true;
-            ankPreVal->SetPID_const(800, 0.01, 0.001, this->AnkActInput(ankPre, tankPre));
+            ankPreVal->SetPID_const(1000, 0.01, 0.001, this->AnkActInput(ankPre, tankPre));
             // this->ankActPID.reset(new PIDCon(800, 0.01, 0.001, this->AnkActInput(ankPre, tankPre)));
         }
         else
@@ -101,7 +106,9 @@ void Controller::AnkPushOff_main(std::shared_ptr<PWMGen> ankPreVal, int ankPre, 
     }
     else
     {
+        // std::cout << "no need: " << ankPre<< std::endl;
         ankPreVal->PushMea(this->senData[TIME], -500.0f);
         this->pwmDuty[ankPreVal->GetIdx()] = ankPreVal->duty.byte[0];
+        this->ankActPID_set = false;
     }
 }

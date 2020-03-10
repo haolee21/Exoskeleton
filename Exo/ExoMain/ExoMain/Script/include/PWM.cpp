@@ -132,7 +132,10 @@ void PWMGen::PushMea(int curTime, float curMea)
 	{
 		int curDuty;
 		curDuty = this->pid->GetDuty(curMea);
-		
+		if(curDuty>100)
+		{
+			curDuty=100;
+		}
 
 		if ((this->duty.num - curDuty > 5) || (this->duty.num - curDuty < -5))
 		{
