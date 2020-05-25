@@ -37,3 +37,6 @@
 !/ExoPC/
 /ExpPC/*
 !/ExoPC/*.py
+
+!/teensy_control/
+
