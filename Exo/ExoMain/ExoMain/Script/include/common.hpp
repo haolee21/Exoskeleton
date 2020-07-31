@@ -22,7 +22,7 @@
 #include <iostream>
 #include <fcntl.h>
 #include <sched.h>
-#include <sys/io.h>
+#include <sys/uio.h>
 #include <string.h>
 #include <signal.h>
 
@@ -98,6 +98,8 @@
 #define VALNUM 7 //this cannot work with test reacting
 #define PWMNUM 4
 
+
+
 class Common
 {
 private:
@@ -108,8 +110,7 @@ public:
     static void tsnorm(struct timespec *ts);
     static int initialize_memory_allocation(void);
     static void stack_prefault(void);
+    static int Get_SPI_CE(int id);
 };
-
-
 
 #endif

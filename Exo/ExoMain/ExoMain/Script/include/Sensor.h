@@ -15,7 +15,6 @@
 #include <iostream>
 #include <fcntl.h>
 #include <sched.h>
-#include <sys/io.h>
 #include <string.h>
 #include <signal.h>
 #include <vector>
