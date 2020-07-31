@@ -7,8 +7,13 @@
 !/ExoGUI/
 /ExoGUI/*
 !/ExoGUI/ExoGUI
+!/ExoGUI/Control_gui
+/ExoGUI/Control_gui/build
 /ExoGUI/ExoGUI/*
 !/ExoGUI/ExoGUI/*.py
+
+
+
 
 !/ExoPi/
 /ExoPi/*
