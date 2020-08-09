@@ -2,6 +2,7 @@
 #define CONNECTOR_H
 #include <boost/asio.hpp>
 #include <iostream>
+typedef std::function<void(const std::string &)> SendMsgHandler;
 class Connector
 {
 private:

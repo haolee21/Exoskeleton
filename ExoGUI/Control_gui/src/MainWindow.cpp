@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "TaskSetDialog.h"
+#include "EncoderSetDialog.h"
 MainWindow::MainWindow(Connector *_conn)
 {
     this->conn = _conn;
@@ -34,7 +35,11 @@ void MainWindow::genMenuBar(){
 
     TaskSetDialog *taskSetDiag = new TaskSetDialog(this->conn);
     connect(act_taskSet, &QAction::triggered, [taskSetDiag] { taskSetDiag->show(); });
-
+ 
+    EncoderSetDialog *encoderSetDiag = new EncoderSetDialog(
+        [&conn = this->conn](const std::string &msg) { conn->Send(msg); }); 
+    //    instead of passing the whole conn or even connector, I just pass a function to run, [&conn=this->conn] is the way c++14 catch member in object
+    connect(act_encoderSet, &QAction::triggered, [encoderSetDiag] { encoderSetDiag->show(); });
 }
 void MainWindow::genConnect_lay(){
     QHBoxLayout *curCon_lay = new QHBoxLayout();

@@ -42,15 +42,25 @@ void Connector::Disconnect()
 void Connector::Send(const std::string &message)
 {
     const std::string data = message + '\n';
-    write(*this->socket, buffer(data));
-    std::cout << "send data " << data;
+    std::cout << "try to send" << data;
+    if (this->isConnect)
+    {
+
+        write(*this->socket, buffer(data));
+        std::cout << "send data " << data;
+    }
+    else
+    {
+        std::cout << "not connected\n";
+    }
 }
 void Connector::Read()
 {
     streambuf buf;
     read_until(*this->socket, buf, '\n');
 }
-void Connector::SetIp(std::string _ip,int _port){
+void Connector::SetIp(std::string _ip, int _port)
+{
     this->ip = _ip;
     this->port = _port;
     this->portSet = true;
