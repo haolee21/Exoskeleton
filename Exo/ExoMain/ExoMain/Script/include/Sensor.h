@@ -15,12 +15,11 @@
 #include <iostream>
 #include <fcntl.h>
 #include <sched.h>
-#include <string.h>
 #include <signal.h>
 #include <vector>
 #include <malloc.h>
 
-#include <unistd.h>
+
 #include <sys/types.h>
 #include <sys/time.h>
 
@@ -44,8 +43,8 @@
 //data recording
 #include "Recorder.hpp"
 //need to sync with controller's
+#include "Encoder.hpp"
 
-using namespace std;
 
 const int recLength = 240000; //This is the pre-allocate memory for recording sensed data
 
@@ -62,8 +61,7 @@ public:
 	void Start(std::chrono::system_clock::time_point startTime);
 	void Stop();
 	
-	// int oriData[NUMSEN]; //original data
-	// int senData[NUMSEN+1]; //data get from ADC after filter
+	
 	std::shared_ptr<int[]> oriData; //the size of array seems important when ~Sensor() is called
 	std::shared_ptr<int[]> senData;
 	std::shared_ptr<char[]> senDataRaw;
@@ -77,9 +75,16 @@ public:
 
 	
 private:
+	std::unique_ptr<Encoder> LHip_s;
+	std::unique_ptr<Encoder> LHip_f;
+	std::unique_ptr<Encoder> RHip_s;
+	std::unique_ptr<Encoder> RHip_f;
+	std::unique_ptr<Encoder> LKne_s;
+	std::unique_ptr<Encoder> RKne_s;
+	std::unique_ptr<Encoder> LAnk_s;
+	std::unique_ptr<Encoder> RAnk_s;
+
 	std::chrono::system_clock::time_point origin;
-	bool is_create = false;
-	int serialDevId;
 	bool sw_senUpdate;
 	
 	
@@ -87,14 +92,6 @@ private:
 	long sampT;
 	std::mutex senUpdateLock;
 	//variables for receiving data
-
-	// char senBuffer[SIZEOFBUFFER];
-	// char tempSen[DATALEN];
-	// char *curHead;
-	// char *curBuf;
-	// int curBufIndex;
-	// bool noHead;
-	// int dataCollect;
 
 	char serialBuf[SIZEOFBUFFER];
 	char senTempBuf[SIZEOFBUFFER];
@@ -112,11 +109,6 @@ private:
 
 
 	
-	
-	int serialPortConnect(char *portName);
-	void readSerialPort(int serialPort);
-	void serialPortClose(int serial_port);
-	std::shared_ptr<Pin> ResetPin;
 
 	//Lowpass butterworth filter, this can be implented to arduino if we replace arduino mega with better MCU chips
 	//BWFilter bFilter;
