@@ -56,7 +56,9 @@ include_directories(
     #${Xenomai_INCLUDE_DIR}
     
 )
-file(GLOB HEAD_FILES ${Include_DIR}/*.h ${Include_DIR}/*.hpp})
+file(GLOB HEAD_FILES 
+    ${Include_DIR}/*.h 
+    ${Include_DIR}/*.hpp)
 add_library(
     lib STATIC
     ${HEAD_FILES}
