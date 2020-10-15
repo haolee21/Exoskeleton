@@ -9,9 +9,9 @@ ValveCon::ValveCon(std::string filePath)
         std::cout << "ioctl error: " << strerror(errno) << "\n";
         
     }
-    Recorder<bool> _valRec = Recorder<bool>("Val", filePath, "time," + this->val_col);
+    Recorder<bool,7> _valRec = Recorder<bool,7>("Val", filePath, "time," + this->val_col);
     this->valRec = &_valRec;
-    Recorder<int> _pwmRec = Recorder<int>("PWM", filePath, "time," + this->pwm_col);
+    Recorder<int,8> _pwmRec = Recorder<int,8>("PWM", filePath, "time," + this->pwm_col);
     this->pwmRec = &_pwmRec;
 }
 

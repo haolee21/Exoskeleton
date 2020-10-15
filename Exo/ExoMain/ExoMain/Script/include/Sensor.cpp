@@ -45,11 +45,11 @@ Sensor::Sensor(std::string _filePath, char *portName, long sampT, std::shared_pt
 	memset(this->senDataRaw.get(), '\0', DATALEN);
 	
 
-	this->senRec.reset(new Recorder<int>("sen", _filePath, "Time,LHipPos,LKnePos,LAnkPos,RHipPos,RKnePos,RAnkPos,sen7,sen8,TankPre,LKnePre,LAnkPre,RKnePre,RAnkPre,sen14,sen15,sen16"));
+	this->senRec.reset(new Recorder<int,16>("sen", _filePath, "Time,LHipPos,LKnePos,LAnkPos,RHipPos,RKnePos,RAnkPos,sen7,sen8,TankPre,LKnePre,LAnkPre,RKnePre,RAnkPre,sen14,sen15,sen16"));
 	//Controller
 	this->com = _com.get();
 
-	this->SampTimeRec.reset(new Recorder<int>("sampTime", _filePath, "duration"));
+	this->SampTimeRec.reset(new Recorder<int,1>("sampTime", _filePath, "duration"));
 }
 
 

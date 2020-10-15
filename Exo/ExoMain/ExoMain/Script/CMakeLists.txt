@@ -4,11 +4,11 @@ set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR arm)
 
 #setup boost library
-set(Boost_INCLUDE_DIR /home/lowlimb/rpi-kernel/boost_1_71_0)
-set(Boost_LIBRARY_DIR /home/lowlimb/rpi-kernel/boost_1_71_0/stage/lib)
+set(Boost_INCLUDE_DIR /home/lowlimb/Lib/arm/boost_1_74_0)
+set(Boost_LIBRARY_DIR /home/lowlimb/Lib/arm/boost_1_74_0/stage/lib)
 
-set(CMAKE_C_COMPILER arm-linux-gnueabihf-gcc)
-set(CMAKE_CXX_COMPILER arm-linux-gnueabihf-g++)
+set(CMAKE_C_COMPILER arm-linux-gnueabihf-gcc-9)
+set(CMAKE_CXX_COMPILER arm-linux-gnueabihf-g++-9)
 
 set(Boost_USE_STATIC_LIBS ON)
 # set(XENO_CONFIG "/home/lowlimb/rpi-kernel/xenomai-3.0.7/target/usr/xenomai/bin/xeno-config")
@@ -39,7 +39,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
 set(Include_DIR include)
-find_package(Boost 1.71.0 COMPONENTS serialization date_time filesystem REQUIRED)
+find_package(Boost 1.74.0 COMPONENTS serialization date_time filesystem REQUIRED)
 #set(Eigen_INCLUDE_DIR /home/pi/Lib/eigen-eigen-323c052e1731)
 
 

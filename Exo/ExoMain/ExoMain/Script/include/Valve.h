@@ -22,12 +22,13 @@ private:
     
     shared_ptr<Pin> gpioPin;
     //shared_ptr<Pin> pin;
+    
     chrono::system_clock::time_point startTime;
     void writeTempFile();
     bool recCond[MAXRECLENGTHVAL];
     int valIdx;//the index of this valve in valveCond array
     //unique_ptr<Recorder<bool>> valveRec;
-    Recorder<bool> *valveRec;
+    Recorder<bool,1> *valveRec;
 
     bool dummy=true;
 public:

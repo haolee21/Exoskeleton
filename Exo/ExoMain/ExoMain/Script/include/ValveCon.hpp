@@ -36,8 +36,8 @@ class ValveCon
 private:
     int fd;
     std::string filePath;
-    Recorder<bool> *valRec;
-    Recorder<int> *pwmRec;
+    Recorder<bool,7> *valRec;
+    Recorder<int,8> *pwmRec;
     char curCmd[NUM_PWM + NUM_VAL]; //save the cmd, so if we want to change one of the valve, we can change arrordingly 
     void _send_cmd();
 

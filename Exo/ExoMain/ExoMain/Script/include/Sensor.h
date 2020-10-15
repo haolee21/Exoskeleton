@@ -133,9 +133,9 @@ private:
 	std::shared_ptr<std::thread> saveData_th;
 	void SaveAllData();
 	
-	shared_ptr<Recorder<int>> senRec; //smart pointer test, failed, don't know why since it works in simpler cases
+	shared_ptr<Recorder<int,16>> senRec; //smart pointer test, failed, don't know why since it works in simpler cases
 
-	unique_ptr<Recorder<int>> SampTimeRec;
+	unique_ptr<Recorder<int,1>> SampTimeRec;
 };
 
 
