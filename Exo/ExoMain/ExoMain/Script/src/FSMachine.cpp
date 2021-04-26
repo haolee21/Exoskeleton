@@ -38,8 +38,8 @@ FSMachine::FSMachine(std::string filePath, actFun _p1_act,actFun _p2_act,actFun 
     this->RAnkBuf = this->RAnkBuf_array;
     this->RAnkBuf_pre = this->RAnkBuf_pre_array;
 
-    this->FSMRec.reset(new Recorder<int>("FSM", filePath, "time,phase1,phase2,phase3,phase4,phase5,phase6,phase7,phase8,phase9,phase10,period,sw"));
-    this->InitPosRec.reset(new Recorder<int>("FSMInitPos", filePath, "time,LHipPos,RHipPos"));
+    this->FSMRec.reset(new Recorder<int,12>("FSM", filePath, "time,phase1,phase2,phase3,phase4,phase5,phase6,phase7,phase8,phase9,phase10,period,sw"));
+    this->InitPosRec.reset(new Recorder<int,2>("FSMInitPos", filePath, "time,LHipPos,RHipPos"));
     //define the FSM act function
     this->p1_act = _p1_act;
     this->p2_act = _p2_act;
@@ -253,7 +253,7 @@ void FSMachine::CalPhaseTime()
     this->GetP5();
     this->GetP10();
 
-    this->FSMRec->PushData(this->time, std::vector<int>{this->p1_idx, this->p2_idx, this->p3_idx, this->p4_idx, this->p5_idx, this->p6_idx, this->p7_idx, this->p8_idx, this->p9_idx, this->p10_idx,this->period,this->swIdx});
+    this->FSMRec->PushData(this->time, std::array<int,12>{this->p1_idx, this->p2_idx, this->p3_idx, this->p4_idx, this->p5_idx, this->p6_idx, this->p7_idx, this->p8_idx, this->p9_idx, this->p10_idx,this->period,this->swIdx});
     if(this->idx_less_0){
         std::cout << "false time\n";
         this->p5_idx = 1;
@@ -274,7 +274,7 @@ void FSMachine::SetInitPos(int curLHip, int curRHip)
     this->RHipMean = curRHip;
     this->LHipMean = curLHip;
     std::cout << "set init pos, LHip:" << curLHip << ", RHip:" << curRHip << std::endl;
-    this->InitPosRec->PushData(this->initPosSetTime++,std::vector<int>{curLHip,curRHip});
+    this->InitPosRec->PushData(this->initPosSetTime++,std::array<int,2>{curLHip,curRHip});
 }
 void FSMachine::_OnePhase(std::function<void()> *actFun, int *time_idx){
     this->gaitTime.tv_nsec += *time_idx*USEC*SAMPTIME;

@@ -11,8 +11,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(Boost_INCLUDE_DIR /home/lowlimb/Apps/boost/boost_1_73_0)
-set(Boost_LIBRARY_DIR /home/lowlimb/Apps/boost/boost_1_73_0/stage/lib)
+set(Boost_INCLUDE_DIR /home/lowlimb/tools/x86/boost_1_76_0)
+set(Boost_LIBRARY_DIR /home/lowlimb/tools/x86/boost_1_76_0/stage/lib)
 set(Boost_USE_STATIC_LIBS ON)
 set(CMAKE_CXX_FLAGS "-std=c++17 -Wall -o3 -pthread -lrt ") #you can set with add_definitions("-Wall -std=c+11, etc")
 set(CMAKE_C_FLAGS   "-std=c++17 -Wall -o3 -pthread -lrt ")
@@ -32,7 +32,7 @@ set(CMAKE_C_FLAGS   "-std=c++17 -Wall -o3 -pthread -lrt ")
 #endif()
 
 find_package(Qt5 COMPONENTS Widgets Charts REQUIRED)
-find_package(Boost 1.73.0 COMPONENTS serialization)
+find_package(Boost 1.76.0 COMPONENTS serialization)
 include_directories(
   src
   include

@@ -1,6 +1,6 @@
 #include "Sensor.h"
 #include <memory>
-
+#include <future>
 #define SENSOR_PRIORITY (99)		 /* we use 49 as the PRREMPT_RT use 50 \
 									as the priority of kernel tasklets     \
 									and interrupt handler by default */
@@ -17,8 +17,18 @@ Sensor::Sensor(std::string _filePath, char *portName, long sampT, std::shared_pt
 {
 
 	//define the encoders
-	this->LHip_s.reset(new Encoder(0));
-	this->LHip_f.reset(new Encoder(1));
+	this->LHip_s.reset(new Encoder(0,0));
+	this->LHip_f.reset(new Encoder(1,0));
+	this->LKne_s.reset(new Encoder(2,0));
+	this->LAnk_s.reset(new Encoder(3,0));
+	
+	this->RHip_s.reset(new Encoder(0,5));
+	this->RHip_f.reset(new Encoder(1,5));
+	this->RKne_s.reset(new Encoder(2,5));
+	this->RAnk_s.reset(new Encoder(3,5));
+
+	this->adc1.reset(new ADC("/dev/spi1.0"));
+	this->adc2.reset(new ADC("/dev/spi1.1"));
 
 	this->display = _display;
 
@@ -27,22 +37,11 @@ Sensor::Sensor(std::string _filePath, char *portName, long sampT, std::shared_pt
 
 	this->sampT = sampT * USEC;
 
-	//initialize data receiving buffer
-	this->senBuff = SenBuffer();
+
 
 	this->senDataLock = new std::mutex;
-	//this->senDataLock.reset(new std::mutex());
 
-	this->init = false;
-	this->falseSenCount = 0;
 
-	this->senData.reset(new int[NUMSEN + 1]);
-	this->oriData.reset(new int[NUMSEN]);
-	this->senDataRaw.reset(new char[DATALEN]);
-
-	memset(this->senData.get(), 0, NUMSEN + 1);
-	memset(this->serialBuf, '\0', SIZEOFBUFFER);
-	memset(this->senDataRaw.get(), '\0', DATALEN);
 	
 
 	this->senRec.reset(new Recorder<int,16>("sen", _filePath, "Time,LHipPos,LKnePos,LAnkPos,RHipPos,RKnePos,RAnkPos,sen7,sen8,TankPre,LKnePre,LAnkPre,RKnePre,RAnkPre,sen14,sen15,sen16"));
@@ -119,44 +118,56 @@ void Sensor::Stop()
 void *Sensor::senUpdate(void *_sen)
 {
 	Sensor *sen = (Sensor *)_sen;
-	std::unique_ptr<Controller> con;
-	con.reset(new Controller(sen->filePath, sen->com, sen->display, sen->origin, sen->sampT));
-	std::unique_ptr<std::thread> conTh;
-	bool conStart = false;
 
 	//for accurate timer
 
-	// struct timespec t;
-	// clock_gettime(CLOCK_MONOTONIC, &t);
+	struct timespec t;
+	clock_gettime(CLOCK_MONOTONIC, &t);
 
-	// int flushVal = tcflush(sen->serialDevId, TCIFLUSH);
-	// if(flushVal==0){
-	// 	std::cout << "clear buffer\n";
-	// }
-	// else{
-	// 	std::cout << "failed to clear the buffer\n";
-	// }
-	// sen->ResetPin->Off();
+	
 	bool curSenCond = true;
 	while (true)
 	{
+		//I am not sure if multiple ioctl can take place at the same time, we will give it a try 
+		future<int> lHipPos_s = std::async(launch::async,[sen]{return sen->LHip_s->ReadPos();});
+		future<int> lHipPos_f = std::async(launch::async,[sen]{return sen->LHip_f->ReadPos();});
+		future<int> lKnePos_s = std::async(launch::async,[sen]{return sen->LKne_s->ReadPos();});
+		future<int> lAnkPos_s = std::async(launch::async,[sen]{return sen->LAnk_s->ReadPos();});
+		
 
-		if (conStart)
-		{
-			// if(conTh->joinable()){ //I am not sure but the program stop to freeze after I put this
-			// 	conTh->join();
-			// }
-		}
-		else
-		{
-			conStart = true;
-			con->Start(sen->senData.get(), sen->senDataRaw.get(), sen->senDataLock);
-		}
-
+		future<int> rHipPos_s = std::async(launch::async,[sen]{return sen->RHip_s->ReadPos();});
+		future<int> rHipPos_f = std::async(launch::async,[sen]{return sen->RHip_f->ReadPos();});
+		future<int> rKnePos_s = std::async(launch::async,[sen]{return sen->RKne_s->ReadPos();});
+		future<int> rAnkPos_s = std::async(launch::async,[sen]{return sen->RAnk_s->ReadPos();});
+		//while both adc access the same adcData, since it is addressing different position, we don't need a lock here
+		future<void> adc1_data = std::async(launch::async,[sen]{sen->adc1->Read(sen->adcData.data());});
+		future<void> adc2_data = std::async(launch::async,[sen]{sen->adc2->Read(sen->adcData.data()+8);});
+		lHipPos_s.wait();
+		lHipPos_f.wait();
+		lKnePos_s.wait();
+		lAnkPos_s.wait();
+		rHipPos_s.wait();
+		rHipPos_f.wait();
+		rKnePos_s.wait();
+		rAnkPos_s.wait();
+		adc1_data.wait();
+		adc2_data.wait();
 		{
 			std::lock_guard<std::mutex> lock(sen->senUpdateLock);
-			curSenCond = sen->sw_senUpdate;
+			auto elapsed = std::chrono::high_resolution_clock::now() - sen->origin;
+			sen->time = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+			sen->encData[LHIPPOS_S] = lHipPos_s.get();
+			sen->encData[LHIPPOS_F]=lHipPos_f.get();
+			sen->encData[LKNEPOS_S]=lKnePos_s.get();
+			sen->encData[LANKPOS_S]=lAnkPos_s.get();
+			sen->encData[RHIPPOS_S]=rHipPos_s.get();
+			sen->encData[RHIPPOS_F]=rHipPos_f.get();
+			sen->encData[RKNEPOS_S]=rKnePos_s.get();
+			sen->encData[RANKPOS_S]=rAnkPos_s.get();
 		}
+		
+		curSenCond = sen->sw_senUpdate;
+		
 		if (!curSenCond)
 		{
 			break;
@@ -165,13 +176,12 @@ void *Sensor::senUpdate(void *_sen)
 		// timer
 		// calculate next shot
 
-		// t.tv_nsec += sen->sampT;
-		// Common::tsnorm(&t);
-		// clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
-		//clock_gettime(CLOCK_MONOTONIC, &t);
+		t.tv_nsec += sen->sampT;
+		Common::tsnorm(&t);
+		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &t);
 	}
 	std::cout << "end sampling\n";
-	con->Stop();
 	std::cout << "sensor ends" << endl;
 	sen->saveData_th.reset(new std::thread(&Sensor::SaveAllData, sen)); //original purpose is for some reason, sen is destoried before it went through this line
 	sen->saveData_th->join();
@@ -179,6 +189,9 @@ void *Sensor::senUpdate(void *_sen)
 
 	return 0;
 }
+
+
+
 void Sensor::SaveAllData()
 {
 	this->senRec.reset();

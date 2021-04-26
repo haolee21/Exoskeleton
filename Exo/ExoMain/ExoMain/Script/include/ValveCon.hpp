@@ -11,6 +11,7 @@
 #include <string.h>
 #include "Recorder.hpp"
 #include "common.hpp"
+#include <memory>
 #define I2C_ADDR 0x002D //this address has to sync with the address on teensy board
 #define NUM_PWM 8
 #define NUM_VAL 7
@@ -35,17 +36,22 @@ class ValveCon
 {
 private:
     int fd;
+    std::chrono::system_clock::time_point t_origin;
     std::string filePath;
-    Recorder<bool,7> *valRec;
-    Recorder<int,8> *pwmRec;
+    std::unique_ptr<Recorder<bool,7>> valRec;
+    std::unique_ptr<Recorder<int,8>> pwmRec;
+    std::array<bool,7> valCond={ValSwitch::Off,ValSwitch::Off,ValSwitch::Off,ValSwitch::Off,ValSwitch::Off,ValSwitch::Off,ValSwitch::Off};
+    std::array<int,8> pwmCond={0,0,0,0,0,0,0,0};
+    
     char curCmd[NUM_PWM + NUM_VAL]; //save the cmd, so if we want to change one of the valve, we can change arrordingly 
     void _send_cmd();
 
     std::string pwm_col = "LHipPwm,RHipPWM,LKnePWM,RKnePWM,LAnkPWM,RAnkPWM,DrivePWM,PRecPWM";
     std::string val_col = "LKneVal,RKneVal,LAnkVal,RAnkVal,LBalVal,RBalVal,PRelVal";
 
+    std::chrono::high_resolution_clock *beg_time;
 public:
-    ValveCon(std::string filePath);
+    ValveCon(std::string filePath,std::chrono::system_clock::time_point t_origin);
     ~ValveCon();
     
     void setDuty(int pwm,int duty);
@@ -55,6 +61,12 @@ public:
     
     void val_all_off();
     void preRel();
+
+    const enum ValSwitch
+    {
+        On=true,
+        Off=false
+    };
 };
 
 #endif VALVECON_HPP

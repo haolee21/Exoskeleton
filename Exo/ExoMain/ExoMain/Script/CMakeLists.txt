@@ -69,8 +69,10 @@ add_library(
 set_target_properties(lib PROPERTIES LINKER_LANGUAGE CXX)
 link_directories(${Boost_LIBRARY_DIR}) 
 enable_testing()
-file(GLOB SRC_FILES ${Include_DIR}/*.cpp)
-add_executable(exo_o src/main.cpp ${SRC_FILES})
+file(GLOB SRC_FILES 
+    ${Include_DIR}/*.cpp
+    src/*.cpp)
+add_executable(exo_o ${SRC_FILES})
 
 target_link_libraries(exo_o PRIVATE ${Boost_LIBRARIES}) 
 

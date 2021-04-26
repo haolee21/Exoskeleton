@@ -44,10 +44,28 @@
 #include "Recorder.hpp"
 //need to sync with controller's
 #include "Encoder.hpp"
-
+#include "ADC.hpp"
 
 const int recLength = 240000; //This is the pre-allocate memory for recording sensed data
 
+
+#define LHIPPOS_S 0
+#define LHIPPOS_F 1
+#define LKNEPOS_S 2
+#define LANKPOS_S 3
+
+#define RHIPPOS_S 4
+#define RHIPPOS_F 5
+#define RKNEPOS_S 6
+#define RANKPOS_S 7
+
+
+
+#define TANKPRE 0
+#define LKNEPRE 1
+#define LANKPRE 2
+#define RKNEPRE 3
+#define RANKPRE 4
 
 #define MY_STACK_SIZE       (100*1024)      /* 100 kB is enough for now. */
 
@@ -55,34 +73,37 @@ class Sensor
 {
 public:
 	
-	Sensor(string _filePath,char *port,long sampTmicro,std::shared_ptr<Com> com,bool display); //sampT is in milli
+	Sensor(std::string _filePath,char *port,long sampTmicro,std::shared_ptr<Com> com,bool display); //sampT is in milli
 	~Sensor();
 	
 	void Start(std::chrono::system_clock::time_point startTime);
 	void Stop();
 	
-	
-	std::shared_ptr<int[]> oriData; //the size of array seems important when ~Sensor() is called
-	std::shared_ptr<int[]> senData;
-	std::shared_ptr<char[]> senDataRaw;
-	int tempSenData[NUMSEN];//this is for checking the temp senData after we read it from arduino, if any of the senData>1024, all senData is waived
-	//std::shared_ptr<std::mutex> senDataLock;
+	unsigned long time=0;
+	std::array<int,8> encData;
+	std::array<int,16> adcData;
 	std::mutex *senDataLock;
+	
 	pthread_t th_SenUpdate;
 	pthread_attr_t attr;
 
 	// thread *th_SenUpdate;
 
-	
-private:
 	std::unique_ptr<Encoder> LHip_s;
 	std::unique_ptr<Encoder> LHip_f;
+	std::unique_ptr<Encoder> LKne_s;
+	std::unique_ptr<Encoder> LAnk_s;
 	std::unique_ptr<Encoder> RHip_s;
 	std::unique_ptr<Encoder> RHip_f;
-	std::unique_ptr<Encoder> LKne_s;
 	std::unique_ptr<Encoder> RKne_s;
-	std::unique_ptr<Encoder> LAnk_s;
 	std::unique_ptr<Encoder> RAnk_s;
+	
+	std::unique_ptr<ADC> adc1;
+	std::unique_ptr<ADC> adc2;
+private:
+	
+	
+	
 
 	std::chrono::system_clock::time_point origin;
 	bool sw_senUpdate;
@@ -93,19 +114,6 @@ private:
 	std::mutex senUpdateLock;
 	//variables for receiving data
 
-	char serialBuf[SIZEOFBUFFER];
-	char senTempBuf[SIZEOFBUFFER];
-	SenBuffer senBuff;
-	char outBuff[DATALEN];
-
-
-	char *tempSen;
-	bool init;
-
-	int dataNeedRead = DATALEN;
-	int falseSenCount;
-
-	bool senNotInit = true;
 
 
 	
@@ -133,9 +141,9 @@ private:
 	std::shared_ptr<std::thread> saveData_th;
 	void SaveAllData();
 	
-	shared_ptr<Recorder<int,16>> senRec; //smart pointer test, failed, don't know why since it works in simpler cases
+	std::shared_ptr<Recorder<int,16>> senRec; //smart pointer test, failed, don't know why since it works in simpler cases
 
-	unique_ptr<Recorder<int,1>> SampTimeRec;
+	std::unique_ptr<Recorder<int,1>> SampTimeRec;
 };
 
 

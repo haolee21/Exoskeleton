@@ -2,7 +2,7 @@
 #define VALVE_H
 #include <string>
 #include <mutex>
-#include <Pin.h>
+#include <Pin.hpp>
 #include <chrono>
 #include<ctime> //this timer
 #include "Recorder.hpp"
@@ -13,14 +13,14 @@
 
 
 #define MAXRECLENGTHVAL 24000
-using namespace std;
+
 
 class Valve
 {
 private:
-    string name;
+    std::string name;
     
-    shared_ptr<Pin> gpioPin;
+    std::shared_ptr<Pin> gpioPin;
     //shared_ptr<Pin> pin;
     
     chrono::system_clock::time_point startTime;
@@ -33,13 +33,13 @@ private:
     bool dummy=true;
 public:
    
-    Valve(string name,string path, int valveId, int valIdx);
+    Valve(std::string name,std::string path, int valveId, int valIdx);
     ~Valve();
     void On(int curTime);
     void Off(int curTime);
     int GetValIdx();
    
-    string GetValveName();
+    std::string GetValveName();
     
 };
 

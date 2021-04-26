@@ -1,7 +1,7 @@
 #ifndef PWM_H
 #define PWM_H
 #include <mutex>
-#include "Pin.h"
+#include "Pin.hpp"
 #include<thread>
 #include<Recorder.hpp>
 #include <string>
@@ -54,8 +54,8 @@ private:
 	bool swDuty = false;
 	
 
-	std::shared_ptr<Recorder<int>> pwmRec;
-	std::shared_ptr<Recorder<int>> pwmOnOffRec;
+	std::shared_ptr<Recorder<int,1>> pwmRec;
+	std::shared_ptr<Recorder<int,1>> pwmOnOffRec;
 	//timer 
 	int sampT;
 	long int ms_cnt = 0;

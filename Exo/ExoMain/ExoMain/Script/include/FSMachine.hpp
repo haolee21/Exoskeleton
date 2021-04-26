@@ -100,7 +100,7 @@ private:
     
 
     MovAvgFilt<MVFORDER> mvf;
-    std::shared_ptr<Recorder<int>> FSMRec;
+    std::shared_ptr<Recorder<int,12>> FSMRec;
 
 
     //create the controller action when we reach each phase, these are lambda function passed down from the Controller
@@ -118,7 +118,7 @@ private:
     void _GetPhaseTime(int curTime,long &p1_t,long &p2_t,long &p3_t,long &p4_t,long &p5_t,
                       long &p6_t, long &p7_t, long &p8_t, long &p9_t,long &p10_t);
 
-    std::unique_ptr<Recorder<int>> InitPosRec;
+    std::unique_ptr<Recorder<int,2>> InitPosRec;
     int initPosSetTime=0;
 
 

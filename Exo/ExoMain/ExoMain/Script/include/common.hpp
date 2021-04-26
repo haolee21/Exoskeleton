@@ -74,21 +74,7 @@
 // #define GPIO_PULLCLK0 *(gpio+38) // Pull up/pull down clock
 // //=======================================================================================================================
 
-#define TIME 0
-#define LHIPPOS 1
-#define LKNEPOS 2
-#define LANKPOS 3
-#define RHIPPOS 4
-#define RKNEPOS 5
-#define RANKPOS 6
 
-#define SYNCREAD 7
-
-#define TANKPRE 9
-#define LKNEPRE 10
-#define LANKPRE 11
-#define RKNEPRE 12
-#define RANKPRE 13
 
 //Some setting constant
 #define RELTIME 10 //time that the valve will open to release pressure

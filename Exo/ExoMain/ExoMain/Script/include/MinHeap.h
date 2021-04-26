@@ -1,7 +1,7 @@
 // A C++ program to demonstrate common Binary Heap Operations 
 #include<iostream> 
 #include<climits> 
-using namespace std; 
+
 
 // Prototype of a utility function to swap two integers 
 void swap(int *x, int *y); 

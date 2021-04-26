@@ -3,73 +3,21 @@
 typedef std::chrono::duration<long, std::nano> nanosecs_t;
 typedef std::chrono::duration<int, std::micro> microsecs_t;
 typedef std::chrono::duration<int, std::milli> millisecs_t;
+using namespace std;
 
 //==================================================================================================================
-Controller::Controller(std::string filePath, Com *_com, bool _display, std::chrono::system_clock::time_point _origin, long _sampT)
+Controller::Controller(std::string filePath, Com *_com, std::chrono::system_clock::time_point _origin, long _sampT,
+                        int *_encData,int *_adcData,std::mutex *_senLock)
 {
     
-
+    this->t_origin = _origin;
     this->sampT = _sampT;
-    this->senData[0] = 0;
-    this->preSen[0] = 0;
-    
-    this->preSend = true;
-    this->display = _display;
-    if (_display)
-    {
-        this->client.reset(new Displayer());
-        // this->client.reset(new Displayer());
-    }
-
-    this->valveCond.reset(new char[VALNUM]);
-    this->pwmDuty.reset(new char[PWMNUM]);
-
+    this->encData = _encData;
+    this->adcData = _adcData;
+    this->senLock = _senLock;
     this->com = _com;
-
-    this->LKneVal.reset(new Valve("LKneVal", filePath, OP13, 0));
-    this->RKneVal.reset(new Valve("RKneVal", filePath, OP8, 1));
-    this->LAnkVal.reset(new Valve("LAnkVal", filePath, OP6, 2));
-    this->RAnkVal.reset(new Valve("RAnkVal", filePath, OP9, 3));
-    this->LBalVal.reset(new Valve("LBalVal", filePath, OP7, 4));
-    this->RBalVal.reset(new Valve("RBalVal", filePath, OP10, 5));
-
-    this->RelVal.reset(new Valve("RelVal", filePath, OP16, 6));
-
-    //this is useless now since I use this pin to reset arduino
-    this->trParam.testOut.reset(new Valve("SyncOut", filePath, SYNCOUT, 7)); //this is not a valve, the valve index is meaningless, we do not count it in VALNUM
-    // this->KnePreVal = new PWMGen("KnePreVal",filePath,OP1,30000L);
-    // this->AnkPreVal = new PWMGen("AnkPreVal",filePath,OP2,30000L);
-    this->LKnePreVal.reset(new PWMGen("LKnePreVal", filePath, OP1, 40000L, 0, _origin));
-    this->LAnkPreVal.reset(new PWMGen("LAnkPreVal", filePath, OP2, 40000L, 1, _origin));
-    this->RKnePreVal.reset(new PWMGen("RKnePreVal", filePath, OP3, 40000L, 2, _origin));
-    this->RAnkPreVal.reset(new PWMGen("RAnkPreVal", filePath, OP4, 40000L, 3, _origin));
-
-    this->PWMList[0] = this->LKnePreVal;
-    this->PWMList[1] = this->LAnkPreVal;
-    this->PWMList[2] = this->RKnePreVal;
-    this->PWMList[3] = this->RAnkPreVal;
-
-    this->ValveList[0] = this->LKneVal;
-    this->ValveList[1] = this->RKneVal;
-    this->ValveList[2] = this->LAnkVal;
-    this->ValveList[3] = this->RAnkVal;
-    this->ValveList[4] = this->LBalVal;
-    this->ValveList[5] = this->RBalVal;
-    this->ValveList[6] = this->RelVal;
-
-    std::shared_ptr<PWMGen> *begPWM = this->PWMList;
-    do
-    {
-        this->SetDuty(*begPWM, 0);
-        (*begPWM)->Start();
-    } while (++begPWM != std::end(this->PWMList));
-
-    std::shared_ptr<Valve> *begVal = this->ValveList;
-    do
-    {
-        this->ValveOff(*begVal);
-    } while (++begVal != std::end(this->ValveList));
-
+    this->valveCon.reset(new ValveCon(filePath,_origin));
+    
     // this->trParam.testOut.reset(new Valve("TestMea", filePath, 8, 6)); //this uses gpio2
     // this->ValveOff(this->trParam.testOut);
     this->curState = 0;
@@ -122,13 +70,10 @@ Controller::Controller(std::string filePath, Com *_com, bool _display, std::chro
 
     this->FSM.reset(new FSMachine(filePath,p1_fun,p2_fun,p3_fun,p4_fun,p5_fun,p6_fun,p7_fun,p8_fun,p9_fun,p10_fun));
     // now we need to actuate some valves, since we prefer the system to isolate each chambers
-    this->ValveOn(this->LKneVal);
-    this->ValveOn(this->RKneVal);
-    this->ValveOn(this->LBalVal);
-    this->ValveOn(this->RBalVal);
-
-
-
+    this->valveCon->setVal(LKNE_VAL,ValveCon::ValSwitch::On);
+    this->valveCon->setVal(RKNE_VAL,ValveCon::ValSwitch::On);
+    this->valveCon->setVal(LBAL_VAL,ValveCon::ValSwitch::On);
+    this->valveCon->setVal(RBAL_VAL,ValveCon::ValSwitch::On);
     
 }
 Controller::~Controller()
@@ -136,82 +81,57 @@ Controller::~Controller()
     std::cout << "destory controller\n";
     // this->FSM_stop();
     this->PreRel();
-    std::shared_ptr<PWMGen> *begPWM = this->PWMList;
-    do
-    {
+    this->valveCon->pwm_all_off();
 
-        (*begPWM)->Stop();
-    } while (++begPWM != std::end(this->PWMList));
 
-    // delete this->valveCond;
-    // delete this->pwmDuty;
-
-    //delete this->senData;
     std::cout << "controller ends\n";
 }
 
 //=================================================================================================================
 void Controller::PreRel()
 {
+    auto elapsed =  std::chrono::high_resolution_clock::now() - this->t_origin;
+    long long curTime = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
     std::cout << "Pressure Release\n";
-    this->ValveOn(this->RelVal);
+    this->valveCon->setVal(PREL_VAL,ValveCon::ValSwitch::On);
     sleep(RELTIME / 2);
-    this->ValveOff(this->LKneVal);
-    this->ValveOff(this->RKneVal);
-    this->SetDuty(this->LKnePreVal, 100);
-    this->SetDuty(this->RKnePreVal, 100);
-    // this->ValveOn(this->RelVal);
-    this->ValveOff(this->LAnkVal);
-    this->ValveOff(this->RAnkVal);
 
-    this->SetDuty(this->LAnkPreVal, 100);
-    this->SetDuty(this->RAnkPreVal, 100);
-
+    elapsed =  std::chrono::high_resolution_clock::now() - this->t_origin;
+    curTime = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+    this->valveCon->setVal(LKNE_VAL,ValveCon::ValSwitch::Off);
+    this->valveCon->setVal(RKNE_VAL,ValveCon::ValSwitch::Off);
+    this->valveCon->setDuty(LKNE_PWM,100);
+    this->valveCon->setDuty(RKNE_PWM,100);
+    
+    this->valveCon->setVal(LANK_VAL,ValveCon::ValSwitch::Off);
+    this->valveCon->setVal(RANK_VAL,ValveCon::ValSwitch::Off);
+    
+    this->valveCon->setDuty(LANK_PWM,100);
+    this->valveCon->setDuty(RANK_PWM,100);
     sleep(RELTIME/2);
+    elapsed =  std::chrono::high_resolution_clock::now() - this->t_origin;
+    curTime = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
 
-    this->SetDuty(this->LKnePreVal, 0);
-    this->SetDuty(this->LAnkPreVal, 0);
-    this->SetDuty(this->RKnePreVal, 0);
-    this->SetDuty(this->RAnkPreVal, 0);
-    this->ValveOff(this->RelVal);
-    this->LKnePreVal->SetDuty(0, senData[TIME] + RELTIME * 1000000);
-    this->LAnkPreVal->SetDuty(0, senData[TIME] + RELTIME * 1000000);
-    this->RKnePreVal->SetDuty(0, senData[TIME] + RELTIME * 1000000);
-    this->RAnkPreVal->SetDuty(0, senData[TIME] + RELTIME * 1000000);
+
+    this->valveCon->setDuty(LKNE_PWM,0);
+    this->valveCon->setDuty(LANK_PWM,0);
+    this->valveCon->setDuty(RKNE_PWM,0);
+    this->valveCon->setDuty(RKNE_PWM,0);
+    this->valveCon->setDuty(RANK_PWM,0);
+    this->valveCon->setVal(PREL_VAL,ValveCon::ValSwitch::Off);
+    this->valveCon->setDuty(LKNE_PWM,0);
+    this->valveCon->setDuty(LANK_PWM,0);
+    this->valveCon->setDuty(RKNE_PWM,0);
+    this->valveCon->setDuty(RANK_PWM,0);
+
 }
 void Controller::ShutDownPWM()
 {
 
-    std::shared_ptr<PWMGen> *begPWM = this->PWMList;
-    do
-    {
-        this->SetDuty(*begPWM, 0);
-        (*begPWM)->Start();
-    } while (++begPWM != std::end(this->PWMList));
+    this->valveCon->pwm_all_off();
 }
 
-void Controller::SendToDisp(const char *senRaw)
-{
 
-    if (this->preSend == this->dispPreScale)
-    {
-        char sendData[DATALEN + VALNUM + PWMNUM];
-        std::copy(senRaw, senRaw + DATALEN, sendData);
-        {
-            std::lock_guard<std::mutex> curLock(this->ValveCondLock);
-            std::copy(this->valveCond.get(), this->valveCond.get() + VALNUM, sendData + DATALEN);
-            std::copy(this->pwmDuty.get(), this->pwmDuty.get() + PWMNUM, sendData + DATALEN + VALNUM);
-        }
-
-        this->client->send(sendData, DATALEN + VALNUM + PWMNUM);
-        this->preSend = 0;
-    }
-    else
-    {
-        this->preSend++;
-        //     this->preSend = true;
-    }
-}
 //Test Valve
 //============================================================================================================
 void Controller::TestValve()
@@ -222,7 +142,8 @@ void Controller::TestValve()
         if (this->tvParam.singleValCount++ < this->tvParam.maxTest)
         {
             if (this->tvParam.curValCond)
-            {
+            {   
+                this->valveCon->setVal()
                 this->ValveOn(this->ValveList[this->tvParam.testValIdx]);
                 this->tvParam.curValCond = false;
             }
@@ -248,28 +169,7 @@ void Controller::TestValve()
     }
 }
 //============================================================================================================
-void Controller::TestReactingTime()
-{
-    if (this->trParam.dataNotSent)
-    {
-        this->trParam.testOut->On(0); //we do not use this->ValveOn since we don't need this in valve condition
-        this->trParam.dataNotSent = false;
-        this->trParam.sendTime = std::chrono::system_clock::now();
-    }
-    else
-    {
-        if (this->senData[SYNCREAD] > 300)
-        {
-            std::chrono::system_clock::time_point curTime = std::chrono::system_clock::now();
-            microsecs_t sen_time(std::chrono::duration_cast<microsecs_t>(curTime - this->trParam.sendTime));
 
-            std::cout << " reaction time = " << sen_time.count() << "us\n";
-            this->trParam.testOut->Off(1);
-            this->trParam.dataNotSent = true;
-            this->com->comArray[TESTSYNC] = false;
-        }
-    }
-}
 
 // PWM
 //============================================================================================================
@@ -295,26 +195,8 @@ void Controller::TestPWM()
     }
 }
 
-void Controller::SetDuty(std::shared_ptr<PWMGen> pwmVal, int duty)
-{
-    std::lock_guard<std::mutex> curLock(this->ValveCondLock);
-    pwmVal->SetDuty(duty, this->senData[TIME]);
-    this->pwmDuty[pwmVal->GetIdx()] = pwmVal->duty.byte[0];
-}
 
 //============================================================================================================
-void Controller::ValveOn(std::shared_ptr<Valve> val)
-{
-    std::lock_guard<std::mutex> curLock(this->ValveCondLock);
-    val->On(this->senData[TIME]);
-    this->valveCond[val->GetValIdx()] = 'd';
-}
-
-void Controller::ValveOff(std::shared_ptr<Valve> val)
-{
-    val->Off(this->senData[TIME]);
-    this->valveCond[val->GetValIdx()] = '!';
-}
 
 int Controller::CalDuty(int curPre, int desPre, int tankPre)
 {
@@ -404,45 +286,53 @@ void Controller::TestLeak(int curPath)
     {
     case 0: //test LKneeSup
         std::cout << "test LKneeSup\n";
-        this->ValveOn(this->LKneVal);
-        this->ValveOn(this->LAnkVal);
-        this->SetDuty(this->LKnePreVal, 100);
+        this->valveCon->setVal(LKNE_VAL,ValveCon::ValSwitch::On);
+        this->valveCon->setVal(LANK_VAL,ValveCon::ValSwitch::On);
+        this->valveCon->setDuty(LKNE_PWM,100);
         sleep(10);
-        this->ValveOff(this->LKneVal);
-        this->ValveOff(this->LAnkVal);
-        this->SetDuty(this->LKnePreVal, 0);
+        this->valveCon->setVal(LKNE_VAL,ValveCon::ValSwitch::Off);
+        this->valveCon->setVal(LANK_VAL,ValveCon::ValSwitch::Off);
+        this->valveCon->setVal(LKNE_PWM,0);
+        
         break;
     case 2: //test LKneeFree and LKneeSup
         std::cout << "test LKneeFree and LKneeSup\n";
-        this->ValveOff(this->LKneVal);
-        this->ValveOff(this->LAnkVal);
-        this->SetDuty(this->LKnePreVal, 100);
+        this->valveCon->setVal(LKNE_VAL,ValveCon::ValSwitch::Off);
+        this->valveCon->setVal(LANK_VAL,ValveCon::ValSwitch::Off);
+        this->valveCon->setDuty(LKNE_PWM,100);
+        
         sleep(10);
-        this->SetDuty(this->LKnePreVal, 0);
+        this->valveCon->setDuty(LKNE_PWM,0);
         break;
     case 3: //test RKneeSup
         std::cout << "test RKneeSup\n";
-        this->ValveOn(this->RKneVal);
-        this->ValveOn(this->RAnkVal);
-        this->SetDuty(this->RKnePreVal, 100);
+        this->valveCon->setVal(RKNE_VAL,ValveCon::ValSwitch::On);
+        this->valveCon->setVal(RKNE_VAL,ValveCon::ValSwitch::On);
+        this->valveCon->setVal(RANK_VAL,ValveCon::ValSwitch::On);
+        this->valveCon->setVal(RANK_VAL,ValveCon::ValSwitch::On);
+        this->valveCon->setDuty(RKNE_PWM,100);
+        
         sleep(10);
-        this->ValveOff(this->RKneVal);
-        this->ValveOff(this->RAnkVal);
-        this->SetDuty(this->RKnePreVal, 0);
+        this->valveCon->setVal(RKNE_VAL,ValveCon::ValSwitch::Off);
+        this->valveCon->setVal(RANK_VAL,ValveCon::ValSwitch::Off);
+        this->valveCon->setDuty(RKNE_PWM,0);
         break;
     case 4: //test RKneeFree and RKneeSup
         std::cout << "test RKneeFree and RKneeSup\n";
-        this->ValveOff(this->RKneVal);
-        this->ValveOff(this->RAnkVal);
-        this->SetDuty(this->RKnePreVal, 100);
+        this->valveCon->setVal(RKNE_VAL,ValveCon::ValSwitch::Off);
+        this->valveCon->setVal(RANK_VAL,ValveCon::ValSwitch::Off);
+        this->valveCon->setDuty(RKNE_PWM,100);
         sleep(10);
-        this->SetDuty(this->RKnePreVal, 0);
+        this->valveCon->setDuty(RKNE_PWM,0);
+        
         break;
     case 5: //test LAnkleSup
         std::cout << "test LAnkleSup\n";
-        this->SetDuty(this->LAnkPreVal, 100);
+        this->valveCon->setDuty(LANK_PWM,100);
+        
         sleep(10);
-        this->SetDuty(this->LAnkPreVal, 0);
+        this->valveCon->setDuty(LANK_PWM,0);
+        
         break;
     case 6: //test LAnkleFree and LKneeSup (looks weird but that is how the loop is connected)
         break;
@@ -451,23 +341,25 @@ void Controller::TestLeak(int curPath)
 void Controller::TestAllLeakOn()
 {
     std::cout << "Leak test started\n";
-    this->ValveOff(this->LKneVal);
-    this->ValveOff(this->RKneVal);
-    this->SetDuty(this->LKnePreVal, 100);
-    this->SetDuty(this->RKnePreVal, 100);
-    this->ValveOff(this->LBalVal);
-    this->ValveOff(this->RBalVal);
-    this->ValveOff(this->LAnkVal);
-    this->ValveOff(this->RAnkVal);
-    this->SetDuty(this->LAnkPreVal, 100);
-    this->SetDuty(this->RAnkPreVal, 100);
+    this->valveCon->setVal(LKNE_VAL,ValveCon::ValSwitch::Off);
+    this->valveCon->setVal(RKNE_VAL,ValveCon::ValSwitch::Off);
+    this->valveCon->setDuty(LKNE_PWM,100);
+    this->valveCon->setDuty(RKNE_PWM,100);
+    this->valveCon->setVal(LBAL_VAL,ValveCon::ValSwitch::Off);
+    this->valveCon->setVal(RBAL_VAL,ValveCon::ValSwitch::Off);
+    this->valveCon->setVal(LANK_VAL,ValveCon::ValSwitch::Off);
+    this->valveCon->setVal(RANK_VAL,ValveCon::ValSwitch::Off);
+    this->valveCon->setDuty(LANK_PWM,100);
+    this->valveCon->setDuty(RANK_PWM,100);
+    
 }
 void Controller::TestAllLeakOff()
 {
-    this->SetDuty(this->LKnePreVal, 0);
-    this->SetDuty(this->RKnePreVal, 0);
-    this->SetDuty(this->LAnkPreVal, 0);
-    this->SetDuty(this->RAnkPreVal, 0);
+    this->valveCon->setDuty(LKNE_PWM,0);
+    this->valveCon->setDuty(RKNE_PWM,0);
+    this->valveCon->setDuty(LANK_PWM,0);
+    this->valveCon->setDuty(RANK_PWM,0);
+    
     this->com->comArray[TESTALLLEAK] = false;
     std::cout << "leak test ends\n";
 }
@@ -491,12 +383,13 @@ void Controller::FreeWalk_on()
     //call TestAllLeak with RelVal on
 
     this->TestAllLeakOn();
-    this->ValveOn(this->RelVal);
+    this->valveCon->setVal(PREL_VAL,ValveCon::ValSwitch::On);
 }
 void Controller::FreeWalk_off()
 {
     this->TestAllLeakOff();
-    this->ValveOff(this->RelVal);
+    this->valveCon->setVal(PREL_VAL,ValveCon::ValSwitch::Off);
+    
 }
 void Controller::FreeWalk()
 {
@@ -524,18 +417,18 @@ void Controller::PIDActTest(int joint)
     //although it is called act test, for knee support, it is also an action
     if (joint == 0)
     {
-        this->ValveOn(this->LBalVal);
-        this->ValveOn(this->LKneVal);
+        this->valveCon->setVal(LBAL_VAL,ValveCon::ValSwitch::On);
+        this->valveCon->setVal(LKNE_VAL,ValveCon::ValSwitch::On);
+        
         if (this->CheckSupPre_main(this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE], this->kneSupPre))
-        {
-            
+        {    
             this->com->comArray[PIDACTTEST] = false;
             std::cout << "done rec\n";
         }
     }
     if (joint == 1)
     {
-        this->ValveOn(this->LBalVal);
+        this->valveCon->setVal(LBAL_VAL,ValveCon::ValSwitch::On);
         if (this->CheckSupPre_main(this->LAnkPreVal, this->senData[LANKPRE], this->senData[TANKPRE], this->ankSupPre))
         {
             
@@ -545,8 +438,9 @@ void Controller::PIDActTest(int joint)
     }
     if (joint == 2)
     {
-        this->ValveOn(this->RBalVal);
-        this->ValveOn(this->RKneVal);
+        this->valveCon->setVal(RBAL_VAL,ValveCon::ValSwitch::On);
+        this->valveCon->setVal(RKNE_VAL,ValveCon::ValSwitch::On);
+        
         if (this->CheckSupPre_main(this->RKnePreVal, this->senData[RKNEPRE], this->senData[TANKPRE], this->kneSupPre))
         {
             
@@ -556,7 +450,8 @@ void Controller::PIDActTest(int joint)
     }
     if (joint == 3)
     {
-        this->ValveOn(this->RBalVal);
+        this->valveCon->setVal(RBAL_VAL,ValveCon::ValSwitch::On);
+        
         if (this->CheckSupPre_main(this->RAnkPreVal, this->senData[RANKPRE], this->senData[TANKPRE], this->ankSupPre))
         {
             
@@ -574,8 +469,9 @@ void Controller::PIDRecTest(int joint)
 
     if (joint == 0)
     {
-        this->ValveOn(this->LBalVal);
-        this->ValveOn(this->LKneVal);
+        this->valveCon->setVal(LBAL_VAL,ValveCon::ValSwitch::On);
+        this->valveCon->setVal(LKNE_VAL,ValveCon::ValSwitch::On);
+        
         if (this->CheckKnePreRec_main(this->LKnePreVal, this->senData[LKNEPRE], this->senData[TANKPRE], this->kneRecPre))
         {
             
@@ -584,7 +480,7 @@ void Controller::PIDRecTest(int joint)
     }
     if (joint == 1)
     {
-        this->ValveOn(this->LBalVal);
+        this->valveCon->setVal(LBAL_VAL,ValveCon::ValSwitch::On);
         if (this->CheckAnkPreRec_main(this->LAnkPreVal, this->senData[LANKPRE], this->senData[TANKPRE], this->LBalVal, this->ankRecPre))
         {
             
@@ -593,9 +489,8 @@ void Controller::PIDRecTest(int joint)
     }
     if (joint == 2)
     {
-
-        this->ValveOn(this->RBalVal);
-        this->ValveOn(this->RKneVal);
+        this->valveCon->setVal(RBAL_VAL,ValveCon::ValSwitch::On);
+        this->valveCon->setVal(RKNE_VAL,ValveCon::ValSwitch::On);        
         if (this->CheckKnePreRec_main(this->RKnePreVal, this->senData[RKNEPRE], this->senData[TANKPRE], this->kneRecPre))
         {
             
@@ -604,7 +499,7 @@ void Controller::PIDRecTest(int joint)
     }
     if (joint == 3)
     {
-        this->ValveOn(this->RBalVal);
+        this->valveCon->setVal(RBAL_VAL,ValveCon::ValSwitch::On);
         if (this->CheckAnkPreRec_main(this->RAnkPreVal, this->senData[RANKPRE], this->senData[TANKPRE], this->RBalVal, this->ankRecPre))
         {
             
@@ -627,10 +522,9 @@ void Controller::PIDRecTest(int joint)
 void Controller::TestOnePWM(int pwmIdx)
 {
     //kind of stupid, but need to turn on all balvals so pressure won't fill both ankle and knee
-    this->ValveOn(this->LBalVal);
-    this->ValveOn(this->RBalVal);
-
-    this->SetDuty(this->PWMList[pwmIdx], 33);
+    this->valveCon->setVal(LBAL_VAL,ValveCon::ValSwitch::On);
+    this->valveCon->setVal(RBAL_VAL,ValveCon::ValSwitch::On);
+    this->valveCon->setDuty(pwmIdx,33);
     this->testOnePWM_flag = true;
 }
 
@@ -638,17 +532,20 @@ void Controller::TestRAnk()
 {
     if (this->TestRAnkFlag)
     {
-        this->SetDuty(this->RAnkPreVal, 0);
+        this->valveCon->setDuty(RKNE_PWM,0);
         this->TestRAnkFlag = false;
-        this->ValveOff(this->RBalVal);
-        this->ValveOn(this->RKneVal);
+        this->valveCon->setVal(RBAL_VAL,ValveCon::ValSwitch::Off);
+        this->valveCon->setVal(RKNE_VAL,ValveCon::ValSwitch::On);
+       
     }
     else
     {
-        this->ValveOff(this->RKneVal);
-        this->ValveOn(this->RBalVal);
+        this->valveCon->setVal(RKNE_VAL,ValveCon::ValSwitch::Off);
+        this->valveCon->setVal(RBAL_VAL,ValveCon::ValSwitch::On);
+        
         this->TestRAnkFlag = true;
-        this->SetDuty(this->RAnkPreVal, 100);
+        this->valveCon->setDuty(RANK_PWM,100);
+        
     }
 }
 void Controller::TestLAnk()
@@ -657,17 +554,20 @@ void Controller::TestLAnk()
     {
         std::cout << "turn off LAnk\n";
         this->TestLAnkFlag = false;
-        this->SetDuty(this->LAnkPreVal, 0);
-        this->ValveOff(this->LBalVal);
-        this->ValveOff(this->LKneVal);
+        this->valveCon->setDuty(LANK_PWM,0);
+        this->valveCon->setVal(LBAL_VAL,ValveCon::ValSwitch::Off);
+        this->valveCon->setVal(LKNE_VAL,ValveCon::ValSwitch::Off);
+        
     }
     else
     {
         std::cout << "turn on LAnk\n";
-        this->ValveOn(this->LKneVal);
-        this->ValveOn(this->LBalVal);
+        this->valveCon->setVal(LKNE_VAL,ValveCon::ValSwitch::On);
+        this->valveCon->setVal(LBAL_VAL,ValveCon::ValSwitch::On);
+        
         this->TestLAnkFlag = true;
-        this->SetDuty(this->LAnkPreVal, 100);
+        
+        this->valveCon->setDuty(LANK_PWM,100);
     }
 }
 void Controller::ShowSen()
